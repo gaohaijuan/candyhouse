@@ -1,0 +1,113 @@
+{
+ "levels": [
+  {
+   "id": 1,
+   "types": 6,
+   "max_open": 1,
+   "seed": 101,
+   "tutorial": true,
+   "layers": [
+    {
+     "cols": 4,
+     "rows": 3,
+     "offset": [
+      0,
+      0
+     ]
+    },
+    {
+     "cols": 3,
+     "rows": 2,
+     "offset": [
+      1,
+      1
+     ]
+    }
+   ],
+   "target_win_pct": [
+    90,
+    100
+   ]
+  },
+  {
+   "id": 2,
+   "types": 8,
+   "max_open": 2,
+   "seed": 202,
+   "layers": [
+    {
+     "cols": 6,
+     "rows": 4,
+     "offset": [
+      0,
+      0
+     ]
+    },
+    {
+     "cols": 5,
+     "rows": 3,
+     "offset": [
+      1,
+      1
+     ]
+    },
+    {
+     "cols": 3,
+     "rows": 2,
+     "offset": [
+      3,
+      2
+     ]
+    }
+   ],
+   "target_win_pct": [
+    45,
+    75
+   ]
+  },
+  {
+   "id": 3,
+   "types": 7,
+   "max_open": 1,
+   "seed": 303,
+   "layers": [
+    {
+     "cols": 7,
+     "rows": 5,
+     "offset": [
+      0,
+      0
+     ]
+    },
+    {
+     "cols": 6,
+     "rows": 4,
+     "offset": [
+      1,
+      1
+     ]
+    },
+    {
+     "cols": 4,
+     "rows": 3,
+     "offset": [
+      3,
+      2
+     ]
+    },
+    {
+     "cols": 2,
+     "rows": 2,
+     "offset": [
+      5,
+      3
+     ]
+    }
+   ],
+   "target_win_pct": [
+    25,
+    50
+   ]
+  }
+ ]
+}
