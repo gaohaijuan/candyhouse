@@ -144,7 +144,7 @@ func _build_static() -> void:
 	hud.hold.modulate.a = 0.0
 	var tray_rect := _rect("tray")
 	if Art.ui("tray"):
-		hud.tray = _texture_rect(tray_rect, Art.ui("tray"))
+		hud.tray = _texture_rect(_tray_texture_rect(), Art.ui("tray"))
 	else:
 		hud.tray = _panel(tray_rect, Color("#F7E3CC"), Color("#D9A57A"), 40)
 	for i in (0 if Art.ui("tray") else GameState.TRAY_SIZE):
@@ -361,10 +361,24 @@ func _fit_board() -> void:
 func _board_pos(t: Dictionary) -> Vector2:
 	return board_origin + Vector2(t.x, t.y) * tile_px / 2 - Vector2(0, t.layer * layout.layer_lift)
 
+## Screen rect for the tray texture so that its visible wooden frame (measured
+## inside the PNG) lands exactly on the layout's tray rect.
+func _tray_texture_rect() -> Rect2:
+	var tex := Art.ui("tray")
+	var target := _rect("tray")
+	if not tex or not layout.has("tray_texture_frame"):
+		return target
+	var f: Array = layout.tray_texture_frame
+	var k := Vector2(target.size.x / f[2], target.size.y / f[3])
+	return Rect2(target.position - Vector2(f[0], f[1]) * k, Vector2(tex.get_width(), tex.get_height()) * k)
+
 func _tray_slot(i: int) -> Vector2:
-	if layout.has("tray_slot_centers"):
-		var c: Dictionary = layout.tray_slot_centers
-		return Vector2(c.x0 + i * c.pitch, c.y)
+	if Art.ui("tray") and layout.has("tray_texture_slots"):
+		var r := _tray_texture_rect()
+		var tex := Art.ui("tray")
+		var k := r.size / Vector2(tex.get_width(), tex.get_height())
+		var s: Dictionary = layout.tray_texture_slots
+		return r.position + Vector2(float(s.cx[i]), float(s.cy)) * k
 	var r := _rect("tray")
 	var slot: float = layout.tray_slot
 	var gap := (r.size.x - slot * GameState.TRAY_SIZE) / (GameState.TRAY_SIZE + 1)
@@ -689,9 +703,10 @@ func _show_win() -> void:
 
 func _show_lose() -> void:
 	var tw := create_tween()
+	var rest_x: float = hud.tray.position.x
 	for i in 4:
-		tw.tween_property(hud.tray, "position:x", _rect("tray").position.x + (14 if i % 2 == 0 else -14), 0.05)
-	tw.tween_property(hud.tray, "position:x", _rect("tray").position.x, 0.05)
+		tw.tween_property(hud.tray, "position:x", rest_x + (14 if i % 2 == 0 else -14), 0.05)
+	tw.tween_property(hud.tray, "position:x", rest_x, 0.05)
 	var buttons := [["重新开始", func(): start_level(level_index)]]
 	if state.boosters.move_out > 0 and state.hold.is_empty():
 		buttons.push_front(["用“移出”继续", func():

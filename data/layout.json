@@ -47,7 +47,7 @@
   1033,
   232
  ],
- "tray_slot": 124,
+ "tray_slot": 122,
  "boosters_y": 1711,
  "booster_size": 225,
  "booster_x": [
@@ -62,11 +62,6 @@
   668,
   900
  ],
- "tray_slot_centers": {
-  "x0": 133.13,
-  "pitch": 137.73,
-  "y": 1444.6
- },
  "badge_size": 71,
  "cover_multiply": [
   0.717,
@@ -99,5 +94,25 @@
    "outline": "#FFF7DD",
    "outline_size": 8
   }
+ },
+ "tray_texture_frame": [
+  79,
+  16,
+  1721,
+  279
+ ],
+ "tray_texture_slots": {
+  "cx": [
+   264,
+   486,
+   714,
+   940,
+   1166,
+   1394,
+   1620
+  ],
+  "cy": 148,
+  "w": 206,
+  "h": 160
  }
 }
