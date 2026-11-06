@@ -47,7 +47,7 @@
   1033,
   232
  ],
- "tray_slot": 122,
+ "tray_slot": 124,
  "boosters_y": 1711,
  "booster_size": 225,
  "booster_x": [
@@ -134,5 +134,18 @@
  "hand_tip": [
   48,
   28
- ]
+ ],
+ "tile_face_box": [
+  17,
+  18,
+  349,
+  336
+ ],
+ "tile_visible_box": [
+  17,
+  18,
+  349,
+  370
+ ],
+ "tile_face_fill": 0.97
 }

@@ -61,6 +61,12 @@ func _ready() -> void:
 			DirAccess.make_dir_recursive_absolute(capture_dir)
 		elif arg.begins_with("--level="):
 			level_index = clampi(int(arg.substr(8)) - 1, 0, 2)
+	if layout.has("tile_face_box"):
+		var fb: Array = layout.tile_face_box
+		var vb: Array = layout.tile_visible_box
+		TileView.face_box = Rect2(fb[0], fb[1], fb[2], fb[3])
+		TileView.visible_box = Rect2(vb[0], vb[1], vb[2], vb[3])
+		TileView.face_fill = layout.get("tile_face_fill", 0.97)
 	if layout.has("cover_multiply"):
 		var m: Array = layout.cover_multiply
 		TileView.cover_multiply = Color(m[0], m[1], m[2])
@@ -412,9 +418,7 @@ func _tray_slot(i: int) -> Vector2:
 
 ## Top-left offset that centres a tile (face plus thickness) on a slot centre.
 func _tile_anchor(side: float) -> Vector2:
-	var base := Art.ui("tile_base")
-	var aspect := float(base.get_height()) / base.get_width() if base else 1.0
-	return Vector2(side / 2, side * aspect / 2)
+	return Vector2(side, side) / 2
 
 func _hold_slot(i: int) -> Vector2:
 	var r := _rect("hold_row")

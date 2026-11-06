@@ -10,6 +10,12 @@ var type := 0:
 		queue_redraw()
 ## Overlay for covered tiles; replaced by the colour measured from the mockup.
 static var cover_tint := Color(0.18, 0.12, 0.2, 0.5)
+## Where the visible biscuit sits inside tile_base.png (texture pixels): the face
+## alone, and the face plus its thickness edge. The face is scaled to fill
+## `face_fill` of the cell so tiles look the same size in the board and the tray.
+static var face_box := Rect2(17, 18, 349, 336)
+static var visible_box := Rect2(17, 18, 349, 370)
+static var face_fill := 0.97
 ## Multiply colour for covered tiles when real art is used (measured from the mockup).
 static var cover_multiply := Color(0.62, 0.55, 0.55)
 var dim := 0.0:
@@ -34,9 +40,13 @@ func _draw() -> void:
 	var base := Art.ui("tile_base")
 	var icon := Art.dessert_icon(type)
 	var shade := Color.WHITE.lerp(cover_multiply, dim) if base else Color.WHITE
+	var icon_rect := Rect2(size * 0.12, size * 0.76)
 	if base:
-		var aspect := float(base.get_height()) / base.get_width()
-		draw_texture_rect(base, Rect2(Vector2.ZERO, Vector2(s, s * aspect)), false, shade)
+		var k := (s * face_fill) / face_box.size.x
+		var origin := (Vector2(s, s) - visible_box.size * k) / 2 - visible_box.position * k
+		draw_texture_rect(base, Rect2(origin, Vector2(base.get_width(), base.get_height()) * k), false, shade)
+		var face := Rect2(origin + face_box.position * k, face_box.size * k)
+		icon_rect = face.grow(-face.size.x * 0.1)
 	else:
 		var face := StyleBoxFlat.new()
 		face.bg_color = Color("#FFF6E6")
@@ -48,7 +58,7 @@ func _draw() -> void:
 		face.shadow_offset = Vector2(0, s * 0.06)
 		draw_style_box(face, Rect2(Vector2.ZERO, size))
 	if icon:
-		draw_texture_rect(icon, Rect2(size * 0.12, size * 0.76), false, shade)
+		draw_texture_rect(icon, icon_rect, false, shade)
 	else:
 		var d: Dictionary = Art.DESSERTS[type]
 		draw_circle(Vector2(s / 2, s * 0.42), s * 0.24, d.color)
