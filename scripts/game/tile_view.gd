@@ -8,6 +8,10 @@ var type := 0:
 	set(value):
 		type = value
 		queue_redraw()
+## Overlay for covered tiles; replaced by the colour measured from the mockup.
+static var cover_tint := Color(0.18, 0.12, 0.2, 0.5)
+## Multiply colour for covered tiles when real art is used (measured from the mockup).
+static var cover_multiply := Color(0.62, 0.55, 0.55)
 var dim := 0.0:
 	set(value):
 		dim = value
@@ -29,8 +33,10 @@ func _draw() -> void:
 	var s := size.x
 	var base := Art.ui("tile_base")
 	var icon := Art.dessert_icon(type)
+	var shade := Color.WHITE.lerp(cover_multiply, dim) if base else Color.WHITE
 	if base:
-		draw_texture_rect(base, Rect2(Vector2.ZERO, size), false)
+		var aspect := float(base.get_height()) / base.get_width()
+		draw_texture_rect(base, Rect2(Vector2.ZERO, Vector2(s, s * aspect)), false, shade)
 	else:
 		var face := StyleBoxFlat.new()
 		face.bg_color = Color("#FFF6E6")
@@ -42,7 +48,7 @@ func _draw() -> void:
 		face.shadow_offset = Vector2(0, s * 0.06)
 		draw_style_box(face, Rect2(Vector2.ZERO, size))
 	if icon:
-		draw_texture_rect(icon, Rect2(size * 0.12, size * 0.76), false)
+		draw_texture_rect(icon, Rect2(size * 0.12, size * 0.76), false, shade)
 	else:
 		var d: Dictionary = Art.DESSERTS[type]
 		draw_circle(Vector2(s / 2, s * 0.42), s * 0.24, d.color)
@@ -51,8 +57,8 @@ func _draw() -> void:
 		var fs := int(s * 0.17)
 		var w := Art.font.get_string_size(label, HORIZONTAL_ALIGNMENT_LEFT, -1, fs).x
 		draw_string(Art.font, Vector2((s - w) / 2, s * 0.86), label, HORIZONTAL_ALIGNMENT_LEFT, -1, fs, Color("#7A4A32"))
-	if dim > 0.0:
-		var shade := StyleBoxFlat.new()
-		shade.bg_color = Color(0.18, 0.12, 0.2, 0.5 * dim)
-		shade.set_corner_radius_all(int(s * 0.2))
-		draw_style_box(shade, Rect2(Vector2.ZERO, size))
+	if dim > 0.0 and not base:
+		var overlay := StyleBoxFlat.new()
+		overlay.bg_color = Color(cover_tint, cover_tint.a * dim)
+		overlay.set_corner_radius_all(int(s * 0.2))
+		draw_style_box(overlay, Rect2(Vector2.ZERO, size))

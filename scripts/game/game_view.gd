@@ -86,31 +86,64 @@ func _build_static() -> void:
 		bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		add_child(bg)
 
-	hud.pause = _round_button(_rect("pause_button"), "Ⅱ", Color("#F48FB1"))
+	if Art.ui("button_pause"):
+		hud.pause = _texture_button(_rect("pause_button"), Art.ui("button_pause"), null)
+	else:
+		hud.pause = _round_button(_rect("pause_button"), "Ⅱ", Color("#F48FB1"))
 	hud.pause.pressed.connect(_on_pause)
-	hud.level = _plaque(_rect("level_plaque"), Color("#F48FB1"), Color.WHITE, 52)
-	hud.coins = _plaque(_rect("coin_pill"), Color("#FFF6E6"), Color("#7A4A32"), 40)
-	hud.coins.get_child(0).text = "● 1280"
+	if Art.ui("ribbon_level"):
+		hud.level = _textured_label(_rect("level_plaque"), Art.ui("ribbon_level"), _text_style("level_text"))
+	else:
+		hud.level = _plaque(_rect("level_plaque"), Color("#F48FB1"), Color.WHITE, 52)
+	if Art.ui("coin_pill"):
+		hud.coins = _textured_label(_rect("coin_pill"), Art.ui("coin_pill"), _text_style("coin_text"))
+		hud.coins.get_child(0).text = "1280"
+	else:
+		hud.coins = _plaque(_rect("coin_pill"), Color("#FFF6E6"), Color("#7A4A32"), 40)
+		hud.coins.get_child(0).text = "● 1280"
 	var bar_rect := _rect("progress_bar")
-	hud.bar_bg = _panel(bar_rect, Color("#FFF6E6"), Color("#E9B98F"), int(bar_rect.size.y / 2))
-	hud.bar_fill = _panel(Rect2(bar_rect.position + Vector2(4, 4), Vector2(0, bar_rect.size.y - 8)), Color("#F48FB1"), Color.TRANSPARENT, int(bar_rect.size.y / 2))
+	if Art.ui("progress_bg") and Art.ui("progress_fill"):
+		_texture_rect(bar_rect, Art.ui("progress_bg"))
+		var fill := NinePatchRect.new()
+		fill.texture = Art.ui("progress_fill")
+		var cap := int(Art.ui("progress_fill").get_height() / 2)
+		fill.patch_margin_left = cap
+		fill.patch_margin_right = cap
+		var inset: float = layout.get("progress_fill_inset", 6)
+		fill.position = bar_rect.position + Vector2(inset, inset)
+		fill.size = Vector2(0, bar_rect.size.y - inset * 2)
+		fill.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		add_child(fill)
+		hud.bar_fill = fill
+	else:
+		hud.bar_bg = _panel(bar_rect, Color("#FFF6E6"), Color("#E9B98F"), int(bar_rect.size.y / 2))
+		hud.bar_fill = _panel(Rect2(bar_rect.position + Vector2(4, 4), Vector2(0, bar_rect.size.y - 8)), Color("#F48FB1"), Color.TRANSPARENT, int(bar_rect.size.y / 2))
 	hud.stars = []
 	for i in 3:
-		var star := Label.new()
-		star.text = "★"
-		star.add_theme_font_size_override("font_size", 52)
-		star.add_theme_color_override("font_color", Color("#D9C7B8"))
-		star.position = bar_rect.position + Vector2(bar_rect.size.x * (i + 1) / 3.0 - 26, -16)
-		star.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		add_child(star)
+		var star: Control
+		var star_size: float = layout.get("star_size", 64)
+		var at := bar_rect.position + Vector2(bar_rect.size.x * (i + 1) / 3.0, bar_rect.size.y / 2) - Vector2.ONE * star_size / 2
+		if Art.ui("star"):
+			star = _texture_rect(Rect2(at, Vector2.ONE * star_size), Art.ui("star"))
+		else:
+			var l := Label.new()
+			l.text = "★"
+			l.add_theme_font_size_override("font_size", 52)
+			l.position = at
+			l.mouse_filter = Control.MOUSE_FILTER_IGNORE
+			add_child(l)
+			star = l
 		hud.stars.append(star)
 
 	var hold_rect := _rect("hold_row")
 	hud.hold = _panel(hold_rect, Color(1, 1, 1, 0.55), Color("#E9B98F"), 30)
 	hud.hold.modulate.a = 0.0
 	var tray_rect := _rect("tray")
-	hud.tray = _panel(tray_rect, Color("#F7E3CC"), Color("#D9A57A"), 40)
-	for i in GameState.TRAY_SIZE:
+	if Art.ui("tray"):
+		hud.tray = _texture_rect(tray_rect, Art.ui("tray"))
+	else:
+		hud.tray = _panel(tray_rect, Color("#F7E3CC"), Color("#D9A57A"), 40)
+	for i in (0 if Art.ui("tray") else GameState.TRAY_SIZE):
 		var slot := _panel(Rect2(_tray_slot(i) - Vector2.ONE * layout.tray_slot / 2, Vector2.ONE * layout.tray_slot), Color("#EBCDAE"), Color.TRANSPARENT, 24)
 		slot.modulate.a = 0.7
 
@@ -120,13 +153,24 @@ func _build_static() -> void:
 		var glyph: String = ["↶", "⇪", "⟲"][i]
 		var c := Vector2(layout.booster_x[i], layout.boosters_y)
 		var side: float = layout.booster_size
-		var b := _round_button(Rect2(c - Vector2(side, side) / 2, Vector2(side, side)), glyph, Color("#7CC8B4"))
+		var b: BaseButton
+		var disc := Art.ui("button_round_green" if key == "move_out" else "button_round_pink")
+		var b_rect := Rect2(c - Vector2(side, side) / 2, Vector2(side, side))
+		if disc:
+			b = _texture_button(b_rect, disc, Art.ui("icon_" + key))
+		else:
+			b = _round_button(b_rect, glyph, Color("#7CC8B4"))
 		b.pressed.connect(_on_booster.bind(key))
-		var badge := _plaque(Rect2(c + Vector2(side * 0.22, -side * 0.55), Vector2(56, 56)), Color("#E5484D"), Color.WHITE, 34)
+		var badge_side: float = layout.get("badge_size", 56)
+		var badge_at := c + Vector2(side * 0.22, -side * 0.55)
+		var badge: Control
+		if Art.ui("badge"):
+			badge = _textured_label(Rect2(badge_at, Vector2.ONE * badge_side), Art.ui("badge"), _text_style("badge_text"))
+		else:
+			badge = _plaque(Rect2(badge_at, Vector2(56, 56)), Color("#E5484D"), Color.WHITE, 34)
 		var name_label := Label.new()
 		name_label.text = label
-		name_label.add_theme_font_size_override("font_size", 38)
-		name_label.add_theme_color_override("font_color", Color("#7A4A32"))
+		_apply_text_style(name_label, _text_style("booster_text"))
 		name_label.size = Vector2(200, 50)
 		name_label.position = c + Vector2(-100, side / 2 + 4)
 		name_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -193,6 +237,73 @@ func _round_button(rect: Rect2, glyph: String, ring: Color) -> Button:
 	b.focus_mode = Control.FOCUS_NONE
 	add_child(b)
 	return b
+
+func _texture_rect(rect: Rect2, tex: Texture2D) -> TextureRect:
+	var t := TextureRect.new()
+	t.texture = tex
+	t.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	t.stretch_mode = TextureRect.STRETCH_SCALE
+	t.position = rect.position
+	t.size = rect.size
+	t.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(t)
+	return t
+
+func _textured_label(rect: Rect2, tex: Texture2D, style: Dictionary) -> TextureRect:
+	var t := _texture_rect(rect, tex)
+	var l := Label.new()
+	l.size = rect.size
+	l.position = Vector2(style.get("offset_x", 0.0), style.get("offset_y", 0.0))
+	l.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	l.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	_apply_text_style(l, style)
+	t.add_child(l)
+	return t
+
+func _texture_button(rect: Rect2, base: Texture2D, icon: Texture2D) -> TextureButton:
+	var b := TextureButton.new()
+	b.texture_normal = base
+	b.ignore_texture_size = true
+	b.stretch_mode = TextureButton.STRETCH_SCALE
+	b.position = rect.position
+	b.size = rect.size
+	b.pivot_offset = rect.size / 2
+	b.focus_mode = Control.FOCUS_NONE
+	b.button_down.connect(func(): create_tween().tween_property(b, "scale", Vector2(0.92, 0.92), 0.06))
+	b.button_up.connect(func(): create_tween().tween_property(b, "scale", Vector2.ONE, 0.1).set_trans(Tween.TRANS_BACK))
+	if icon:
+		var ic := TextureRect.new()
+		ic.texture = icon
+		ic.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		ic.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		var pad := rect.size * 0.2
+		ic.position = pad
+		ic.size = rect.size - pad * 2
+		ic.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		b.add_child(ic)
+	add_child(b)
+	return b
+
+## Text styles come from layout.json ("text_styles"), measured from the approved mockup.
+func _text_style(key: String) -> Dictionary:
+	var defaults := {
+		"level_text": {"size": 56, "color": "#FFFFFF", "outline": "#E05A87", "outline_size": 10},
+		"coin_text": {"size": 44, "color": "#7A4A32", "outline": "#FFFFFF", "outline_size": 0, "offset_x": 24.0},
+		"badge_text": {"size": 36, "color": "#FFFFFF", "outline": "#B8323A", "outline_size": 0},
+		"booster_text": {"size": 44, "color": "#6B3A26", "outline": "#FFFFFF", "outline_size": 10},
+	}
+	var styles: Dictionary = layout.get("text_styles", {})
+	var out: Dictionary = defaults.get(key, {}).duplicate()
+	out.merge(styles.get(key, {}), true)
+	return out
+
+func _apply_text_style(l: Label, style: Dictionary) -> void:
+	l.add_theme_font_size_override("font_size", int(style.get("size", 40)))
+	l.add_theme_color_override("font_color", Color(style.get("color", "#7A4A32")))
+	if int(style.get("outline_size", 0)) > 0:
+		l.add_theme_color_override("font_outline_color", Color(style.get("outline", "#FFFFFF")))
+		l.add_theme_constant_override("outline_size", int(style.outline_size))
+	l.mouse_filter = Control.MOUSE_FILTER_IGNORE
 
 # ---------------------------------------------------------------- level
 
@@ -496,7 +607,11 @@ func _refresh_hud() -> void:
 	create_tween().tween_property(hud.bar_fill, "size:x", maxf(0.0, (bar_rect.size.x - 8) * frac), 0.2)
 	for i in 3:
 		var lit := frac >= (i + 1) / 3.0
-		hud.stars[i].add_theme_color_override("font_color", Color("#FFC233") if lit else Color("#D9C7B8"))
+		var star: Control = hud.stars[i]
+		if star is Label:
+			star.add_theme_color_override("font_color", Color("#FFC233") if lit else Color("#D9C7B8"))
+		else:
+			star.modulate = Color.WHITE if lit else Color(0.55, 0.5, 0.5, 0.9)
 	var enabled := {"undo": state.can_undo(), "move_out": state.can_move_out(), "shuffle": state.can_shuffle()}
 	for key in booster_buttons:
 		var entry: Dictionary = booster_buttons[key]
