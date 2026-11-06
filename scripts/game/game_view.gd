@@ -61,6 +61,9 @@ func _ready() -> void:
 			DirAccess.make_dir_recursive_absolute(capture_dir)
 		elif arg.begins_with("--level="):
 			level_index = clampi(int(arg.substr(8)) - 1, 0, 2)
+	if layout.has("cover_multiply"):
+		var m: Array = layout.cover_multiply
+		TileView.cover_multiply = Color(m[0], m[1], m[2])
 	_build_static()
 	start_level(level_index)
 
@@ -122,7 +125,8 @@ func _build_static() -> void:
 	for i in 3:
 		var star: Control
 		var star_size: float = layout.get("star_size", 64)
-		var at := bar_rect.position + Vector2(bar_rect.size.x * (i + 1) / 3.0, bar_rect.size.y / 2) - Vector2.ONE * star_size / 2
+		var star_x: float = layout.stars_x[i] if layout.has("stars_x") else bar_rect.position.x + bar_rect.size.x * (i + 1) / 3.0
+		var at := Vector2(star_x, bar_rect.position.y + bar_rect.size.y / 2) - Vector2.ONE * star_size / 2
 		if Art.ui("star"):
 			star = _texture_rect(Rect2(at, Vector2.ONE * star_size), Art.ui("star"))
 		else:
@@ -358,10 +362,19 @@ func _board_pos(t: Dictionary) -> Vector2:
 	return board_origin + Vector2(t.x, t.y) * tile_px / 2 - Vector2(0, t.layer * layout.layer_lift)
 
 func _tray_slot(i: int) -> Vector2:
+	if layout.has("tray_slot_centers"):
+		var c: Dictionary = layout.tray_slot_centers
+		return Vector2(c.x0 + i * c.pitch, c.y)
 	var r := _rect("tray")
 	var slot: float = layout.tray_slot
 	var gap := (r.size.x - slot * GameState.TRAY_SIZE) / (GameState.TRAY_SIZE + 1)
 	return Vector2(r.position.x + gap + i * (slot + gap) + slot / 2, r.position.y + r.size.y / 2)
+
+## Top-left offset that centres a tile (face plus thickness) on a slot centre.
+func _tile_anchor(side: float) -> Vector2:
+	var base := Art.ui("tile_base")
+	var aspect := float(base.get_height()) / base.get_width() if base else 1.0
+	return Vector2(side / 2, side * aspect / 2)
 
 func _hold_slot(i: int) -> Vector2:
 	var r := _rect("hold_row")
@@ -420,7 +433,7 @@ func _pick(id: int) -> void:
 		for i in r.matched.size():
 			display_tray.insert(at + i, r.matched[i])
 	_reflow(display_tray, [id])
-	var slot: Vector2 = _tray_slot(display_tray.find(id)) - Vector2.ONE * layout.tray_slot / 2
+	var slot: Vector2 = _tray_slot(display_tray.find(id)) - _tile_anchor(layout.tray_slot)
 	var press := create_tween()
 	press.tween_property(v, "scale", Vector2(0.93, 0.93), 0.06)
 	press.tween_property(v, "scale", Vector2.ONE, 0.06)
@@ -455,7 +468,7 @@ func _reflow(order: Array, skip: Array) -> void:
 		if skip.has(id):
 			continue
 		var v: Control = views[id]
-		var target: Vector2 = _tray_slot(i) - Vector2.ONE * layout.tray_slot / 2
+		var target: Vector2 = _tray_slot(i) - _tile_anchor(layout.tray_slot)
 		create_tween().tween_property(v, "global_position", target, REFLOW_TIME).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
 
 func _merge(ids: Array) -> void:
@@ -471,7 +484,7 @@ func _merge(ids: Array) -> void:
 		tw.parallel().tween_property(v, "modulate:a", 0.0, MERGE_VANISH)
 		tw.tween_callback(v.queue_free)
 		views.erase(id)
-	var burst_at: Vector2 = center + Vector2.ONE * layout.tray_slot / 2
+	var burst_at: Vector2 = center + _tile_anchor(layout.tray_slot)
 	get_tree().create_timer(MERGE_GATHER).timeout.connect(func():
 		_burst(burst_at, color)
 		_float_text(burst_at + Vector2(0, -90), "+30", Color("#E5484D"), 46)
@@ -588,7 +601,7 @@ func _layout_hold() -> void:
 		var start := v.global_position
 		v.reparent(fly_layer)
 		v.global_position = start
-		_fly(v, start, _hold_slot(i) - Vector2.ONE * layout.tray_slot / 2, 0.22, layout.tray_slot)
+		_fly(v, start, _hold_slot(i) - _tile_anchor(layout.tray_slot), 0.22, layout.tray_slot)
 
 func _refresh_cover(animate: bool) -> void:
 	for t in state.board_tiles():
@@ -604,14 +617,21 @@ func _refresh_hud() -> void:
 	var done := total - state.remaining()
 	var frac := float(done) / total
 	var bar_rect := _rect("progress_bar")
-	create_tween().tween_property(hud.bar_fill, "size:x", maxf(0.0, (bar_rect.size.x - 8) * frac), 0.2)
+	var inset: float = layout.get("progress_fill_inset", 4)
+	var fill_w := maxf(0.0, (bar_rect.size.x - inset * 2) * frac)
+	if hud.bar_fill is NinePatchRect and fill_w > 0.0:
+		fill_w = maxf(fill_w, hud.bar_fill.patch_margin_left * 2.0)
+	create_tween().tween_property(hud.bar_fill, "size:x", fill_w, 0.2)
 	for i in 3:
-		var lit := frac >= (i + 1) / 3.0
+		var threshold: float = (i + 1) / 3.0
+		if layout.has("stars_x"):
+			threshold = (float(layout.stars_x[i]) - bar_rect.position.x) / bar_rect.size.x
+		var lit := frac >= threshold - 0.001
 		var star: Control = hud.stars[i]
 		if star is Label:
 			star.add_theme_color_override("font_color", Color("#FFC233") if lit else Color("#D9C7B8"))
 		else:
-			star.modulate = Color.WHITE if lit else Color(0.55, 0.5, 0.5, 0.9)
+			star.modulate = Color.WHITE if lit else Color(1.0, 0.95, 0.9, 0.45)
 	var enabled := {"undo": state.can_undo(), "move_out": state.can_move_out(), "shuffle": state.can_shuffle()}
 	for key in booster_buttons:
 		var entry: Dictionary = booster_buttons[key]

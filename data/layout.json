@@ -4,55 +4,100 @@
   1920
  ],
  "pause_button": [
-  50,
-  60,
-  120,
-  120
+  18,
+  14,
+  130,
+  130
  ],
  "level_plaque": [
-  330,
-  62,
-  420,
-  116
+  281,
+  11,
+  511,
+  157
  ],
  "coin_pill": [
-  790,
-  80,
-  240,
-  84
+  791,
+  34,
+  274,
+  94
  ],
  "progress_bar": [
-  150,
-  222,
-  780,
-  34
+  106,
+  196,
+  870,
+  64
  ],
  "board": [
-  60,
-  300,
-  960,
-  980
+  39,
+  306,
+  1003,
+  872
  ],
- "board_tile_max": 170,
+ "board_tile_max": 150,
  "layer_lift": 7,
  "hold_row": [
-  324,
-  1318,
-  432,
-  128
+  300,
+  1186,
+  480,
+  140
  ],
  "tray": [
-  70,
-  1460,
-  940,
-  156
+  24,
+  1334,
+  1033,
+  232
  ],
- "tray_slot": 114,
- "boosters_y": 1738,
- "booster_size": 150,
+ "tray_slot": 124,
+ "boosters_y": 1711,
+ "booster_size": 225,
  "booster_x": [
-  270,
-  540,
-  810
- ]
+  217,
+  536,
+  856
+ ],
+ "progress_fill_inset": 14,
+ "star_size": 66,
+ "stars_x": [
+  449,
+  668,
+  900
+ ],
+ "tray_slot_centers": {
+  "x0": 133.13,
+  "pitch": 137.73,
+  "y": 1444.6
+ },
+ "badge_size": 71,
+ "cover_multiply": [
+  0.717,
+  0.64,
+  0.594
+ ],
+ "text_styles": {
+  "level_text": {
+   "size": 76,
+   "color": "#FFF1CF",
+   "outline": "#9C3219",
+   "outline_size": 10,
+   "offset_y": -8
+  },
+  "coin_text": {
+   "size": 44,
+   "color": "#692908",
+   "outline_size": 0,
+   "offset_x": 12
+  },
+  "badge_text": {
+   "size": 46,
+   "color": "#FFFBE6",
+   "outline_size": 0,
+   "offset_y": -2
+  },
+  "booster_text": {
+   "size": 58,
+   "color": "#672709",
+   "outline": "#FFF7DD",
+   "outline_size": 8
+  }
+ }
 }
