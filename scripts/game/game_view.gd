@@ -95,11 +95,11 @@ func _build_static() -> void:
 		hud.pause = _round_button(_rect("pause_button"), "Ⅱ", Color("#F48FB1"))
 	hud.pause.pressed.connect(_on_pause)
 	if Art.ui("ribbon_level"):
-		hud.level = _textured_label(_rect("level_plaque"), Art.ui("ribbon_level"), _text_style("level_text"))
+		hud.level = _textured_label(_rect("level_plaque"), Art.ui("ribbon_level"), _text_style("level_text"), layout.get("ribbon_text_box", []))
 	else:
 		hud.level = _plaque(_rect("level_plaque"), Color("#F48FB1"), Color.WHITE, 52)
 	if Art.ui("coin_pill"):
-		hud.coins = _textured_label(_rect("coin_pill"), Art.ui("coin_pill"), _text_style("coin_text"))
+		hud.coins = _textured_label(_rect("coin_pill"), Art.ui("coin_pill"), _text_style("coin_text"), layout.get("coin_text_box", []))
 		hud.coins.get_child(0).text = "1280"
 	else:
 		hud.coins = _plaque(_rect("coin_pill"), Color("#FFF6E6"), Color("#7A4A32"), 40)
@@ -128,7 +128,10 @@ func _build_static() -> void:
 		var star_x: float = layout.stars_x[i] if layout.has("stars_x") else bar_rect.position.x + bar_rect.size.x * (i + 1) / 3.0
 		var at := Vector2(star_x, bar_rect.position.y + bar_rect.size.y / 2) - Vector2.ONE * star_size / 2
 		if Art.ui("star"):
-			star = _texture_rect(Rect2(at, Vector2.ONE * star_size), Art.ui("star"))
+			star = _texture_rect(Rect2(at, Vector2.ONE * star_size), Art.ui("star_off") if Art.ui("star_off") else Art.ui("star"))
+			star.pivot_offset = star.size / 2
+			if not Art.ui("star_off"):
+				star.material = _unlit_star_material()
 		else:
 			var l := Label.new()
 			l.text = "★"
@@ -253,11 +256,29 @@ func _texture_rect(rect: Rect2, tex: Texture2D) -> TextureRect:
 	add_child(t)
 	return t
 
-func _textured_label(rect: Rect2, tex: Texture2D, style: Dictionary) -> TextureRect:
-	var t := _texture_rect(rect, tex)
+## Largest rect with the texture's aspect that fits inside `rect`, centred.
+func _fit_rect(rect: Rect2, tex: Texture2D) -> Rect2:
+	var aspect := float(tex.get_width()) / tex.get_height()
+	var sz := rect.size
+	if sz.x / sz.y > aspect:
+		sz.x = sz.y * aspect
+	else:
+		sz.y = sz.x / aspect
+	return Rect2(rect.position + (rect.size - sz) / 2, sz)
+
+## `text_box` is [x, y, w, h] in the texture's own pixels (measured from the art);
+## the label is centred inside it so the words sit on the art, not on the canvas.
+func _textured_label(rect: Rect2, tex: Texture2D, style: Dictionary, text_box: Array = []) -> TextureRect:
+	var fitted := _fit_rect(rect, tex)
+	var t := _texture_rect(fitted, tex)
 	var l := Label.new()
-	l.size = rect.size
-	l.position = Vector2(style.get("offset_x", 0.0), style.get("offset_y", 0.0))
+	var k := fitted.size.x / tex.get_width()
+	if text_box.size() == 4:
+		l.position = Vector2(text_box[0], text_box[1]) * k
+		l.size = Vector2(text_box[2], text_box[3]) * k
+	else:
+		l.size = fitted.size
+	l.position += Vector2(style.get("offset_x", 0.0), style.get("offset_y", 0.0))
 	l.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	l.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	_apply_text_style(l, style)
@@ -307,6 +328,11 @@ func _apply_text_style(l: Label, style: Dictionary) -> void:
 	if int(style.get("outline_size", 0)) > 0:
 		l.add_theme_color_override("font_outline_color", Color(style.get("outline", "#FFFFFF")))
 		l.add_theme_constant_override("outline_size", int(style.outline_size))
+	if style.has("shadow"):
+		l.add_theme_color_override("font_shadow_color", Color(style.shadow))
+		l.add_theme_constant_override("shadow_offset_x", int(style.get("shadow_x", 0)))
+		l.add_theme_constant_override("shadow_offset_y", int(style.get("shadow_y", 4)))
+		l.add_theme_constant_override("shadow_outline_size", int(style.get("shadow_outline", style.get("outline_size", 0))))
 	l.mouse_filter = Control.MOUSE_FILTER_IGNORE
 
 # ---------------------------------------------------------------- level
@@ -534,8 +560,9 @@ func _burst(at: Vector2, color: Color) -> void:
 		p.scale_amount_min = 0.3
 		p.scale_amount_max = 0.6
 	var ramp := Gradient.new()
-	ramp.set_color(0, color.lightened(0.3))
-	ramp.set_color(1, Color(color, 0.0))
+	ramp.set_color(0, Color(1.0, 0.98, 0.9))
+	ramp.add_point(0.45, color.lightened(0.35))
+	ramp.set_color(1, Color(color.lightened(0.2), 0.0))
 	p.color_ramp = ramp
 	fly_layer.add_child(p)
 	p.emitting = true
@@ -644,8 +671,9 @@ func _refresh_hud() -> void:
 		var star: Control = hud.stars[i]
 		if star is Label:
 			star.add_theme_color_override("font_color", Color("#FFC233") if lit else Color("#D9C7B8"))
-		else:
-			star.modulate = Color.WHITE if lit else Color(1.0, 0.95, 0.9, 0.45)
+		elif lit != bool(star.get_meta("lit", false)):
+			star.set_meta("lit", lit)
+			_set_star_lit(star, lit)
 	var enabled := {"undo": state.can_undo(), "move_out": state.can_move_out(), "shuffle": state.can_shuffle()}
 	for key in booster_buttons:
 		var entry: Dictionary = booster_buttons[key]
@@ -653,6 +681,36 @@ func _refresh_hud() -> void:
 		entry.button.modulate.a = 1.0 if enabled[key] else 0.55
 		entry.badge.get_child(0).text = str(state.boosters[key])
 		entry.badge.visible = state.boosters[key] > 0
+
+func _unlit_star_material() -> ShaderMaterial:
+	var sh := Shader.new()
+	sh.code = """
+shader_type canvas_item;
+uniform vec3 tint = vec3(0.86, 0.76, 0.66);
+uniform float amount = 1.0;
+void fragment() {
+	vec4 c = texture(TEXTURE, UV);
+	float g = dot(c.rgb, vec3(0.299, 0.587, 0.114));
+	COLOR = vec4(mix(c.rgb, tint * (0.55 + 0.6 * g), amount), c.a);
+}
+"""
+	var m := ShaderMaterial.new()
+	m.shader = sh
+	return m
+
+## Lit stars use the gold art at 1.2x after a pop; unlit stars are solid and muted.
+func _set_star_lit(star: TextureRect, lit: bool) -> void:
+	if lit:
+		star.texture = Art.ui("star")
+		star.material = null
+		var tw := create_tween()
+		tw.tween_property(star, "scale", Vector2(1.5, 1.5), 0.14).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+		tw.tween_property(star, "scale", Vector2(1.2, 1.2), 0.18)
+		_burst(star.global_position + star.size / 2, Color("#FFC233"))
+	else:
+		star.texture = Art.ui("star_off") if Art.ui("star_off") else Art.ui("star")
+		star.material = null if Art.ui("star_off") else _unlit_star_material()
+		star.scale = Vector2.ONE
 
 # ---------------------------------------------------------------- tutorial hand
 
@@ -663,23 +721,59 @@ func _show_hand() -> void:
 	var target: int = state.solution[0]
 	if not state.is_free(target):
 		return
+	var tile_center := _board_pos(state.tiles[target]) + Vector2(tile_px, tile_px) / 2
 	var tex := Art.ui("tutorial_hand")
-	if tex:
-		hand = TextureRect.new()
-		hand.texture = tex
-		hand.size = Vector2(150, 150)
-	else:
+	if not tex:
 		hand = PulseRing.new()
 		hand.size = Vector2(tile_px, tile_px)
+		hand.position = _board_pos(state.tiles[target])
+		hand.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		fly_layer.add_child(hand)
+		return
+	hand = Control.new()
 	hand.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	var base := _board_pos(state.tiles[target])
-	if tex:
-		base += Vector2(tile_px * 0.45, tile_px * 0.55)
-	hand.position = base
 	fly_layer.add_child(hand)
+	var pic := TextureRect.new()
+	pic.texture = tex
+	pic.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	pic.stretch_mode = TextureRect.STRETCH_SCALE
+	var side: float = layout.get("hand_size", 170)
+	pic.size = Vector2(side, side)
+	var tip_px: Array = layout.get("hand_tip", [48, 28])
+	var tip := Vector2(tip_px[0], tip_px[1]) * side / tex.get_width()
+	pic.pivot_offset = tip
+	pic.position = -tip
+	pic.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	hand.add_child(pic)
+	var press_tex := Art.ui("tutorial_hand_press")
+	var rest := tile_center + Vector2(46, 52)
+	hand.position = rest
 	var tw := hand.create_tween().set_loops()
-	tw.tween_property(hand, "position", base + Vector2(-12, -18), 0.45).set_trans(Tween.TRANS_SINE)
-	tw.tween_property(hand, "position", base, 0.45).set_trans(Tween.TRANS_SINE)
+	tw.tween_property(hand, "position", tile_center, 0.32).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
+	tw.tween_callback(func():
+		if press_tex: pic.texture = press_tex
+		_tap_ripple(tile_center))
+	tw.tween_property(pic, "scale", Vector2(0.88, 0.88), 0.08)
+	tw.tween_property(pic, "scale", Vector2.ONE, 0.12).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	tw.tween_callback(func(): pic.texture = tex)
+	tw.tween_interval(0.25)
+	tw.tween_property(hand, "position", rest, 0.3).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+	tw.tween_interval(0.2)
+
+func _tap_ripple(at: Vector2) -> void:
+	if hand == null:
+		return
+	var ring := PulseRing.new()
+	ring.set_process(false)
+	ring.size = Vector2(tile_px, tile_px) * 0.5
+	ring.position = at - ring.size / 2
+	ring.pivot_offset = ring.size / 2
+	ring.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	fly_layer.add_child(ring)
+	var tw := ring.create_tween().set_parallel()
+	tw.tween_property(ring, "scale", Vector2(2.2, 2.2), 0.4).set_ease(Tween.EASE_OUT)
+	tw.tween_property(ring, "modulate:a", 0.0, 0.4)
+	tw.chain().tween_callback(ring.queue_free)
 
 func _hide_hand() -> void:
 	if hand:

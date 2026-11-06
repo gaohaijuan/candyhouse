@@ -70,11 +70,12 @@
  ],
  "text_styles": {
   "level_text": {
-   "size": 76,
+   "size": 72,
    "color": "#FFF1CF",
    "outline": "#9C3219",
-   "outline_size": 10,
-   "offset_y": -8
+   "outline_size": 14,
+   "shadow": "#7A1E1E80",
+   "shadow_y": 5
   },
   "coin_text": {
    "size": 44,
@@ -92,7 +93,9 @@
    "size": 58,
    "color": "#672709",
    "outline": "#FFF7DD",
-   "outline_size": 8
+   "outline_size": 8,
+   "shadow": "#00000030",
+   "shadow_y": 3
   }
  },
  "tray_texture_frame": [
@@ -114,5 +117,22 @@
   "cy": 148,
   "w": 206,
   "h": 160
- }
+ },
+ "ribbon_text_box": [
+  150,
+  40,
+  540,
+  120
+ ],
+ "coin_text_box": [
+  140,
+  20,
+  220,
+  128
+ ],
+ "hand_size": 170,
+ "hand_tip": [
+  48,
+  28
+ ]
 }
