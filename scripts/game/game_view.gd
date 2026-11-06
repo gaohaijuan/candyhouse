@@ -35,6 +35,7 @@ var busy_until := 0.0
 
 # Debug capture: --autoplay plays the known solution, --capture=<dir> saves frames.
 var autoplay := false
+var autoplay_random := false
 var capture_dir := ""
 var capture_every := 0.1
 var capture_clock := 0.0
@@ -52,6 +53,9 @@ func _ready() -> void:
 	for arg in OS.get_cmdline_user_args():
 		if arg == "--autoplay":
 			autoplay = true
+		elif arg == "--autoplay=random":
+			autoplay = true
+			autoplay_random = true
 		elif arg.begins_with("--capture="):
 			capture_dir = arg.substr(10)
 			DirAccess.make_dir_recursive_absolute(capture_dir)
@@ -581,9 +585,7 @@ func _open_popup(title: String, subtitle: String, buttons: Array, stars := -1) -
 	sb.set_border_width_all(10)
 	sb.set_corner_radius_all(48)
 	panel.add_theme_stylebox_override("panel", sb)
-	panel.size = Vector2(780, 640 if stars >= 0 else 520)
-	panel.position = (size - panel.size) / 2
-	panel.pivot_offset = panel.size / 2
+	panel.size = Vector2(780, 400)
 	popup.add_child(panel)
 	var t := Label.new()
 	t.text = title
@@ -641,6 +643,9 @@ func _open_popup(title: String, subtitle: String, buttons: Array, stars := -1) -
 		b.pressed.connect(entry[1])
 		panel.add_child(b)
 		y += 150
+	panel.size.y = y + 50
+	panel.position = (size - panel.size) / 2
+	panel.pivot_offset = panel.size / 2
 	panel.scale = Vector2(0.7, 0.7)
 	panel.modulate.a = 0.0
 	var tw2 := create_tween().set_parallel()
@@ -686,7 +691,11 @@ func _process(delta: float) -> void:
 		autoplay_clock += delta
 		if autoplay_clock >= 0.45 and not state.solution.is_empty():
 			autoplay_clock = 0.0
-			_pick(state.solution[0])
+			if autoplay_random:
+				var free: Array = state.board_tiles().filter(func(t): return state.is_free(t.id))
+				_pick(free[state.rng.randi_range(0, free.size() - 1)].id)
+			else:
+				_pick(state.solution[0])
 	if capture_dir != "":
 		capture_clock += delta
 		if capture_clock >= capture_every:
