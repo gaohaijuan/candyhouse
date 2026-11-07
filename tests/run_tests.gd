@@ -277,7 +277,7 @@ func _test_design(levels: Array) -> void:
 			for t in s.tiles.values():
 				if t.has("fuse"):
 					check(not s.is_free(t.id), "L%d candle is not free at the start" % level.id)
-					check(int(t.fuse) >= 8, "L%d candle starts with at least 8 steps (%d)" % [level.id, t.fuse])
+					check(int(t.fuse) >= 8 and int(t.fuse) <= 22, "L%d candle starts with 8-22 steps (%d)" % [level.id, t.fuse])
 					check(int(t.layer) >= top - 1, "L%d candle is visible at the start" % level.id)
 				if t.has("lock") or t.has("key"):
 					check(int(t.layer) >= top - 1, "L%d lock/key visible at the start" % level.id)

@@ -173,15 +173,33 @@ func _draw_ice(rect: Rect2) -> void:
 	var w := Art.font.get_string_size(label, HORIZONTAL_ALIGNMENT_LEFT, -1, fs).x
 	draw_string(Art.font, Vector2(c.x - w / 2, c.y + fs * 0.36), label, HORIZONTAL_ALIGNMENT_LEFT, -1, fs, Color("#1E5FB4"))
 
+## Places `tex` so that its pixel `anchor` lands at `uv` on the tile face and
+## its `measure` (pixels) spans `ratio` of the face `axis` (0 = width, 1 = height).
+func _draw_on_face(tex: Texture2D, anchor: Vector2, uv: Vector2, measure: float, ratio: float, axis: int, tint := Color.WHITE) -> void:
+	var face := _face_rect()
+	var k := ratio * (face.size.x if axis == 0 else face.size.y) / measure
+	var at := face.position + uv * face.size - anchor * k
+	draw_texture_rect(tex, Rect2(at, Vector2(tex.get_width(), tex.get_height()) * k), false, tint)
+
+func _badge_number(center: Vector2, radius: float, text: String, fill: Color, outline: Color) -> void:
+	var fs := int(radius * 1.25)
+	var w := Art.font.get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1, fs).x
+	var pos := Vector2(center.x - w / 2, center.y + fs * 0.36)
+	draw_string_outline(Art.font, pos, text, HORIZONTAL_ALIGNMENT_LEFT, -1, fs, maxi(2, int(fs * 0.12)), outline)
+	draw_string(Art.font, pos, text, HORIZONTAL_ALIGNMENT_LEFT, -1, fs, fill)
+
 func _badge_circle(c: Vector2, r: float, fill: Color, ring: Color) -> void:
 	draw_circle(c + Vector2(0, r * 0.12), r, Color(0, 0, 0, 0.18))
 	draw_circle(c, r, fill)
 	draw_circle(c, r, ring, false, r * 0.16)
 
 func _draw_lock(rect: Rect2, shade: Color) -> void:
-	var tex := Art.ui("lock_overlay")
+	var tex := Art.ui("lock_mint" if lock_id % 2 == 1 else "lock_gold")
 	if tex:
-		draw_texture_rect(tex, rect.grow(rect.size.x * 0.12), false, shade)
+		# Measured on approved mockup B: lock body centre at (0.51, 0.81) of the
+		# face, visible width 0.61 of the face width.
+		var tint := shade if lock_id < 2 else shade * Color(0.85, 0.8, 1.0)
+		_draw_on_face(tex, Vector2(144.5, 208.0), Vector2(0.51, 0.75), tex.get_width() - 12.0, 0.61, 0, tint)
 		return
 	var col: Color = KEY_COLORS[lock_id % KEY_COLORS.size()]
 	draw_rect(rect.grow(rect.size.x * 0.1), Color(1.0, 0.85, 0.4, 0.18 * shade.r))
@@ -198,12 +216,14 @@ func _draw_lock(rect: Rect2, shade: Color) -> void:
 	draw_rect(Rect2(body.get_center() + Vector2(-w * 0.03, -w * 0.02), Vector2(w * 0.06, w * 0.18)), Color("#5A3A18") * shade)
 
 func _draw_key(rect: Rect2, shade: Color) -> void:
-	var tex := Art.ui("key_badge")
+	var tex := Art.ui("key_badge_mint" if key_id % 2 == 1 else "key_badge_gold")
+	if tex:
+		# Mockup B: badge centre at (0.26, 0.17) of the face, diameter 0.52 of its width.
+		var tint := shade if key_id < 2 else shade * Color(0.85, 0.8, 1.0)
+		_draw_on_face(tex, Vector2(78.4, 80.0), Vector2(0.2, 0.17), 146.8, 0.46, 0, tint)
+		return
 	var r := rect.size.x * 0.2
 	var c := rect.position + Vector2(r * 0.7, r * 0.7)
-	if tex:
-		draw_texture_rect(tex, Rect2(c - Vector2(r, r), Vector2(r, r) * 2), false, shade)
-		return
 	var col: Color = KEY_COLORS[key_id % KEY_COLORS.size()]
 	_badge_circle(c, r, Color.WHITE * shade, col * shade)
 	draw_circle(c + Vector2(-r * 0.25, 0), r * 0.28, col * shade, false, r * 0.14)
@@ -211,12 +231,30 @@ func _draw_key(rect: Rect2, shade: Color) -> void:
 	draw_line(c + Vector2(r * 0.4, 0), c + Vector2(r * 0.4, r * 0.25), col * shade, r * 0.14)
 
 func _draw_candle(rect: Rect2, shade: Color) -> void:
-	var tex := Art.ui("candle_badge")
+	var danger := fuse <= 3
+	var candle := Art.ui("candle")
+	if candle:
+		# Mockup B: candle base at (0.79, 0.43) of the face, 0.63 of its height;
+		# step badge centre at (0.80, 0.56), diameter 0.41 of the face width.
+		_draw_on_face(candle, Vector2(69.3, 291.6), Vector2(0.80, 0.42), 286.0, 0.63, 1, shade)
+		var face := _face_rect()
+		var badge := Art.ui("step_badge_danger" if danger else "step_badge")
+		var center := face.position + Vector2(0.80, 0.60) * face.size
+		var radius := face.size.x * 0.205
+		if badge:
+			var anchor := Vector2(90.7, 92.6) if danger else Vector2(67.6, 68.9)
+			var r_png := 61.9 if danger else 62.9
+			var k := radius / r_png
+			draw_texture_rect(badge, Rect2(center - anchor * k, Vector2(badge.get_width(), badge.get_height()) * k), false, shade)
+		if danger:
+			_badge_number(center, radius, str(fuse), Color("#FDF8F8") * shade, Color("#C9302C") * shade)
+		else:
+			_badge_number(center, radius, str(fuse), Color("#6E2E09") * shade, Color("#FFF2D8") * shade)
+		return
 	var r := rect.size.x * 0.22
 	var c := rect.position + Vector2(rect.size.x - r * 0.6, r * 0.6)
-	var danger := fuse <= 3
-	if tex:
-		draw_texture_rect(tex, Rect2(c - Vector2(r, r * 1.3), Vector2(r * 2, r * 2)), false, shade)
+	if false:
+		pass
 	else:
 		_badge_circle(c, r, Color("#FFF4E0") * shade, (Color("#E5484D") if danger else Color("#F2A33A")) * shade)
 		var flame := c + Vector2(0, -r * 1.05)

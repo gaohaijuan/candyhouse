@@ -61,90 +61,90 @@
   "shape": "brick",
   "mech": {
    "candles": [
-    14
+    6
    ]
   },
-  "target": 78
+  "target": 81
  },
  "35": {
   "shape": "brick3",
   "types": 6,
   "mech": {
    "candles": [
-    12
+    5
    ]
   },
-  "target": 70
+  "target": 60
  },
  "36": {
   "mech": {
    "candles": [
-    10
+    4
    ]
   },
-  "target": 58
+  "target": 53
  },
  "37": {
   "mech": {
    "candles": [
-    9,
-    11
+    4,
+    5
    ]
   },
-  "target": 51
+  "target": 60
  },
  "38": {
   "mech": {
    "candles": [
-    8,
-    10
+    3,
+    4
    ]
   },
   "types": 8,
-  "target": 33
+  "target": 31
  },
  "39": {
   "shape": "brick",
   "mech": {
    "candles": [
-    12
+    5
    ]
   },
-  "target": 80
+  "target": 70
  },
  "40": {
   "mech": {
    "candles": [
-    11
+    5
    ]
   },
-  "target": 55
+  "target": 50
  },
  "41": {
   "mech": {
    "candles": [
-    9,
-    11
+    4,
+    5
    ]
   },
-  "target": 45
+  "target": 50
  },
  "42": {
   "mech": {
    "candles": [
-    8,
-    10
+    3,
+    4
    ]
   },
   "types": 8,
-  "target": 43
+  "target": 26
  },
  "43": {
   "types": 8,
   "mech": {
    "candles": [
-    7,
-    9
+    3,
+    4
    ]
   },
   "target": 25
@@ -152,33 +152,33 @@
  "46": {
   "mech": {
    "candles": [
-    10
+    5
    ]
   },
-  "target": 50
+  "target": 58
  },
  "47": {
   "mech": {
    "candles": [
-    9,
-    11
+    4,
+    5
    ]
   },
-  "target": 41
+  "target": 31
  },
  "48": {
   "mech": {
    "candles": [
-    9
+    4
    ]
   },
-  "target": 28
+  "target": 23
  },
  "49": {
   "types": 7,
   "mech": {
    "candles": [
-    9
+    5
    ]
   },
   "target": 40
@@ -186,11 +186,12 @@
  "50": {
   "mech": {
    "candles": [
-    8,
-    10
+    3,
+    4
    ]
   },
-  "target": 30
+  "target": 25,
+  "types": 7
  },
  "26": {
   "shape": "heart3",

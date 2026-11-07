@@ -137,7 +137,9 @@ static func _place_candles(tiles: Array, order: Array, slacks: Array, rng: Rando
 	var top := _top_layer(tiles)
 	var cover := BoardRules.coverers(tiles)
 	for slack in slacks:
-		var hi := maxi(min_index + 1, order.size() * 3 / 5)
+		# Keep candles early enough that the countdown is felt: at most ~12
+		# picks into the winning order, plus the level's slack.
+		var hi := maxi(min_index + 1, mini(order.size() * 3 / 5, min_index + 8))
 		var picks: Array = []
 		for i in range(min_index, mini(hi, order.size())):
 			var t: Dictionary = tiles[order[i]]
