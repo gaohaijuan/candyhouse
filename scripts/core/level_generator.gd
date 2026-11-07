@@ -46,6 +46,10 @@ static func generate_with_solution(level: Dictionary) -> Dictionary:
 		var types := assign_along(order.size(), group_types, max_open, rng, [])
 		for i in order.size():
 			tiles[order[i]]["type"] = types[i]
+		if not _place_locks(tiles, order, int(level.get("locks", 0)), rng):
+			continue
+		if not _place_candles(tiles, order, level.get("candles", []), rng):
+			continue
 		return {"tiles": tiles, "order": order}
 	push_error("level %s: no solvable layout after %d attempts" % [level.get("id"), MAX_ATTEMPTS])
 	return {"tiles": [], "order": []}
@@ -64,6 +68,74 @@ static func _place_mechanics(tiles: Array, level: Dictionary, rng: RandomNumberG
 	var ice: Array = level.get("ice", [])
 	for i in mini(ice.size(), upper.size()):
 		upper[i]["ice"] = int(ice[i])
+
+## Index in `order` where the triple containing order[i] is completed.
+static func group_end(tiles: Array, order: Array, i: int) -> int:
+	var type: int = tiles[order[i]].type
+	var seen := 0
+	for j in i + 1:
+		if int(tiles[order[j]].type) == type:
+			seen += 1
+	var need := int(ceil(seen / 3.0)) * 3
+	if seen == need:
+		return i
+	for j in range(i + 1, order.size()):
+		if int(tiles[order[j]].type) == type:
+			seen += 1
+			if seen == need:
+				return j
+	return order.size() - 1
+
+static func _plain(t: Dictionary) -> bool:
+	return not (t.get("mystery", false) or int(t.get("ice", 0)) > 0 or t.has("key") or t.has("lock") or t.has("fuse") or t.has("stack"))
+
+## Puts a key on a tile and a lock on a tile the winning order takes only after
+## the key's triple is complete, so following the order never hits a closed lock.
+static func _place_locks(tiles: Array, order: Array, count: int, rng: RandomNumberGenerator) -> bool:
+	var top := 0
+	for t in tiles:
+		if not t.has("stack"):
+			top = maxi(top, int(t.layer))
+	for k in count:
+		var keys: Array = []
+		for i in range(0, order.size() / 2):
+			if _plain(tiles[order[i]]):
+				keys.append(i)
+		if keys.is_empty():
+			return false
+		var ki: int = keys[rng.randi_range(0, keys.size() - 1)]
+		var end := group_end(tiles, order, ki)
+		var locks: Array = []
+		for j in range(end + 1, order.size()):
+			var t: Dictionary = tiles[order[j]]
+			if _plain(t) and int(t.layer) >= top - 1:
+				locks.append(j)
+		if locks.is_empty():
+			for j in range(end + 1, order.size()):
+				if _plain(tiles[order[j]]):
+					locks.append(j)
+		if locks.is_empty():
+			return false
+		var li: int = locks[rng.randi_range(0, mini(locks.size(), 6) - 1)]
+		tiles[order[ki]]["key"] = k
+		tiles[order[li]]["lock"] = k
+	return true
+
+## Candles burn one step per pick while on the board. Each gets enough steps to
+## be taken along the winning order, plus the level's slack.
+static func _place_candles(tiles: Array, order: Array, slacks: Array, rng: RandomNumberGenerator) -> bool:
+	for slack in slacks:
+		var lo := order.size() / 5
+		var hi := order.size() * 3 / 5
+		var picks: Array = []
+		for i in range(lo, hi):
+			if _plain(tiles[order[i]]):
+				picks.append(i)
+		if picks.is_empty():
+			return false
+		var i: int = picks[rng.randi_range(0, picks.size() - 1)]
+		tiles[order[i]]["fuse"] = i + 1 + int(slack)
+	return true
 
 ## Earliest order position for each frozen tile: with at most `max_open` triples
 ## half-collected, k tiles taken guarantee at least (k - 2*max_open) / 3 triples.

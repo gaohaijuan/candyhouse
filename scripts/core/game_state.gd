@@ -19,8 +19,11 @@ var last_pick: Dictionary = {}   # undo record of the most recent unmatched pick
 var solution: Array = []         # board tile ids in an order known to win from now
 var cover: Dictionary = {}       # id -> ids that can cover it (fixed geometry)
 var rng := RandomNumberGenerator.new()
+var burned := false               # a candle ran out of steps on the board
 
-func _init(level_def: Dictionary) -> void:
+func _init(level_def: Dictionary, empty := false) -> void:
+	if empty:
+		return
 	level = level_def
 	rng.seed = int(level_def.seed) * 7919
 	var made := Generator.generate_with_solution(level_def)
@@ -44,15 +47,23 @@ func is_free(id: int) -> bool:
 func is_frozen(id: int) -> bool:
 	return int(tiles[id].get("ice", 0)) > 0
 
+func is_locked(id: int) -> bool:
+	return tiles[id].has("lock")
+
+## Free, not frozen and not locked: the player may take it now.
+func is_takeable(id: int) -> bool:
+	return is_free(id) and not is_frozen(id) and not is_locked(id)
+
 func can_pick(id: int) -> bool:
 	if not tiles.has(id) or tray.size() >= TRAY_SIZE or is_finished():
 		return false
 	var t: Dictionary = tiles[id]
-	return (t.place == "board" and is_free(id) and not is_frozen(id)) or t.place == "hold"
+	return (t.place == "board" and is_takeable(id)) or t.place == "hold"
 
 ## Moves a tile into the tray next to its kind and resolves a triple.
-## Returns {ok, index, from, matched: [ids], thawed: [ids], won, lost};
-## `thawed` lists frozen tiles whose ice dropped because of this triple.
+## Returns {ok, index, from, matched, thawed, unlocked, burning, won, lost}:
+## `thawed` frozen tiles whose ice dropped, `unlocked` tiles whose lock opened,
+## `burning` candle tiles whose steps dropped (lost when one reaches zero).
 func pick(id: int) -> Dictionary:
 	if not can_pick(id):
 		return {"ok": false}
@@ -67,13 +78,28 @@ func pick(id: int) -> Dictionary:
 	var matched := _take_triple(int(t.type))
 	solution.erase(id)
 	var thawed: Array = []
+	var unlocked: Array = []
 	if not matched.is_empty():
+		var keys: Array = []
+		for m in matched:
+			if tiles[m].has("key"):
+				keys.append(int(tiles[m].key))
 		for other in tiles.values():
 			if other.place == "board" and int(other.get("ice", 0)) > 0:
 				other.ice = int(other.ice) - 1
 				thawed.append(other.id)
-	last_pick = {} if not matched.is_empty() else {"id": id, "from": from, "hold_index": hold_index}
-	return {"ok": true, "index": index, "from": from, "matched": matched, "thawed": thawed, "won": is_won(), "lost": is_lost()}
+			if other.has("lock") and keys.has(int(other.lock)):
+				other.erase("lock")
+				unlocked.append(other.id)
+	var burning: Array = []
+	for other in tiles.values():
+		if other.place == "board" and other.has("fuse"):
+			other.fuse = int(other.fuse) - 1
+			burning.append(other.id)
+			if int(other.fuse) <= 0:
+				burned = true
+	last_pick = {} if not matched.is_empty() else {"id": id, "from": from, "hold_index": hold_index, "burning": burning}
+	return {"ok": true, "index": index, "from": from, "matched": matched, "thawed": thawed, "unlocked": unlocked, "burning": burning, "won": is_won(), "lost": is_lost()}
 
 func _insert_index(type: int) -> int:
 	var last := -1
@@ -92,8 +118,9 @@ func _take_triple(type: int) -> Array:
 		tiles[id].place = "gone"
 	return matched
 
+## Undo also rescues a pick that burned out a candle.
 func can_undo() -> bool:
-	return boosters.undo > 0 and not last_pick.is_empty() and not is_finished()
+	return boosters.undo > 0 and not last_pick.is_empty() and (not is_finished() or burned)
 
 ## Returns the tile to where it came from. Result {ok, id, to}.
 func undo() -> Dictionary:
@@ -107,6 +134,9 @@ func undo() -> Dictionary:
 	else:
 		tiles[id].place = "board"
 	var to: String = last_pick.from
+	for b in last_pick.get("burning", []):
+		tiles[b].fuse = int(tiles[b].fuse) + 1
+	burned = false
 	last_pick = {}
 	_spend("undo")
 	return {"ok": true, "id": id, "to": to}
@@ -156,17 +186,51 @@ func shuffle() -> Dictionary:
 	var free_slots := TRAY_SIZE - tray.size()
 	var max_open := clampi((free_slots - 1) / 2, 1, 3)
 	var ice_min := Generator.ice_min_positions(tiles.values(), max_open, pending.size())
-	var order := Generator.removal_order(tiles.values(), rng, board_ids, ice_min)
-	if order.size() != board_ids.size():
-		# Ice leaves no safe re-deal right now; keep the current deal.
+	var old_types := {}
+	for bid in board_ids:
+		old_types[bid] = tiles[bid].type
+	var found := false
+	for attempt in 40:
+		var order := Generator.removal_order(tiles.values(), rng, board_ids, ice_min)
+		if order.size() != board_ids.size():
+			continue
+		var types := Generator.assign_along(order.size(), groups, max_open, rng, pending)
+		for i in order.size():
+			tiles[order[i]].type = types[i]
+		var plan: Array = hold.duplicate()
+		plan.append_array(order)
+		if wins_with(plan):
+			solution = order
+			found = true
+			break
+	if not found:
+		# Ice, locks or candles leave no safe re-deal right now; keep the deal.
+		for bid in board_ids:
+			tiles[bid].type = old_types[bid]
 		return {"ok": false}
-	var types := Generator.assign_along(order.size(), groups, max_open, rng, pending)
-	for i in order.size():
-		tiles[order[i]].type = types[i]
-	solution = order
 	last_pick = {}
 	_spend("shuffle")
 	return {"ok": true, "ids": board_ids}
+
+## Copy of the rules state for look-ahead checks.
+func clone():
+	var c = get_script().new({}, true)
+	c.level = level
+	c.tiles = tiles.duplicate(true)
+	c.tray = tray.duplicate()
+	c.hold = hold.duplicate()
+	c.boosters = boosters.duplicate()
+	c.cover = cover
+	c.burned = burned
+	return c
+
+## True when taking `plan` (hold tiles, then board tiles) in order wins.
+func wins_with(plan: Array) -> bool:
+	var c = clone()
+	for id in plan:
+		if not c.pick(id).ok:
+			return false
+	return c.is_won()
 
 func _spend(kind: String) -> void:
 	boosters[kind] -= 1
@@ -185,13 +249,18 @@ func has_moves() -> bool:
 	if not hold.is_empty():
 		return true
 	for t in board_tiles():
-		if is_free(t.id) and not is_frozen(t.id):
+		if is_takeable(t.id):
 			return true
 	return false
 
-## Lost when the tray is full, or when only frozen tiles are left to take.
+## Lost when the tray is full, a candle burned out, or nothing can be taken.
 func is_lost() -> bool:
-	return not is_won() and not has_moves()
+	return not is_won() and (burned or not has_moves())
+
+func lose_reason() -> String:
+	if burned:
+		return "candle"
+	return "tray" if tray.size() >= TRAY_SIZE else "stuck"
 
 func is_finished() -> bool:
 	return is_won() or is_lost()

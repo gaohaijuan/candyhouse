@@ -30,6 +30,9 @@ func _init() -> void:
 	_test_ice(levels[6])
 	_test_stacks(levels[9])
 	_test_mystery(levels[3])
+	_test_locks(levels[12])
+	_test_candles(levels[15])
+	_test_shuffle(levels[18])
 	print("checks=%d failures=%d" % [checks, failures])
 	quit(1 if failures > 0 else 0)
 
@@ -195,6 +198,50 @@ func _test_mystery(level: Dictionary) -> void:
 	check(hidden.size() == int(level.mystery), "L%d places %d mystery tiles" % [level.id, level.mystery])
 	for t in hidden:
 		check(not s.is_free(t.id), "mystery tiles start covered")
+
+func _test_locks(level: Dictionary) -> void:
+	for trial in 10:
+		var def := level.duplicate(true)
+		def.seed = int(level.seed) + trial
+		var s := GameState.new(def)
+		var locked: Array = s.tiles.values().filter(func(t): return t.has("lock"))
+		var keys: Array = s.tiles.values().filter(func(t): return t.has("key"))
+		check(locked.size() == int(level.locks) and keys.size() == int(level.locks), "L%d places %d key/lock pairs" % [level.id, level.locks])
+		for t in locked:
+			check(not s.can_pick(t.id), "locked tile cannot be picked")
+		var opened := false
+		while not s.is_finished():
+			var r := s.pick(s.solution[0])
+			check(r.ok, "L%d solution respects locks" % level.id)
+			if not r.ok:
+				return
+			if not r.unlocked.is_empty():
+				opened = true
+		check(opened and s.is_won(), "L%d locks open and the solution wins (trial %d)" % [level.id, trial])
+
+func _test_candles(level: Dictionary) -> void:
+	var s := GameState.new(level)
+	var candle: Array = s.tiles.values().filter(func(t): return t.has("fuse"))
+	check(candle.size() == level.candles.size(), "L%d places candles" % level.id)
+	var start := int(candle[0].fuse)
+	var other: Array = s.board_tiles().filter(func(t): return s.can_pick(t.id) and not t.has("fuse"))
+	var r := s.pick(other[0].id)
+	check(int(s.tiles[candle[0].id].fuse) == start - 1, "each pick burns one candle step")
+	check(s.undo().ok and int(s.tiles[candle[0].id].fuse) == start, "undo gives the step back")
+	# Burning out loses.
+	var c: GameState = s.clone()
+	c.tiles[candle[0].id].fuse = 1
+	var free: Array = c.board_tiles().filter(func(t): return c.can_pick(t.id) and not t.has("fuse"))
+	c.pick(free[0].id)
+	check(c.is_lost() and c.lose_reason() == "candle", "a candle reaching zero on the board loses")
+	# The solution always takes candles in time.
+	for trial in 10:
+		var def := level.duplicate(true)
+		def.seed = int(level.seed) + trial
+		var g := GameState.new(def)
+		while not g.is_finished():
+			g.pick(g.solution[0])
+		check(g.is_won(), "L%d solution beats every candle (trial %d)" % [level.id, trial])
 
 func _test_seed_variety(level: Dictionary) -> void:
 	var a := Generator.generate(level)
