@@ -27,6 +27,20 @@ var face_down := false:
 	set(value):
 		face_down = value
 		queue_redraw()
+## Key badge id (-1 none), lock id (-1 none) and candle steps (-1 none).
+var key_id := -1:
+	set(value):
+		key_id = value
+		queue_redraw()
+var lock_id := -1:
+	set(value):
+		lock_id = value
+		queue_redraw()
+var fuse := -1:
+	set(value):
+		fuse = value
+		queue_redraw()
+const KEY_COLORS := [Color("#F2B233"), Color("#7CC8B4"), Color("#B58BE0")]
 ## Remaining ice; 0 means not frozen.
 var ice := 0:
 	set(value):
@@ -81,6 +95,12 @@ func _draw() -> void:
 		draw_string(Art.font, Vector2((s - w) / 2, s * 0.86), label, HORIZONTAL_ALIGNMENT_LEFT, -1, fs, Color("#7A4A32"))
 	if ice > 0:
 		_draw_ice(icon_rect.grow(icon_rect.size.x * 0.12))
+	if lock_id >= 0:
+		_draw_lock(icon_rect, shade)
+	if key_id >= 0 and not face_down:
+		_draw_key(icon_rect, shade)
+	if fuse >= 0 and not face_down:
+		_draw_candle(icon_rect, shade)
 	if dim > 0.0 and not base:
 		var overlay := StyleBoxFlat.new()
 		overlay.bg_color = Color(cover_tint, cover_tint.a * dim)
@@ -123,3 +143,57 @@ func _draw_ice(rect: Rect2) -> void:
 	var fs := int(r * 1.5)
 	var w := Art.font.get_string_size(label, HORIZONTAL_ALIGNMENT_LEFT, -1, fs).x
 	draw_string(Art.font, Vector2(c.x - w / 2, c.y + fs * 0.36), label, HORIZONTAL_ALIGNMENT_LEFT, -1, fs, Color("#2A7CC7"))
+
+func _badge_circle(c: Vector2, r: float, fill: Color, ring: Color) -> void:
+	draw_circle(c + Vector2(0, r * 0.12), r, Color(0, 0, 0, 0.18))
+	draw_circle(c, r, fill)
+	draw_circle(c, r, ring, false, r * 0.16)
+
+func _draw_lock(rect: Rect2, shade: Color) -> void:
+	var tex := Art.ui("lock_overlay")
+	if tex:
+		draw_texture_rect(tex, rect.grow(rect.size.x * 0.12), false, shade)
+		return
+	var col: Color = KEY_COLORS[lock_id % KEY_COLORS.size()]
+	draw_rect(rect.grow(rect.size.x * 0.1), Color(1.0, 0.85, 0.4, 0.18 * shade.r))
+	var w := rect.size.x * 0.56
+	var body := Rect2(rect.get_center() - Vector2(w / 2, w * 0.15), Vector2(w, w * 0.78))
+	draw_arc(Vector2(body.get_center().x, body.position.y), w * 0.3, PI, TAU, 16, Color("#8A6A3A") * shade, w * 0.12)
+	var sb := StyleBoxFlat.new()
+	sb.bg_color = col * shade
+	sb.border_color = Color("#8A5A20") * shade
+	sb.set_border_width_all(int(w * 0.07))
+	sb.set_corner_radius_all(int(w * 0.18))
+	draw_style_box(sb, body)
+	draw_circle(body.get_center() - Vector2(0, w * 0.06), w * 0.09, Color("#5A3A18") * shade)
+	draw_rect(Rect2(body.get_center() + Vector2(-w * 0.03, -w * 0.02), Vector2(w * 0.06, w * 0.18)), Color("#5A3A18") * shade)
+
+func _draw_key(rect: Rect2, shade: Color) -> void:
+	var tex := Art.ui("key_badge")
+	var r := rect.size.x * 0.2
+	var c := rect.position + Vector2(r * 0.7, r * 0.7)
+	if tex:
+		draw_texture_rect(tex, Rect2(c - Vector2(r, r), Vector2(r, r) * 2), false, shade)
+		return
+	var col: Color = KEY_COLORS[key_id % KEY_COLORS.size()]
+	_badge_circle(c, r, Color.WHITE * shade, col * shade)
+	draw_circle(c + Vector2(-r * 0.25, 0), r * 0.28, col * shade, false, r * 0.14)
+	draw_line(c + Vector2(0, 0), c + Vector2(r * 0.55, 0), col * shade, r * 0.16)
+	draw_line(c + Vector2(r * 0.4, 0), c + Vector2(r * 0.4, r * 0.25), col * shade, r * 0.14)
+
+func _draw_candle(rect: Rect2, shade: Color) -> void:
+	var tex := Art.ui("candle_badge")
+	var r := rect.size.x * 0.22
+	var c := rect.position + Vector2(rect.size.x - r * 0.6, r * 0.6)
+	var danger := fuse <= 3
+	if tex:
+		draw_texture_rect(tex, Rect2(c - Vector2(r, r * 1.3), Vector2(r * 2, r * 2)), false, shade)
+	else:
+		_badge_circle(c, r, Color("#FFF4E0") * shade, (Color("#E5484D") if danger else Color("#F2A33A")) * shade)
+		var flame := c + Vector2(0, -r * 1.05)
+		draw_circle(flame, r * 0.26, Color("#FFB020"))
+		draw_circle(flame + Vector2(0, r * 0.06), r * 0.13, Color("#FFF1A8"))
+	var label := str(fuse)
+	var fs := int(r * 1.3)
+	var w := Art.font.get_string_size(label, HORIZONTAL_ALIGNMENT_LEFT, -1, fs).x
+	draw_string(Art.font, Vector2(c.x - w / 2, c.y + fs * 0.36), label, HORIZONTAL_ALIGNMENT_LEFT, -1, fs, (Color("#D32F2F") if danger else Color("#8A4A12")) * shade)

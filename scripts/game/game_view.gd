@@ -374,6 +374,9 @@ func start_level(index: int) -> void:
 		var v := TileView.new(t.id, t.type, _tile_side(t))
 		v.face_down = t.get("mystery", false) or (t.has("stack") and not state.is_free(t.id))
 		v.ice = int(t.get("ice", 0))
+		v.key_id = int(t.get("key", -1))
+		v.lock_id = int(t.get("lock", -1))
+		v.fuse = int(t.get("fuse", -1))
 		board_layer.add_child(v)
 		views[t.id] = v
 		var target := _board_pos(t)
@@ -482,6 +485,10 @@ func _tile_at(point: Vector2) -> int:
 	if best >= 0 and not state.is_free(best):
 		_nudge(best)
 		return -1
+	if best >= 0 and state.is_locked(best):
+		_nudge(best)
+		_float_text(_board_pos(state.tiles[best]) + Vector2(tile_px / 2, -10), "需要钥匙", Color("#B07A20"), 40)
+		return -1
 	if best >= 0 and state.is_frozen(best):
 		_nudge(best)
 		_float_text(_board_pos(state.tiles[best]) + Vector2(tile_px / 2, -10), "还冻着", Color("#2A7CC7"), 40)
@@ -504,6 +511,7 @@ func _pick(id: int) -> void:
 	_hide_hand()
 	tutorial_picks += 1
 	var v: Control = views[id]
+	v.fuse = -1
 	var start := v.global_position
 	v.reparent(fly_layer)
 	v.global_position = start
@@ -526,6 +534,9 @@ func _pick(id: int) -> void:
 		get_tree().create_timer(FLY_TIME).timeout.connect(_merge.bind(r.matched))
 	if not r.thawed.is_empty():
 		get_tree().create_timer(FLY_TIME + MERGE_GATHER).timeout.connect(_thaw.bind(r.thawed))
+	if not r.unlocked.is_empty():
+		get_tree().create_timer(FLY_TIME + MERGE_GATHER).timeout.connect(_unlock.bind(r.unlocked))
+	_burn(r.burning)
 	if r.won:
 		get_tree().create_timer(FLY_TIME + MERGE_GATHER + MERGE_VANISH + 0.3).timeout.connect(_show_win)
 	elif r.lost:
@@ -659,6 +670,9 @@ func _on_booster(kind: String) -> void:
 
 func _animate_back(id: int, to: String) -> void:
 	var v: Control = views[id]
+	for t in state.tiles.values():
+		if t.has("fuse") and views.has(t.id):
+			views[t.id].fuse = int(t.fuse) if t.place == "board" else -1
 	display_tray = state.tray.duplicate()
 	_reflow(display_tray, [])
 	if to == "hold":
@@ -709,6 +723,30 @@ func _reveal(v: Control, animate: bool) -> void:
 	tw.tween_property(v, "scale:x", 0.0, 0.12).set_ease(Tween.EASE_IN)
 	tw.tween_callback(func(): v.face_down = false)
 	tw.tween_property(v, "scale:x", 1.0, 0.16).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+
+func _unlock(ids: Array) -> void:
+	for id in ids:
+		if not views.has(id):
+			continue
+		var v: Control = views[id]
+		var tw := v.create_tween()
+		tw.tween_property(v, "scale", Vector2(1.15, 1.15), 0.1)
+		tw.tween_callback(func(): v.lock_id = -1)
+		tw.tween_property(v, "scale", Vector2.ONE, 0.16).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+		_burst(v.global_position + v.size / 2, Color("#F2B233"))
+
+## Candles show their remaining steps; the last three pulse as a warning.
+func _burn(ids: Array) -> void:
+	for id in ids:
+		if not views.has(id):
+			continue
+		var v: Control = views[id]
+		var left := int(state.tiles[id].fuse)
+		v.fuse = left
+		if left <= 3:
+			var tw := v.create_tween()
+			tw.tween_property(v, "scale", Vector2(1.08, 1.08), 0.08)
+			tw.tween_property(v, "scale", Vector2.ONE, 0.12)
 
 ## Ice loses one level per cleared triple; at zero it shatters.
 func _thaw(ids: Array) -> void:
@@ -953,7 +991,17 @@ func _show_lose() -> void:
 				_layout_hold()
 				_reflow(display_tray, [])
 				_refresh_hud()])
-	get_tree().create_timer(0.35).timeout.connect(func(): _open_popup("托盘满了", "再想想顺序吧", buttons))
+	var titles := {"tray": ["托盘满了", "再想想顺序吧"], "candle": ["蜡烛烧完了", "下次早点把蜡烛拿走"], "stuck": ["没有可以拿的了", "冰块和锁挡住了去路"]}
+	var reason: String = state.lose_reason()
+	if reason == "candle" and state.can_undo():
+		buttons.push_front(["用“撤回”救一下", func():
+			_close_popup()
+			var u := state.undo()
+			if u.ok:
+				_animate_back(u.id, u.to)
+				_refresh_hud()])
+	var text: Array = titles.get(reason, titles.tray)
+	get_tree().create_timer(0.35).timeout.connect(func(): _open_popup(text[0], text[1], buttons))
 
 func _open_popup(title: String, subtitle: String, buttons: Array, stars := -1) -> void:
 	_hide_hand()
