@@ -2,7 +2,7 @@
  "levels": [
   {
    "id": 1,
-   "types": 9,
+   "types": 4,
    "max_open": 1,
    "seed": 101,
    "shape": "mini",
@@ -31,31 +31,18 @@
       "111",
       "111"
      ]
-    },
-    {
-     "cols": 4,
-     "rows": 3,
-     "offset": [
-      0,
-      0
-     ],
-     "mask": [
-      "1111",
-      "1111",
-      "1111"
-     ]
     }
    ],
    "tutorial": true,
-   "target_rating": 3.5,
+   "target_rating": 1.0,
    "types_range": [
-    9,
-    13
+    4,
+    5
    ]
   },
   {
    "id": 2,
-   "types": 9,
+   "types": 6,
    "max_open": 1,
    "seed": 202,
    "shape": "brick",
@@ -86,31 +73,17 @@
       "11111",
       "11111"
      ]
-    },
-    {
-     "cols": 6,
-     "rows": 4,
-     "offset": [
-      0,
-      0
-     ],
-     "mask": [
-      "111111",
-      "111111",
-      "111111",
-      "111111"
-     ]
     }
    ],
-   "target_rating": 4.5,
+   "target_rating": 2.0,
    "types_range": [
-    8,
-    11
+    5,
+    7
    ]
   },
   {
    "id": 3,
-   "types": 11,
+   "types": 8,
    "max_open": 1,
    "seed": 303,
    "shape": "brick3",
@@ -157,10 +130,10 @@
      ]
     }
    ],
-   "target_rating": 5.5,
+   "target_rating": 3.5,
    "types_range": [
     7,
-    12
+    9
    ]
   },
   {
@@ -2263,7 +2236,7 @@
    "candles": [
     10
    ],
-   "target_rating": 5.5,
+   "target_rating": 4.5,
    "types_range": [
     9,
     13
@@ -2589,7 +2562,7 @@
    "candles": [
     9
    ],
-   "target_rating": 6.0,
+   "target_rating": 8.0,
    "types_range": [
     10,
     13

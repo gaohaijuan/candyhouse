@@ -64,6 +64,8 @@ def dense(shape, depth, airy=False):
     if airy:
         top["mask"] = ["".join(ch if (r + c) % 2 == 0 else "0" for c, ch in enumerate(row)) for r, row in enumerate(a)]
     layers = [base, inner, top]
+    if depth <= 2:
+        layers = [base, inner]
     if depth >= 4:
         layers.append(json.loads(json.dumps(inner)))
     return layers
@@ -192,7 +194,9 @@ def build(overrides=None):
 # producer on 2026-11-07: most levels about 6, a block's last level about 8,
 # a mechanic's first level a little lower so it can be learned.
 BLOCK_TARGETS = {
-    "basics": [3.5, 4.5, 5.5],
+    # 2026-11-08 producer: level 1 was unwinnable without boosters. The
+    # first levels are an on-ramp a newcomer clears without boosters.
+    "basics": [1.0, 2.0, 3.5],
     "single": [4.5, 5.5, 6.0, 6.5, 8.0],
     "pair": [5.5, 6.0, 6.5, 7.0, 8.0],
     "triple": [6.0, 6.5, 7.0, 7.5, 8.0],
@@ -208,6 +212,9 @@ def targets():
     return out
 
 def types_range(t):
+    if t < 1.5: return [4, 5]
+    if t < 2.5: return [5, 7]
+    if t < 4.0: return [7, 9]
     if t < 5.0: return [8, 11]
     if t < 6.6: return [9, 13]
     if t < 7.6: return [10, 14]
@@ -217,7 +224,8 @@ def plan():
     levels = build({})
     for L, t in zip(levels, targets()):
         stacks = [s["count"] for s in L.get("stacks", [])]
-        L["layers"] = trim(dense(L["shape"], 4 if t >= 7.0 else 3, airy=bool(L.get("candles"))), stacks)
+        depth = 2 if t < 2.5 else (4 if t >= 7.0 else 3)
+        L["layers"] = trim(dense(L["shape"], depth, airy=bool(L.get("candles"))), stacks)
         L["target_rating"] = t
         L["types_range"] = types_range(t)
         L["types"] = sum(types_range(t)) // 2

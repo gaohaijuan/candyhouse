@@ -23,7 +23,11 @@ func _init() -> void:
 	var path := "res://data/levels.json"
 	var ids: Array = []
 	var trials := 40
+	var boosters := true
 	for a in OS.get_cmdline_user_args():
+		if a == "noboosters":
+			boosters = false
+			continue
 		if a.begins_with("trials="):
 			trials = int(a.substr(7))
 		elif a.begins_with("levels="):
@@ -42,7 +46,7 @@ func _init() -> void:
 				var s := GameState.new(def)
 				var rng := RandomNumberGenerator.new()
 				rng.seed = trial * 7919 + (1 if skill == "casual" else 2)
-				if Players.play(s, skill, true, rng):
+				if Players.play(s, skill, boosters, rng):
 					wins[skill] += 1
 		var sk: float = wins.skilled / float(trials)
 		var ca: float = wins.casual / float(trials)
