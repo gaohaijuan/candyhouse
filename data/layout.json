@@ -4,7 +4,7 @@
   1920
  ],
  "pause_button": [
-  18,
+  934,
   14,
   130,
   130
@@ -16,10 +16,10 @@
   157
  ],
  "coin_pill": [
-  756,
-  30,
-  310,
-  92
+  14,
+  40,
+  268,
+  80
  ],
  "progress_bar": [
   106,
@@ -74,10 +74,11 @@
    "outline": "#9C3219",
    "outline_size": 14,
    "shadow": "#7A1E1E80",
-   "shadow_y": 5
+   "shadow_y": 5,
+   "offset_y": -12
   },
   "coin_text": {
-   "size": 46,
+   "size": 40,
    "color": "#692908",
    "outline_size": 0
   },
