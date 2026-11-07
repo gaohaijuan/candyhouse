@@ -6,6 +6,7 @@ const GameState = preload("res://scripts/core/game_state.gd")
 const TileView = preload("res://scripts/game/tile_view.gd")
 const Art = preload("res://scripts/game/art.gd")
 const PulseRing = preload("res://scripts/game/pulse_ring.gd")
+const Sound = preload("res://scripts/game/sound.gd")
 
 const FLY_TIME := 0.28
 const REFLOW_TIME := 0.15
@@ -28,6 +29,7 @@ var hud: Dictionary = {}
 var booster_buttons: Dictionary = {}
 var popup: Control
 var hand: Control
+var sound: Node
 var box_nodes: Array = []
 var box_badges: Array = []
 var combo := 0
@@ -80,6 +82,10 @@ func _ready() -> void:
 	if layout.has("cover_multiply"):
 		var m: Array = layout.cover_multiply
 		TileView.cover_multiply = Color(m[0], m[1], m[2])
+	sound = Sound.new()
+	add_child(sound)
+	sound.set_enabled(bool(_load_progress().get("sound", true)))
+	sound.start_music()
 	_build_static()
 	if not level_from_args:
 		level_index = clampi(int(_load_progress().get("unlocked", 1)) - 1, 0, levels.size() - 1)
@@ -394,7 +400,7 @@ func start_level(index: int) -> void:
 	var order := 0
 	for t in by_layer:
 		var v := TileView.new(t.id, t.type, _tile_side(t))
-		v.face_down = t.get("mystery", false)
+		v.face_down = t.get("mystery", false) and not t.get("revealed", false)
 		v.blank = t.has("stack") and not state.is_free(t.id)
 		v.ice = int(t.get("ice", 0))
 		v.key_id = int(t.get("key", -1))
@@ -587,6 +593,7 @@ func _tile_at(point: Vector2) -> int:
 	return best
 
 func _nudge(id: int) -> void:
+	sound.play("nope")
 	var v: Control = views[id]
 	var tw := create_tween()
 	tw.tween_property(v, "rotation", 0.06, 0.05)
@@ -602,7 +609,10 @@ func _pick(id: int) -> void:
 	_hide_hand()
 	tutorial_picks += 1
 	var v: Control = views[id]
+	sound.play("tap", randf_range(0.95, 1.08))
 	v.fuse = -1
+	if v.face_down:
+		_reveal(v, true)
 	var start := v.global_position
 	v.reparent(fly_layer)
 	v.global_position = start
@@ -681,6 +691,8 @@ func _combo_feedback(at: Vector2) -> void:
 	var now := Time.get_ticks_msec() / 1000.0
 	combo = combo + 1 if now - last_match_time <= COMBO_WINDOW else 1
 	last_match_time = now
+	# Each combo step plays the chime a little higher.
+	sound.play("match", pow(2.0, mini(combo - 1, 6) / 12.0 * 2.0))
 	if combo >= 2:
 		var words := ["棒!", "太棒了!", "完美!"]
 		_float_text(Vector2(540, at.y - 200), words[mini(combo - 2, 2)], Color("#F06292"), 72)
@@ -735,6 +747,7 @@ func _float_text(at: Vector2, text: String, color: Color, font_size: int) -> voi
 func _on_booster(kind: String) -> void:
 	if popup != null:
 		return
+	var used_before: int = state.boosters_used
 	match kind:
 		"undo":
 			var r := state.undo()
@@ -757,6 +770,8 @@ func _on_booster(kind: String) -> void:
 					tw.tween_property(v, "scale", Vector2(0.0, 1.0), 0.12)
 					tw.tween_callback(func(): v.type = state.tiles[id].type)
 					tw.tween_property(v, "scale", Vector2.ONE, 0.14).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	if state.boosters_used > used_before:
+		sound.play("booster")
 	_refresh_hud()
 
 func _animate_back(id: int, to: String) -> void:
@@ -797,7 +812,9 @@ func _refresh_cover(animate: bool) -> void:
 	for t in state.board_tiles():
 		var v: Control = views[t.id]
 		var free := state.is_free(t.id)
-		if free and (v.face_down or v.blank):
+		# Box tiles show their dessert once on top; mystery tiles stay hidden
+		# until they are taken (see _pick).
+		if free and v.blank:
 			_reveal(v, animate)
 		var target := 0.0 if free else 1.0
 		if animate and not is_equal_approx(v.dim, target):
@@ -819,6 +836,8 @@ func _reveal(v: Control, animate: bool) -> void:
 	tw.tween_property(v, "scale:x", 1.0, 0.16).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 
 func _unlock(ids: Array) -> void:
+	if not ids.is_empty():
+		sound.play("unlock")
 	for id in ids:
 		if not views.has(id):
 			continue
@@ -855,6 +874,7 @@ func _thaw(ids: Array) -> void:
 		tw.tween_property(v, "rotation", 0.0, 0.05)
 		tw.tween_callback(func(): v.ice = left)
 		if left == 0:
+			sound.play("unlock", 1.2)
 			_burst(v.global_position + v.size / 2, Color("#A8DBFF"))
 
 func _refresh_hud() -> void:
@@ -1004,7 +1024,16 @@ func _hide_hand() -> void:
 func _on_pause() -> void:
 	if popup != null:
 		return
-	_open_popup("暂停", "", [["继续", _close_popup], ["重新开始", func(): start_level(level_index), "cream"], ["选择关卡", _open_level_select, "cream"]])
+	var sound_label := "声音:开" if sound.enabled else "声音:关"
+	_open_popup("暂停", "", [["继续", _close_popup], ["重新开始", func(): start_level(level_index), "cream"], ["选择关卡", _open_level_select, "cream"], [sound_label, _toggle_sound, "cream"]])
+
+func _toggle_sound() -> void:
+	sound.set_enabled(not sound.enabled)
+	var progress := _load_progress()
+	progress["sound"] = sound.enabled
+	_write_progress(progress)
+	_close_popup()
+	_on_pause()
 
 func _open_level_select() -> void:
 	_close_popup()
@@ -1054,11 +1083,18 @@ func _load_progress() -> Dictionary:
 	return d if d is Dictionary else {}
 
 func _save_progress(unlocked: int) -> void:
+	var progress := _load_progress()
+	progress["unlocked"] = unlocked
+	_write_progress(progress)
+
+func _write_progress(progress: Dictionary) -> void:
 	var f := FileAccess.open("user://progress.json", FileAccess.WRITE)
 	if f:
-		f.store_string(JSON.stringify({"unlocked": unlocked}))
+		f.store_string(JSON.stringify(progress))
 
 func _show_win() -> void:
+	sound.play("win")
+	sound.duck(2.2)
 	var progress := int(_load_progress().get("unlocked", 1))
 	_save_progress(maxi(progress, mini(level_index + 2, levels.size())))
 	var stars := state.stars()
@@ -1069,6 +1105,7 @@ func _show_win() -> void:
 	_confetti()
 
 func _show_lose() -> void:
+	sound.play("lose")
 	var tw := create_tween()
 	var rest_x: float = hud.tray.position.x
 	for i in 4:

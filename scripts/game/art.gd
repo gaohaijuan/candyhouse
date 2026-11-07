@@ -13,6 +13,16 @@ const DESSERTS := [
 	{"key": "pudding", "name": "布丁", "color": Color("#F2B544")},
 	{"key": "lollipop", "name": "棒棒糖", "color": Color("#BA68C8")},
 	{"key": "chocolate", "name": "巧克力", "color": Color("#6D4C41")},
+	{"key": "muffin", "name": "蓝莓松饼", "color": Color("#6A5ACD")},
+	{"key": "waffle", "name": "华夫饼", "color": Color("#E8B04A")},
+	{"key": "eggtart", "name": "蛋挞", "color": Color("#F6C443")},
+	{"key": "jelly", "name": "果冻", "color": Color("#E53935")},
+	{"key": "swissroll", "name": "瑞士卷", "color": Color("#F8BBD0")},
+	{"key": "pancake", "name": "松饼", "color": Color("#C68B59")},
+	{"key": "candy", "name": "糖果", "color": Color("#9C27B0")},
+	{"key": "gingerbread", "name": "姜饼人", "color": Color("#A0522D")},
+	{"key": "popsicle", "name": "西瓜冰棒", "color": Color("#43A047")},
+	{"key": "milkshake", "name": "奶昔", "color": Color("#F06292")},
 ]
 
 static var _cache: Dictionary = {}

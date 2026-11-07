@@ -1,0 +1,18 @@
+{
+ "generator": "tools/make_audio.py",
+ "original_composition": true,
+ "external_samples": false,
+ "sample_rate": 32000,
+ "bgm_bpm": 124,
+ "bgm_seconds": 30.97,
+ "files": {
+  "bgm_game.wav": "d01000510f62f692f84220ccbd3c3c9ea2a256c9e0358871ba4a2195dfbf8505",
+  "sfx_booster.wav": "602dae7b585a77488d8c315188b20ae541b250273ea4a7250e6e1d0684956523",
+  "sfx_lose.wav": "0a6bcfaea3e1f7e9c224ddfc2dd50cd9a0404d3e0974da6687da12b2d66b0c7f",
+  "sfx_match.wav": "0e1bd4c7bc641f9455d0cf5f50a83dbcc165a2321209adb554b35e4836534d40",
+  "sfx_nope.wav": "03b19f34e7ff06107c4ccf9733f51dc67fad3c0e53f8278566ffab776b8cbefd",
+  "sfx_tap.wav": "22a213dcde4678a9945acfd17f13aeb8efbb0c62b0166244c5e8322d6607a455",
+  "sfx_unlock.wav": "70a500bf74cac2a1ce70dc09381c9219895e79d37c813d306ec728819f14b459",
+  "sfx_win.wav": "16d7467a8797ae61ba008cdd157dbe8ef6c877b24860dcbb04a926af951bf7cb"
+ }
+}

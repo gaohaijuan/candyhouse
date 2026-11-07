@@ -26,6 +26,67 @@ static func positions(level: Dictionary) -> Array:
 		s += 1
 	return tiles
 
+const Solver = preload("res://scripts/core/solver.gd")
+
+## Authoring: desserts are placed at random (so they do not cluster), the board
+## is proven winnable with the solver, then ice, locks and candles are placed
+## along that winning order. Returns {tiles, order} or {} when not proven.
+static func author_candidate(level: Dictionary, rng: RandomNumberGenerator) -> Dictionary:
+	var tiles := positions(level)
+	if tiles.size() % 3 != 0:
+		return {}
+	_place_mechanics(tiles, {"mystery": level.get("mystery", 0)}, rng)
+	var types: Array = []
+	for g in _group_types(tiles.size() / 3, int(level.types), rng):
+		types.append_array([g, g, g])
+	_shuffle(types, rng)
+	for i in tiles.size():
+		tiles[i]["type"] = types[i]
+	var cover := BoardRules.coverers(tiles)
+	var order: Array = []
+	for beam in [150, 600]:
+		order = Solver.solve(tiles, cover, beam)
+		if order.size() == tiles.size():
+			break
+	if order.size() != tiles.size():
+		return {}
+	if not _place_ice_along(tiles, order, level.get("ice", []), rng):
+		return {}
+	if not _place_locks(tiles, order, int(level.get("locks", 0)), rng):
+		return {}
+	if not _place_candles(tiles, order, level.get("candles", []), rng, int(level.get("candle_min", 5))):
+		return {}
+	return {"tiles": tiles, "order": order}
+
+## Ice of strength v goes on a visible tile that the winning order takes only
+## after at least v triples have been cleared, so it has thawed by then.
+static func _place_ice_along(tiles: Array, order: Array, ice: Array, rng: RandomNumberGenerator) -> bool:
+	if ice.is_empty():
+		return true
+	var by_id := {}
+	for t in tiles:
+		by_id[t.id] = t
+	var done_before: Array = []
+	var counts := {}
+	var done := 0
+	for id in order:
+		done_before.append(done)
+		var ty = by_id[id].type
+		counts[ty] = int(counts.get(ty, 0)) + 1
+		if int(counts[ty]) % 3 == 0:
+			done += 1
+	var top := _top_layer(tiles)
+	for v in ice:
+		var picks: Array = []
+		for p in order.size():
+			var t: Dictionary = by_id[order[p]]
+			if _plain(t) and _visible(t, top) and int(done_before[p]) >= int(v):
+				picks.append(p)
+		if picks.is_empty():
+			return false
+		by_id[order[picks[rng.randi_range(0, picks.size() - 1)]]]["ice"] = int(v)
+	return true
+
 static func generate(level: Dictionary) -> Array:
 	return generate_with_solution(level).tiles
 
@@ -43,7 +104,13 @@ static func generate_with_solution(level: Dictionary) -> Dictionary:
 		if order.size() != tiles.size():
 			continue
 		var group_types := _group_types(tiles.size() / 3, int(level.types), rng)
-		var types := assign_along(order.size(), group_types, max_open, rng, [])
+		var types := assign_along(order.size(), group_types, max_open, rng, [], float(level.get("spread", 0.5)))
+		if level.get("random_types", false):
+			# Experiment: desserts placed at random, no solvability guarantee.
+			types = []
+			for g in group_types:
+				types.append_array([g, g, g])
+			_shuffle(types, rng)
 		for i in order.size():
 			tiles[order[i]]["type"] = types[i]
 		if not _place_locks(tiles, order, int(level.get("locks", 0)), rng):
@@ -59,10 +126,18 @@ static func _place_mechanics(tiles: Array, level: Dictionary, rng: RandomNumberG
 	var top := 0
 	for t in board:
 		top = maxi(top, int(t.layer))
-	var lower := board.filter(func(t): return int(t.layer) < top)
-	_shuffle(lower, rng)
-	for i in mini(int(level.get("mystery", 0)), lower.size()):
-		lower[i]["mystery"] = true
+	# Mystery tiles hide their dessert until taken, so they matter on any
+	# layer: about half sit where the player can reach them early.
+	var pool := board.duplicate()
+	_shuffle(pool, rng)
+	var want := int(level.get("mystery", 0))
+	var near: Array = pool.filter(func(t): return int(t.layer) >= top - 1)
+	var far: Array = pool.filter(func(t): return int(t.layer) < top - 1)
+	var take_near := mini(want / 2 + want % 2, near.size())
+	for i in take_near:
+		near[i]["mystery"] = true
+	for i in mini(want - take_near, far.size()):
+		far[i]["mystery"] = true
 	var upper := board.filter(func(t): return int(t.layer) >= top - 1 and not t.get("mystery", false))
 	_shuffle(upper, rng)
 	var ice: Array = level.get("ice", [])
@@ -192,7 +267,7 @@ static func removal_order(tiles: Array, rng: RandomNumberGenerator, only_ids: Ar
 
 ## `pending` lists types that must be completed first (partial groups already
 ## outside the board); each entry appears once per missing tile.
-static func assign_along(count: int, group_types: Array, max_open: int, rng: RandomNumberGenerator, pending: Array) -> Array:
+static func assign_along(count: int, group_types: Array, max_open: int, rng: RandomNumberGenerator, pending: Array, spread := 0.5) -> Array:
 	var out: Array = pending.duplicate()
 	var open: Array = []  # [{type, have}]
 	var next_group := 0
@@ -203,7 +278,7 @@ static func assign_along(count: int, group_types: Array, max_open: int, rng: Ran
 			to_close += 3 - g.have
 		var can_open := next_group < group_types.size() and open.size() < max_open and left - 1 >= to_close + 2
 		var must_open := open.is_empty()
-		if must_open or (can_open and rng.randf() < 0.5):
+		if must_open or (can_open and rng.randf() < spread):
 			open.append({"type": group_types[next_group], "have": 0})
 			next_group += 1
 		var g: Dictionary = open[rng.randi_range(0, open.size() - 1)] if not must_open else open[0]

@@ -18,6 +18,7 @@ var boosters_used := 0
 var last_pick: Dictionary = {}   # undo record of the most recent unmatched pick
 var solution: Array = []         # board tile ids in an order known to win from now
 var cover: Dictionary = {}       # id -> ids that can cover it (fixed geometry)
+var covers: Dictionary = {}      # id -> ids it can cover (reverse of `cover`)
 var rng := RandomNumberGenerator.new()
 var burned := false               # a candle ran out of steps on the board
 
@@ -26,12 +27,27 @@ func _init(level_def: Dictionary, empty := false) -> void:
 		return
 	level = level_def
 	rng.seed = int(level_def.seed) * 7919
-	var made := Generator.generate_with_solution(level_def)
+	var made: Dictionary
+	if level_def.has("board"):
+		made = {"tiles": level_def.board.tiles.duplicate(true), "order": level_def.board.order.duplicate()}
+		for t in made.tiles:
+			for k in ["id", "layer", "x", "y", "type", "stack", "depth", "ice", "key", "lock", "fuse"]:
+				if t.has(k):
+					t[k] = int(t[k])
+	else:
+		made = Generator.generate_with_solution(level_def)
 	for t in made.tiles:
 		t["place"] = "board"
 		tiles[t.id] = t
-	solution = made.order
+	solution = []
+	for id in made.order:
+		solution.append(int(id))
 	cover = BoardRules.coverers(made.tiles)
+	for t in made.tiles:
+		covers[t.id] = []
+	for id in cover:
+		for c in cover[id]:
+			covers[c].append(id)
 
 func board_tiles() -> Array:
 	return tiles.values().filter(func(t): return t.place == "board")
@@ -42,6 +58,16 @@ func is_free(id: int) -> bool:
 	for c in cover[id]:
 		if tiles[c].place == "board":
 			return false
+	return true
+
+## What the player can see: mystery tiles keep their dessert hidden until they
+## are taken; buried box tiles are blank until they reach the top of the box.
+func type_known(id: int) -> bool:
+	var t: Dictionary = tiles[id]
+	if t.get("mystery", false) and not t.get("revealed", false):
+		return false
+	if t.has("stack") and not is_free(id):
+		return false
 	return true
 
 func is_frozen(id: int) -> bool:
@@ -75,6 +101,7 @@ func pick(id: int) -> Dictionary:
 	var index := _insert_index(int(t.type))
 	tray.insert(index, id)
 	t.place = "tray"
+	t["revealed"] = true
 	var matched := _take_triple(int(t.type))
 	solution.erase(id)
 	var thawed: Array = []
@@ -223,6 +250,7 @@ func clone():
 	c.hold = hold.duplicate()
 	c.boosters = boosters.duplicate()
 	c.cover = cover
+	c.covers = covers
 	c.burned = burned
 	return c
 

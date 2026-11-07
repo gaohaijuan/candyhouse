@@ -36,6 +36,33 @@ SHAPES = {
                  rect(6, 4, 1, 1), rect(5, 3, 2, 2), rect(3, 2, 4, 3)],
 }
 
+# Dense boards: a shape's base mask, the inner mask on the half-offset grid,
+# then the base again on top (and the inner again for the deepest levels), so
+# most tiles start covered. Agreed after the 2026-11-07 difficulty review.
+PAIRS = {
+    "mini": (["1111", "1111", "1111"], ["111", "111"]),
+    "small": (["11111"] * 4, ["1111"] * 3),
+    "brick": (["111111"] * 4, ["11111"] * 3),
+    "brick3": (["111111"] * 4, ["11111"] * 3),
+    "heart": (["110011", "111111", "111111", "011110", "001100"], ["11111", "11111", "01110", "00100"]),
+    "heart3": (["110011", "111111", "111111", "011110", "001100"], ["11111", "11111", "01110", "00100"]),
+    "diamond": (["0011100", "0111110", "1111111", "0111110", "0011100"], ["001100", "011110", "011110", "001100"]),
+    "butterfly": (["1100011", "1110111", "0111110", "1110111", "1100011"], ["110011", "111111", "111111", "110011"]),
+    "flower": (["0111110", "1111111", "1111111", "1111111", "0111110"], ["011110", "111111", "111111", "011110"]),
+    "cake": (["0011100", "0111110", "1111111", "1111111", "1111111"], ["011110", "111111", "111111", "111111"]),
+    "tower": (["1111111"] * 5, ["111111"] * 4),
+    "grand": (["0111110", "1111111", "1111111", "1111111", "0111110"], ["111111"] * 4),
+}
+
+def dense(shape, depth):
+    a, b = PAIRS[shape]
+    base = rect(len(a[0]), len(a), 0, 0, a)
+    inner = rect(len(b[0]), len(b), 1, 1, b)
+    layers = [base, inner, json.loads(json.dumps(base))]
+    if depth >= 4:
+        layers.append(json.loads(json.dumps(inner)))
+    return layers
+
 def count(layers, stacks):
     n = 0
     for L in layers:
@@ -121,7 +148,7 @@ PLAN = [
 ]
 
 INTROS = {
-    "mystery": {"title": "新玩法:神秘方块", "text": "盖着问号的方块\n露出来时才会揭晓"},
+    "mystery": {"title": "新玩法:神秘方块", "text": "问号方块里的甜点看不见\n拿进托盘时才会揭晓"},
     "ice": {"title": "新玩法:冰封方块", "text": "冰上的数字是还要消除的次数\n每消除一组,冰就融化一点"},
     "box": {"title": "新玩法:甜点盒", "text": "两侧的甜点盒一次只能拿最上面一块"},
     "lock": {"title": "新玩法:糖果锁", "text": "带锁的方块暂时不能拿\n消除带钥匙的那组甜点,锁就会打开"},
@@ -138,7 +165,7 @@ def build(overrides=None):
         types = o.get("types", types)
         mech = {**mech, **o.get("mech", {})}
         stacks = mech.get("stacks", [])
-        level = {"id": lid, "types": types, "max_open": 1, "seed": lid * 101,
+        level = {"id": lid, "types": types, "max_open": 1, "seed": lid * 101, "shape": shape,
                  "layers": trim(SHAPES[shape], stacks)}
         if stacks:
             level["stacks"] = [{"count": c} for c in stacks]
@@ -155,6 +182,49 @@ def build(overrides=None):
         level["target_win_pct"] = [max(0, t - 18), min(100, t + 18)]
         levels.append(level)
     return levels
+
+# Target difficulty (1-10, see tests/sweep_levels.gd rating) agreed with the
+# producer on 2026-11-07: most levels about 6, a block's last level about 8,
+# a mechanic's first level a little lower so it can be learned.
+BLOCK_TARGETS = {
+    "basics": [3.5, 4.5, 5.5],
+    "single": [4.5, 5.5, 6.0, 6.5, 8.0],
+    "pair": [5.5, 6.0, 6.5, 7.0, 8.0],
+    "triple": [6.0, 6.5, 7.0, 7.5, 8.0],
+    "finale": [8.0, 8.5],
+}
+BLOCKS = [("basics", 3), ("single", 5), ("single", 5), ("pair", 5), ("single", 5), ("single", 5),
+          ("pair", 5), ("single", 5), ("pair", 5), ("triple", 5), ("finale", 2)]
+
+def targets():
+    out = []
+    for kind, n in BLOCKS:
+        out.extend(BLOCK_TARGETS[kind][:n])
+    return out
+
+def types_range(t):
+    if t < 5.0: return [8, 11]
+    if t < 6.6: return [9, 13]
+    if t < 7.6: return [10, 14]
+    return [11, 15]
+
+def plan():
+    levels = build({})
+    for L, t in zip(levels, targets()):
+        stacks = [s["count"] for s in L.get("stacks", [])]
+        L["layers"] = trim(dense(L["shape"], 4 if t >= 7.0 else 3), stacks)
+        L["target_rating"] = t
+        L["types_range"] = types_range(t)
+        L["types"] = sum(types_range(t)) // 2
+        L.pop("target_win_pct", None)
+    return levels
+
+if __name__ == "__main__" and "--plan" in __import__("sys").argv:
+    root = pathlib.Path(__file__).resolve().parents[1]
+    levels = plan()
+    (root / "data" / "level_plan.json").write_text(json.dumps({"levels": levels}, ensure_ascii=False, indent=1))
+    print("plan levels:", len(levels))
+    raise SystemExit
 
 if __name__ == "__main__":
     root = pathlib.Path(__file__).resolve().parents[1]

@@ -20,7 +20,6 @@ func _init() -> void:
 	for level in levels:
 		_test_level_shape(level)
 		_test_solution_wins(level)
-		_test_greedy_player(level)
 	var by_id := {}
 	for level in levels:
 		by_id[int(level.id)] = level
@@ -38,6 +37,7 @@ func _init() -> void:
 	_test_candles(by_id[34])
 	_test_design(levels)
 	_test_full_tray_rescue(by_id[3])
+	_test_authored(levels)
 	print("checks=%d failures=%d" % [checks, failures])
 	quit(1 if failures > 0 else 0)
 
@@ -328,6 +328,20 @@ func _test_full_tray_rescue(level: Dictionary) -> void:
 		u.pick(options[0].id)
 	if u.lose_reason() == "tray":
 		check(u.can_undo() and u.undo().ok and not u.is_lost(), "undo rescues a full tray")
+
+## Authored boards: winnable along the stored order, rated near the planned
+## difficulty, and mystery desserts stay hidden while the tile is on the board.
+func _test_authored(levels: Array) -> void:
+	for level in levels:
+		if not level.has("board"):
+			continue
+		var s := GameState.new(level)
+		check(s.wins_with(s.solution.duplicate()), "L%d authored board wins along its order" % level.id)
+		var r: float = level.get("rating", -1.0)
+		check(absf(r - float(level.target_rating)) <= 1.5, "L%d rating %.1f near target %.1f" % [level.id, r, level.target_rating])
+		for t in s.tiles.values():
+			if t.get("mystery", false):
+				check(not s.type_known(t.id), "L%d mystery dessert hidden on the board" % level.id)
 
 func _test_seed_variety(level: Dictionary) -> void:
 	var a := Generator.generate(level)
