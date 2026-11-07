@@ -1,106 +1,123 @@
 extends Control
-## Shop: starter pack, free coins by ad, six coin packs, booster bundle and
-## remove-ads. Purchases go through the app's purchase service.
+## Shop (mockup M8): starter pack, free coins by ad, six coin packs, booster
+## bundle and remove-ads, in a scrolling list under a fixed header.
+## Card rects are the mockup's, shifted up by the header height.
 
 const Kit = preload("res://scripts/ui/kit.gd")
 const Common = preload("res://scripts/ui/pages/_common.gd")
-const CurrencyBar = preload("res://scripts/ui/currency_bar.gd")
+const TOP := 170.0          # scroll area starts here; content y = mockup y - TOP
+const BOOSTER_ICONS := ["icon_undo", "icon_move_out", "icon_shuffle"]
 
 var app
-var list: VBoxContainer
+var content: Control
+var scroll: ScrollContainer
+var balance: Label
 
 func setup(owner_app, _args: Dictionary) -> void:
 	app = owner_app
 	Common.background(self, "shop_bg")
-	var scroll := ScrollContainer.new()
-	scroll.position = Vector2(30, 190)
-	scroll.size = Vector2(1020, 1720)
+	scroll = ScrollContainer.new()
+	scroll.position = Vector2(0, TOP)
+	scroll.size = Vector2(1080, 1920 - TOP)
 	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_SHOW_NEVER
 	add_child(scroll)
-	list = VBoxContainer.new()
-	list.custom_minimum_size = Vector2(1020, 0)
-	list.add_theme_constant_override("separation", 22)
-	scroll.add_child(list)
-	var back := Kit.round_button("button_back", 130, "返")
-	back.position = Vector2(24, 24)
+	content = Control.new()
+	content.mouse_filter = Control.MOUSE_FILTER_PASS
+	scroll.add_child(content)
+	var back := Kit.art_button(self, "button_back", Rect2(18, 14, 131, 132), "返")
 	back.pressed.connect(func(): app.goto("home"))
-	add_child(back)
-	Common.title_ribbon(self, "商店")
-	var bar := Control.new()
-	bar.set_script(CurrencyBar)
-	add_child(bar)
-	bar.setup(app, false)
-	bar.position = Vector2(770, -10)
+	Kit.art(self, "popup_ribbon", Rect2(283, 13, 505, 152))
+	Kit.text_at(self, "商店", Rect2(400, 30, 280, 82), 70, Kit.CREAM, Kit.OUTLINE, 12)
+	Kit.art(self, "coin_pill", Rect2(792, 36, 272, 92))
+	balance = Kit.text_at(self, "", Rect2(868, 57, 135, 50), 42, Kit.BROWN)
 	app.wallet_changed.connect(_rebuild)
 	_rebuild()
 
 func _rebuild() -> void:
-	if not is_instance_valid(list):
+	if not is_instance_valid(content):
 		return
-	for c in list.get_children():
+	balance.text = str(app.profile.data.coins)
+	var keep: int = scroll.scroll_vertical
+	for c in content.get_children():
 		c.queue_free()
 	var t: int = app.now()
+	var y := 179.0 - TOP
 	if app.profile.iap_available("starter", t):
-		list.add_child(_wide_card("starter_bundle", "新手礼包", "1000 金币 + 道具各 3 个", "¥6", "pink", func(): app.popups.purchase("starter")))
+		var card := _card("card_wide", Rect2(37, y, 1009, 271))
+		Kit.art(card, "starter_bundle", Rect2(30, 22, 480, 238), "礼包", Color("#FDE0EA"))
+		Kit.text_at(card, "新手礼包", Rect2(370, 24, 330, 72), 60, Kit.BROWN, Kit.CREAM, 6)
+		Kit.text_at(card, "1000 金币 + 道具各 3 个", Rect2(345, 102, 380, 42), 36, Kit.BROWN)
+		_price_button(card, "¥6", "pink", Rect2(707, 124, 265, 109), func(): app.popups.purchase("starter"))
+		Kit.art(card, "ribbon_limited", Rect2(816, -8, 188, 122), "", Color("#E53935"))
+		Kit.text_at(card, "限时", Rect2(852, 14, 116, 58), 44, Kit.CREAM, Color("#B33319"), 6).rotation = 0.17
+		y += 286
 	var left: int = app.profile.ads_left("free_coins", t)
-	list.add_child(_wide_card("icon_free_coins", "免费金币", "看广告领 %d 金币" % int(app.economy.ad_free_coins), "免费 (%d/%d)" % [left, int(app.economy.ad_limits.free_coins)], "green", _free_coins, left <= 0))
+	var free := _card("card_wide", Rect2(37, y, 1010, 178))
+	Kit.art(free, "icon_free_coins", Rect2(35, 16, 281, 145), "免费", Color("#C8E6C9"))
+	Kit.text_at(free, "免费金币", Rect2(345, 22, 330, 64), 56, Kit.BROWN, Kit.CREAM, 6)
+	Kit.text_at(free, "看广告领 %d 金币" % int(app.economy.ad_free_coins), Rect2(330, 92, 345, 48), 38, Kit.BROWN)
+	var fb := _price_button(free, "免费 (%d/%d)" % [left, int(app.economy.ad_limits.free_coins)], "green", Rect2(687, 36, 293, 106), _free_coins)
+	if left <= 0:
+		fb.disabled = true
+		fb.modulate.a = 0.5
+	y += 193
 	var packs: Array = app.economy.iap.filter(func(p): return str(p.id).begins_with("coins_"))
-	for r in range(0, packs.size(), 2):
-		var row := HBoxContainer.new()
-		row.add_theme_constant_override("separation", 20)
-		row.custom_minimum_size = Vector2(1020, 420)
-		for k in 2:
-			if r + k < packs.size():
-				row.add_child(_pack_card(packs[r + k], r + k + 1))
-		list.add_child(row)
-	list.add_child(_wide_card("booster_bundle", "道具组合包", "撤回、移出、洗牌 各 %d 个" % int(app.economy.booster_bundle.each), "%d 金币" % int(app.economy.booster_bundle.price), "pink", _buy_bundle))
+	for i in packs.size():
+		_pack_card(packs[i], i + 1, Rect2(42 + (i % 2) * 501, y + (i / 2) * 330, 495, 318))
+	y += ceili(packs.size() / 2.0) * 330 + 8
+	var bundle := _card("card_wide", Rect2(37, y, 1010, 201))
+	for k in 3:
+		Kit.art(bundle, BOOSTER_ICONS[k], Rect2(28 + k * 88, 45, 110, 110), "", Color("#FDE0EA"))
+	Kit.text_at(bundle, "道具组合包", Rect2(330, 30, 340, 66), 56, Kit.BROWN, Kit.CREAM, 6)
+	Kit.text_at(bundle, "撤回、移出、洗牌 各 %d 个" % int(app.economy.booster_bundle.each), Rect2(320, 104, 360, 48), 36, Kit.BROWN)
+	_price_button(bundle, "%d" % int(app.economy.booster_bundle.price), "pink", Rect2(687, 43, 293, 116), _buy_bundle, "coin_small")
+	y += 216
 	if not app.profile.data.no_ads:
-		list.add_child(_wide_card("icon_no_ads", "去除广告", "去除插屏广告", "¥18", "pink", func(): app.popups.purchase("no_ads")))
+		var na := _card("card_wide", Rect2(36, y, 1011, 201))
+		Kit.art(na, "icon_no_ads", Rect2(64, 15, 247, 168), "去广告", Color("#FDE0EA"))
+		Kit.text_at(na, "去除广告", Rect2(330, 30, 340, 66), 56, Kit.BROWN, Kit.CREAM, 6)
+		Kit.text_at(na, "去除插屏广告", Rect2(330, 104, 340, 48), 40, Kit.BROWN)
+		_price_button(na, "¥18", "pink", Rect2(687, 40, 293, 122), func(): app.popups.purchase("no_ads"))
+		y += 216
+	content.custom_minimum_size = Vector2(1080, y + 40)
+	scroll.set_deferred("scroll_vertical", keep)
 
-func _wide_card(icon: String, title: String, sub: String, price: String, style: String, action: Callable, disabled := false) -> Control:
-	var card := Kit.picture("card_wide", Vector2(1020, 230), "", Color("#FFF4DE"))
+## A card frame (nine-sliced) holding absolutely placed children.
+func _card(art: String, rect: Rect2) -> Control:
+	var card := Control.new()
+	card.position = rect.position
+	card.size = rect.size
 	card.mouse_filter = Control.MOUSE_FILTER_PASS
-	var pic := Kit.picture(icon, Vector2(200, 180), "", Color("#FDE0EA"))
-	pic.position = Vector2(26, 25)
-	card.add_child(pic)
-	var t := Kit.label(title, 58, Kit.BROWN)
-	t.position = Vector2(240, 30)
-	t.size = Vector2(440, 80)
-	card.add_child(t)
-	var s := Kit.label(sub, 36, Kit.BROWN)
-	s.position = Vector2(240, 110)
-	s.size = Vector2(440, 70)
-	Kit.shrink_to_fit(s)
-	card.add_child(s)
-	var b := Kit.pill(price, style, Vector2(300, 120))
-	b.position = Vector2(690, 55)
-	b.disabled = disabled
-	b.modulate.a = 0.5 if disabled else 1.0
-	b.pressed.connect(action)
-	card.add_child(b)
+	content.add_child(card)
+	var k := 0.72 if art == "card_wide" else 0.85
+	Kit.nine(card, art, Rect2(Vector2.ZERO, rect.size), [90, 90, 90, 90], Color("#FFF4DE"), k)
 	return card
 
-func _pack_card(p: Dictionary, tier: int) -> Control:
-	var card := Kit.picture("card_square", Vector2(500, 420), "", Color("#FFF4DE"))
-	card.mouse_filter = Control.MOUSE_FILTER_PASS
-	var pic := Kit.picture("coin_tier_%d" % tier, Vector2(260, 170), "金币", Color("#FFE7A8"))
-	pic.position = Vector2(120, 30)
-	card.add_child(pic)
-	var n := Kit.label(str(int(p.coins)), 64, Kit.BROWN)
-	n.position = Vector2(0, 205)
-	n.size = Vector2(500, 80)
-	card.add_child(n)
-	var b := Kit.pill("¥%d" % int(p.price), "pink", Vector2(360, 110))
-	b.position = Vector2(70, 290)
-	b.pressed.connect(func(): app.popups.purchase(p.id))
+func _price_button(card: Control, text: String, style: String, rect: Rect2, action: Callable, icon := "") -> TextureButton:
+	var b := Kit.pill(text, style, rect.size)
+	b.position = rect.position
 	card.add_child(b)
+	if icon != "":
+		Kit.pill_icon(b, icon)
+	else:
+		for c in b.get_children():
+			if c is Label:
+				c.add_theme_font_size_override("font_size", int(rect.size.y * 0.52))
+				Kit.shrink_to_fit(c, rect.size.x - 60)
+	b.pressed.connect(func():
+		app.sound.play("tap")
+		action.call())
+	return b
+
+func _pack_card(p: Dictionary, tier: int, rect: Rect2) -> void:
+	var card := _card("card_square", rect)
+	Kit.art(card, "coin_tier_%d" % tier, Rect2(97, 12, 300, 138), "金币", Color("#FFE7A8"))
+	Kit.text_at(card, str(int(p.coins)), Rect2(0, 146, rect.size.x, 60), 54, Kit.BROWN, Kit.CREAM, 6)
+	_price_button(card, "¥%d" % int(p.price), "pink", Rect2(92, 208, 310, 92), func(): app.popups.purchase(p.id))
 	if p.has("bonus"):
-		var tag := Kit.label(p.bonus, 36, Color.WHITE, Color("#2E7D32"), 8)
-		tag.position = Vector2(360, 10)
-		tag.size = Vector2(130, 56)
-		card.add_child(tag)
-	return card
+		Kit.art(card, "bonus_tag", Rect2(331, 5, 153, 84), "", Color("#7CC84A"))
+		Kit.text_at(card, str(p.bonus), Rect2(345, 18, 128, 50), 38, Color("#FFF7E0"), Color("#3D7415"), 6)
 
 func _free_coins() -> void:
 	var t: int = app.now()

@@ -317,73 +317,83 @@ func lives() -> void:
 
 ## Shown when a booster runs out mid-level; `got` runs after one is obtained.
 func booster_shortage(kind: String, got: Callable) -> void:
+	# Mockup M9: panel 966 wide at (53, 472); body origin (123, 582).
 	var names := {"undo": "撤回", "move_out": "移出", "shuffle": "洗牌"}
-	var info := _make("道具不足", true)
-	var pic := Kit.picture("icon_" + kind, Vector2(260, 260), names[kind], Color("#FDE0EA"))
-	info.body.add_child(Kit.centered(pic))
-	var n := Kit.label("%s ×1" % names[kind], 60, Kit.BROWN)
-	n.custom_minimum_size = Vector2(0, 80)
-	info.body.add_child(n)
-	_button(info, "%d 金币购买" % int(app.economy.booster_price[kind]), "pink", func():
+	var info := _make("道具不足", true, 966.0)
+	var o := Vector2(123, 582)
+	var box := _abs_body(info, 110, 866)
+	Kit.art(box, "booster_disc", Rect2(Vector2(365, 565) - o, Vector2(343, 325)), "", Color("#FDE0EA"))
+	Kit.art(box, "icon_" + kind, Rect2(Vector2(409, 616) - o, Vector2(255, 220)), names[kind], Color("#FDE0EA"))
+	Kit.text_at(box, "%s ×1" % names[kind], Rect2(Vector2(343, 893) - o, Vector2(403, 87)), 72, Kit.BROWN, Kit.CREAM, 6)
+	_pill_at(box, "%d 金币购买" % int(app.economy.booster_price[kind]), "pink", Rect2(Vector2(164, 993) - o, Vector2(748, 185)), func():
 		if app.profile.buy_booster(kind):
 			app.save()
 			close(info)
 			got.call()
 		else:
 			close(info)
-			app.toast("金币不足,去商店看看吧")
-			purchase_hint())
-	_ad_button(info, "看广告 免费获得", "booster", func():
+			app.toast("金币不足,去商店看看吧"), "coin_small")
+	_ad_pill_at(box, "看广告 免费获得", "booster", Rect2(Vector2(164, 1189) - o, Vector2(748, 183)), func():
 		app.profile.add_booster(kind)
 		close(info)
 		got.call())
-	var left := Kit.label("今日剩余 %d 次" % app.profile.ads_left("booster", app.now()), 36, Kit.BROWN)
-	left.custom_minimum_size = Vector2(0, 50)
-	info.body.add_child(left)
-	Kit.finish_popup(info)
+	Kit.text_at(box, "今日剩余 %d 次" % app.profile.ads_left("booster", app.now()), Rect2(Vector2(343, 1386) - o, Vector2(400, 62)), 50, Kit.BROWN)
+	Kit.finish_popup(info, 86.0)
 
-func purchase_hint() -> void:
-	pass
+## Picture for a store product: its coin tier, the starter bundle or no-ads.
+func _product_art(product_id: String) -> String:
+	if product_id == "starter":
+		return "starter_bundle"
+	if product_id == "no_ads":
+		return "icon_no_ads"
+	var packs: Array = app.economy.iap.filter(func(q): return str(q.id).begins_with("coins_"))
+	for i in packs.size():
+		if packs[i].id == product_id:
+			return "coin_tier_%d" % (i + 1)
+	return "coin_pile_big"
+
+func _product_name(product_id: String, p: Dictionary) -> String:
+	if product_id == "starter":
+		return "新手礼包"
+	if product_id == "no_ads":
+		return "去除插屏广告"
+	return "%d 金币" % int(p.get("coins", 0))
 
 func purchase(product_id: String) -> void:
 	var p: Dictionary = app.profile.iap(product_id)
 	if p.is_empty() or not app.profile.iap_available(product_id, app.now()):
 		app.toast("该商品暂不可购买")
 		return
-	var info := _make("确认购买", true)
-	var what := "%d 金币" % int(p.get("coins", 0)) if p.has("coins") else "去除插屏广告"
-	if product_id == "starter":
-		what = "新手礼包"
-	info.body.add_child(Kit.centered(Kit.picture("coin_pile_big", Vector2(300, 220), "金币", Color("#FFE7A8"))))
-	var t := Kit.label(what, 60, Kit.BROWN)
-	t.custom_minimum_size = Vector2(0, 80)
-	info.body.add_child(t)
-	var price := Kit.label("支付 ¥%d" % int(p.price), 52, Kit.BROWN)
-	price.custom_minimum_size = Vector2(0, 70)
-	info.body.add_child(price)
-	var cancel := Kit.pill("取消", "cream", Vector2(330, 140))
-	cancel.pressed.connect(func(): close(info))
-	var ok := Kit.pill("确认", "pink", Vector2(330, 140))
-	ok.pressed.connect(func():
+	# Mockup M10 (upper): panel 930 wide; body origin (145, 253).
+	var info := _make("确认购买", true, 930.0)
+	var o := Vector2(145, 253)
+	var box := _abs_body(info, 90, 624)
+	Kit.art(box, _product_art(product_id), Rect2(Vector2(371, 266) - o, Vector2(320, 224)), "金币", Color("#FFE7A8"))
+	Kit.text_at(box, _product_name(product_id, p), Rect2(Vector2(291, 509) - o, Vector2(504, 91)), 74, Kit.BROWN, Kit.CREAM, 6)
+	Kit.text_at(box, "支付 ¥%d" % int(p.price), Rect2(Vector2(342, 610) - o, Vector2(413, 82)), 68, Kit.BROWN)
+	_pill_at(box, "取消", "cream", Rect2(Vector2(161, 714) - o, Vector2(363, 163)), func(): close(info))
+	_pill_at(box, "确认", "pink", Rect2(Vector2(546, 714) - o, Vector2(373, 163)), func():
 		close(info)
 		app.iap.buy(product_id, func(success):
 			if success and app.profile.grant_purchase(product_id, app.now()):
 				app.save()
-				purchase_done(p)
+				purchase_done(product_id, p)
 			else:
 				app.toast("购买未完成")))
-	info.body.add_child(Kit.row([cancel, ok], 150))
-	Kit.finish_popup(info)
+	Kit.finish_popup(info, 73.0)
 
-func purchase_done(p: Dictionary) -> void:
+func purchase_done(product_id: String, p: Dictionary) -> void:
 	app.sound.play("win")
-	var info := _make("购买成功")
-	info.body.add_child(Kit.centered(Kit.picture("coin_pile_big", Vector2(360, 260), "金币", Color("#FFE7A8"))))
-	var t := Kit.label("+%d" % int(p.coins) if p.has("coins") else "已去除插屏广告", 72, Kit.BROWN)
-	t.custom_minimum_size = Vector2(0, 100)
-	info.body.add_child(t)
-	_button(info, "好的", "pink", func(): close(info))
-	Kit.finish_popup(info)
+	# Mockup M10 (lower): panel 929 wide; body origin (146, 1179).
+	var info := _make("购买成功", false, 929.0)
+	var o := Vector2(146, 1179)
+	var box := _abs_body(info, 90, 613)
+	var art := "coin_pile_big" if p.has("coins") and product_id != "starter" else _product_art(product_id)
+	Kit.art(box, art, Rect2(Vector2(238, 1169) - o, Vector2(592, 316)), "金币", Color("#FFE7A8"))
+	var what := "+%d" % int(p.coins) if p.has("coins") else "已去除插屏广告"
+	Kit.text_at(box, what, Rect2(Vector2(252, 1500) - o, Vector2(582, 105)), 90 if p.has("coins") else 66, Kit.BROWN, Kit.CREAM, 8)
+	_pill_at(box, "好的", "pink", Rect2(Vector2(270, 1621) - o, Vector2(539, 171)), func(): close(info))
+	Kit.finish_popup(info, 72.0)
 
 # ---------------------------------------------------------------- results
 
@@ -620,5 +630,6 @@ func debug_open(name: String) -> void:
 		"start": level_start(app.current_level_index())
 		"shortage": booster_shortage("shuffle", func(): pass)
 		"purchase": purchase("coins_3300")
+		"purchase_done": purchase_done("coins_3300", app.profile.iap("coins_3300"))
 		"win": win(0, 2, 30, func(): pass)
 		"lose": lose(5, "托盘满了", "再想想顺序吧", true, func(): pass, func(_w): pass)

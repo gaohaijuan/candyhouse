@@ -1461,31 +1461,39 @@ func _close_popup() -> void:
 		popup = null
 
 func _confetti() -> void:
-	var p := CPUParticles2D.new()
-	p.position = Vector2(540, -20)
-	p.emission_shape = CPUParticles2D.EMISSION_SHAPE_RECTANGLE
-	p.emission_rect_extents = Vector2(560, 10)
-	p.amount = 120
-	p.lifetime = 3.0
-	p.direction = Vector2(0, 1)
-	p.spread = 25.0
-	p.initial_velocity_min = 200.0
-	p.initial_velocity_max = 420.0
-	p.gravity = Vector2(0, 260)
-	p.angular_velocity_min = -360.0
-	p.angular_velocity_max = 360.0
-	p.scale_amount_min = 10.0
-	p.scale_amount_max = 18.0
-	p.one_shot = true
-	p.explosiveness = 0.3
-	var colors := Gradient.new()
-	colors.set_color(0, Color("#F48FB1"))
-	colors.set_color(1, Color("#7CC8B4"))
-	colors.add_point(0.5, Color("#FFC233"))
-	p.color_initial_ramp = colors
-	add_child(p)
-	p.emitting = true
-	get_tree().create_timer(3.5).timeout.connect(p.queue_free)
+	# One emitter per confetti slice; falls in front of the win popup.
+	var host: Node = app.popup_layer if app else self
+	for i in 4:
+		var p := CPUParticles2D.new()
+		p.z_index = 100
+		p.position = Vector2(540, -30)
+		p.emission_shape = CPUParticles2D.EMISSION_SHAPE_RECTANGLE
+		p.emission_rect_extents = Vector2(560, 10)
+		p.amount = 26
+		p.lifetime = 3.2
+		p.direction = Vector2(0, 1)
+		p.spread = 25.0
+		p.initial_velocity_min = 180.0
+		p.initial_velocity_max = 420.0
+		p.gravity = Vector2(0, 240)
+		p.angular_velocity_min = -300.0
+		p.angular_velocity_max = 300.0
+		p.angle_min = 0.0
+		p.angle_max = 360.0
+		p.one_shot = true
+		p.explosiveness = 0.35
+		var t: Texture2D = Art.ui("confetti_%d" % (i + 1))
+		if t:
+			p.texture = t
+			p.scale_amount_min = 0.7
+			p.scale_amount_max = 1.1
+		else:
+			p.scale_amount_min = 10.0
+			p.scale_amount_max = 18.0
+			p.color = [Color("#F48FB1"), Color("#FFC233"), Color("#7CC8B4"), Color("#B39DDB")][i]
+		host.add_child(p)
+		p.emitting = true
+		get_tree().create_timer(3.8).timeout.connect(p.queue_free)
 
 # ---------------------------------------------------------------- debug capture
 

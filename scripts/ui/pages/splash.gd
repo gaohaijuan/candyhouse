@@ -10,21 +10,20 @@ var app
 func setup(owner_app, _args: Dictionary) -> void:
 	app = owner_app
 	Common.background(self, "splash_bg")
-	Common.logo(self, Vector2(540, 560), 900)
-	var bar_w := 760.0
-	var bg := Kit.picture("loading_bar_bg", Vector2(bar_w, 60), "", Color("#FFF1DC"))
-	bg.position = Vector2((1080 - bar_w) / 2, 1500)
-	add_child(bg)
-	var fill := Kit.picture("loading_bar_fill", Vector2(bar_w - 24, 36), "", Color("#F0508A"))
-	fill.position = bg.position + Vector2(12, 12)
-	fill.size.x = 0
-	add_child(fill)
-	var notice := Kit.label("健康游戏忠告:抵制不良游戏,拒绝盗版游戏。注意自我保护,谨防受骗上当。\n适度游戏益脑,沉迷游戏伤身。合理安排时间,享受健康生活。", 30, Color.WHITE, Color("#9C3219"), 6)
-	notice.position = Vector2(30, 1700)
-	notice.size = Vector2(1020, 120)
+	# Rects from mockup M1_A.
+	Kit.art(self, "logo", Rect2(91, 199, 901, 563))
+	if not Kit.tex("logo"):
+		Common.logo(self, Vector2(540, 480), 900)
+	Kit.nine(self, "loading_bar_bg", Rect2(34, 1594, 1012, 96), [41, 11, 41, 11], Color("#FFF1DC"), 96.0 / 57.0)
+	var fill := Kit.nine(self, "loading_bar_fill", Rect2(56, 1615, 968, 54), [38, 10, 38, 10], Color("#F0508A"), 54.0 / 50.0)
+	var full_w := fill.size.x
+	fill.size.x = 76.0
+	var notice := Kit.label("健康游戏忠告:抵制不良游戏,拒绝盗版游戏。注意自我保护,谨防受骗上当。\n适度游戏益脑,沉迷游戏伤身。合理安排时间,享受健康生活。", 30, Color("#F9E8DE"), Color("#8E2425"), 6)
+	notice.position = Vector2(30, 1772)
+	notice.size = Vector2(1020, 110)
 	add_child(notice)
 	var tw := create_tween()
-	tw.tween_property(fill, "size:x", bar_w - 24, 1.2).set_ease(Tween.EASE_OUT)
+	tw.tween_property(fill, "size:x", full_w, 1.2).set_ease(Tween.EASE_OUT)
 	tw.tween_callback(_loaded)
 
 func _loaded() -> void:

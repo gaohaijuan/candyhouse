@@ -111,12 +111,13 @@
 |---|---|
 | 定时提醒(Windows:2h、7h、之后每5h,另有用户加的12h) | 完成 |
 | 美术阶段1效果图(14页) | 完成,总指挥已验收:M1=A M2=A M3=B M4=B M5=B M6=A M7=A M8=A M9=A M10=A M11=A M12=A M13=A M14=A |
-| 美术阶段2切图 | 进行中:art-pages-a/b/c/d,任务单 /tmp/briefs/art-pages-*-s2.md,回传 /tmp/art-pages-?_slices_* |
+| 美术阶段2切图 | 完成:a/b/c/d 全部回传并放入 assets/ui(未覆盖游戏页已量好的 popup_ribbon/coin_pill/button_pill_cream) |
 | 存档/经济/体力/签到/宝箱/广告频控/内购(scripts/meta/profile.gd,data/economy.json) | 完成,tests/meta_tests.gd 47 项通过 |
 | 广告、内购服务(模拟实现) | 完成 scripts/services/ |
 | 应用外壳与页面(启动/隐私/主页/地图/商店/游戏)及全部弹窗 | 完成(占位图),scripts/ui/;主场景 scenes/app.tscn |
 | 游戏页接入:道具库存、道具不足、开局道具(多一格/磁铁)、胜利金币、复活、体力 | 完成 |
-| 50 关难度重做 | 机制关已按“确实露出”规则重出;蜡烛关改为棋盘格顶层后重出中(build/redo8.log);完成后 python3 tools/merge_boards.py 并跑 tests/run_tests.gd |
-| 切图到位后替换占位图 | 待做:按 measurements.json 排版 |
+| 50 关难度重做 | 蜡烛关已重出并合并;仍偏离目标的 L10/L35/L40/L41 后台重出中(build/redo10*.log),完成后 python3 tools/merge_boards.py 并跑 tests/run_tests.gd |
+| 切图到位后替换占位图 | 完成:启动/隐私/主页/设置/地图/开局/奖励/胜利/失败/体力/签到/商店/道具不足/购买确认/购买成功,均按效果图量出的坐标排版并截图对照 |
+| 章节宝箱(每章第10关为宝箱节点,首次通关得 150 金币+移出1+洗牌1) | 完成 |
 | 多一格的 8 格托盘美术 | 待定:目前 8 块方块缩小放在 7 格托盘上 |
 | 更新桌面试玩包 | 待做(合并关卡 + 切图后) |

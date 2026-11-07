@@ -9,6 +9,16 @@ static func background(page: Control, art: String) -> void:
 	if t == null:
 		t = Kit.tex("background")
 	if t:
+		# Page art may carry a transparent rim; show only the painted part.
+		var img := t.get_image()
+		if img.is_compressed():
+			img.decompress()
+		var used := img.get_used_rect()
+		if used.size != img.get_size() and used.size.x > 0:
+			var frame := AtlasTexture.new()
+			frame.atlas = t
+			frame.region = Rect2(used)
+			t = frame
 		var bg := TextureRect.new()
 		bg.texture = t
 		bg.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
