@@ -43,6 +43,7 @@ static func author_candidate(level: Dictionary, rng: RandomNumberGenerator) -> D
 	for i in tiles.size():
 		tiles[i]["type"] = types[i]
 	var cover := BoardRules.coverers(tiles)
+	_peek = BoardRules.peeking(tiles)
 	var order: Array = []
 	for beam in [150, 600]:
 		order = Solver.solve(tiles, cover, beam)
@@ -99,6 +100,7 @@ static func generate_with_solution(level: Dictionary) -> Dictionary:
 		rng.seed = int(level.seed) * 1000 + attempt
 		var tiles := positions(level)
 		assert(tiles.size() % 3 == 0, "tile count must be a multiple of 3")
+		_peek = BoardRules.peeking(tiles)
 		_place_mechanics(tiles, level, rng)
 		var order := removal_order(tiles, rng, [], ice_min_positions(tiles, max_open, 0))
 		if order.size() != tiles.size():
@@ -138,7 +140,7 @@ static func _place_mechanics(tiles: Array, level: Dictionary, rng: RandomNumberG
 		near[i]["mystery"] = true
 	for i in mini(want - take_near, far.size()):
 		far[i]["mystery"] = true
-	var upper := board.filter(func(t): return int(t.layer) >= top - 1 and not t.get("mystery", false))
+	var upper := board.filter(func(t): return _peek.has(t.id) and not t.get("mystery", false))
 	_shuffle(upper, rng)
 	var ice: Array = level.get("ice", [])
 	for i in mini(ice.size(), upper.size()):
@@ -171,9 +173,11 @@ static func _top_layer(tiles: Array) -> int:
 			top = maxi(top, int(t.layer))
 	return top
 
-## Board tile on one of the two highest layers: the player can see it from the start.
-static func _visible(t: Dictionary, top: int) -> bool:
-	return not t.has("stack") and int(t.layer) >= top - 1
+## The player can see part of this board tile from the start (see BoardRules.peeking).
+static var _peek: Dictionary = {}
+
+static func _visible(t: Dictionary, _top: int) -> bool:
+	return not t.has("stack") and _peek.has(t.id)
 
 ## Puts a key on a tile and a lock on a tile the winning order takes only after
 ## the key's triple is complete, so following the order never hits a closed lock.

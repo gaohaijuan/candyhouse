@@ -33,3 +33,31 @@ static func coverers(tiles: Array) -> Dictionary:
 				list.append(o.id)
 		out[t.id] = list
 	return out
+
+## Ids of tiles the player can actually see at the start: at least one of the
+## tile's four half-cells is not under a higher tile. Box tiles count only when
+## on top of their pile.
+static func peeking(tiles: Array) -> Dictionary:
+	var cover := coverers(tiles)
+	var by_id := {}
+	for t in tiles:
+		by_id[t.id] = t
+	var out := {}
+	for t in tiles:
+		if t.has("stack"):
+			if cover[t.id].is_empty():
+				out[t.id] = true
+			continue
+		for dx in 2:
+			for dy in 2:
+				var cx := int(t.x) + dx
+				var cy := int(t.y) + dy
+				var hidden := false
+				for c in cover[t.id]:
+					var o: Dictionary = by_id[c]
+					if cx >= int(o.x) and cx < int(o.x) + 2 and cy >= int(o.y) and cy < int(o.y) + 2:
+						hidden = true
+						break
+				if not hidden:
+					out[t.id] = true
+	return out

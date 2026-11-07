@@ -218,7 +218,7 @@
    "mystery": 4,
    "intro": {
     "title": "新玩法:神秘方块",
-    "text": "盖着问号的方块\n露出来时才会揭晓"
+    "text": "问号方块里的甜点看不见\n拿进托盘时才会揭晓"
    },
    "target_rating": 4.5,
    "types_range": [
@@ -3387,8 +3387,8 @@
    "boss": true,
    "target_rating": 8.5,
    "types_range": [
-    11,
-    15
+    10,
+    13
    ]
   }
  ]

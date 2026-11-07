@@ -202,7 +202,12 @@ func _test_mystery(level: Dictionary) -> void:
 	var hidden: Array = s.tiles.values().filter(func(t): return t.get("mystery", false))
 	check(hidden.size() == int(level.mystery), "L%d places %d mystery tiles" % [level.id, level.mystery])
 	for t in hidden:
-		check(not s.is_free(t.id), "mystery tiles start covered")
+		check(not s.type_known(t.id), "mystery dessert hidden until taken")
+	var free_hidden: Array = hidden.filter(func(t): return s.is_free(t.id))
+	if not free_hidden.is_empty():
+		var id: int = free_hidden[0].id
+		s.pick(id)
+		check(s.type_known(id), "mystery dessert revealed once taken")
 
 func _test_locks(level: Dictionary) -> void:
 	for trial in 10:
@@ -273,17 +278,18 @@ func _test_design(levels: Array) -> void:
 			for t in s.tiles.values():
 				if not t.has("stack"):
 					top = maxi(top, int(t.layer))
+			var peek := BoardRules.peeking(s.tiles.values())
 			var free_start := s.board_tiles().filter(func(t): return s.can_pick(t.id)).size()
 			check(free_start >= 3, "L%d offers at least 3 moves at the start" % level.id)
 			for t in s.tiles.values():
 				if t.has("fuse"):
 					check(not s.is_free(t.id), "L%d candle is not free at the start" % level.id)
 					check(int(t.fuse) >= 8 and int(t.fuse) <= 22, "L%d candle starts with 8-22 steps (%d)" % [level.id, t.fuse])
-					check(int(t.layer) >= top - 1, "L%d candle is visible at the start" % level.id)
+					check(peek.has(t.id), "L%d candle is visible at the start" % level.id)
 				if t.has("lock") or t.has("key"):
-					check(int(t.layer) >= top - 1, "L%d lock/key visible at the start" % level.id)
+					check(peek.has(t.id), "L%d lock/key visible at the start" % level.id)
 				if int(t.get("ice", 0)) > 0:
-					check(int(t.layer) >= top - 1, "L%d ice visible at the start" % level.id)
+					check(peek.has(t.id), "L%d ice visible at the start" % level.id)
 			var g: GameState = s.clone()
 			var plan: Array = s.solution.duplicate()
 			check(g.wins_with(plan), "L%d has a winning order (trial %d)" % [level.id, trial])
