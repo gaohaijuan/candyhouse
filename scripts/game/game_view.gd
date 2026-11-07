@@ -28,6 +28,8 @@ var hud: Dictionary = {}
 var booster_buttons: Dictionary = {}
 var popup: Control
 var hand: Control
+var box_nodes: Array = []
+var box_badges: Array = []
 var combo := 0
 var last_match_time := -100.0
 var tutorial_picks := 0
@@ -35,6 +37,7 @@ var busy_until := 0.0
 
 # Debug capture: --autoplay plays the known solution, --capture=<dir> saves frames.
 var autoplay := false
+var debug_open := ""
 var level_from_args := false
 var autoplay_random := false
 var capture_dir := ""
@@ -60,6 +63,8 @@ func _ready() -> void:
 		elif arg.begins_with("--capture="):
 			capture_dir = arg.substr(10)
 			DirAccess.make_dir_recursive_absolute(capture_dir)
+		elif arg.begins_with("--open="):
+			debug_open = arg.substr(7)
 		elif arg.begins_with("--level="):
 			level_index = clampi(int(arg.substr(8)) - 1, 0, levels.size() - 1)
 			level_from_args = true
@@ -76,6 +81,19 @@ func _ready() -> void:
 	if not level_from_args:
 		level_index = clampi(int(_load_progress().get("unlocked", 1)) - 1, 0, levels.size() - 1)
 	start_level(level_index)
+	if debug_open != "":
+		get_tree().create_timer(1.4).timeout.connect(_debug_open_popup)
+
+func _debug_open_popup() -> void:
+	_close_popup()
+	if debug_open == "pause":
+		_on_pause()
+	elif debug_open == "levels":
+		_open_level_select()
+	elif debug_open == "win":
+		_show_win()
+	elif debug_open == "lose":
+		_show_lose()
 
 func _rect(key: String) -> Rect2:
 	var r: Array = layout[key]
@@ -332,6 +350,7 @@ func _text_style(key: String) -> Dictionary:
 		"coin_text": {"size": 44, "color": "#7A4A32", "outline": "#FFFFFF", "outline_size": 0},
 		"badge_text": {"size": 36, "color": "#FFFFFF", "outline": "#B8323A", "outline_size": 0},
 		"booster_text": {"size": 44, "color": "#6B3A26", "outline": "#FFFFFF", "outline_size": 10},
+		"box_count_text": {"size": 40, "color": "#FFFFFF", "outline": "#9C1F1F", "outline_size": 8},
 	}
 	var styles: Dictionary = layout.get("text_styles", {})
 	var out: Dictionary = defaults.get(key, {}).duplicate()
@@ -372,7 +391,8 @@ func start_level(index: int) -> void:
 	var order := 0
 	for t in by_layer:
 		var v := TileView.new(t.id, t.type, _tile_side(t))
-		v.face_down = t.get("mystery", false) or (t.has("stack") and not state.is_free(t.id))
+		v.face_down = t.get("mystery", false)
+		v.blank = t.has("stack") and not state.is_free(t.id)
 		v.ice = int(t.get("ice", 0))
 		v.key_id = int(t.get("key", -1))
 		v.lock_id = int(t.get("lock", -1))
@@ -387,6 +407,7 @@ func start_level(index: int) -> void:
 		tw.tween_property(v, "position", target, 0.25).set_delay(delay).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 		tw.tween_property(v, "modulate:a", 1.0, 0.18).set_delay(delay)
 		order += 1
+	_build_boxes()
 	_refresh_cover(false)
 	_refresh_hud()
 	busy_until = Time.get_ticks_msec() / 1000.0 + 1.2
@@ -423,6 +444,49 @@ func _board_pos(t: Dictionary) -> Vector2:
 			x -= side
 		return Vector2(x, float(anchor[1]) + float(step[1]) * int(t.depth))
 	return board_origin + Vector2(t.x, t.y) * tile_px / 2 - Vector2(0, t.layer * layout.layer_lift)
+
+## Wooden box under each side pile, with a badge counting tiles left in it.
+func _build_boxes() -> void:
+	for n in box_nodes:
+		n.queue_free()
+	box_nodes.clear()
+	box_badges.clear()
+	var stacks: Array = levels[level_index].get("stacks", [])
+	for i in stacks.size():
+		var tex := Art.ui("box_base_left" if i == 0 else "box_base_right")
+		var bm: Dictionary = layout.box
+		var pile_w := float(layout.stack_tile) + float(layout.stack_step[0]) * (int(stacks[i].count) - 1)
+		var w: float = pile_w + float(bm.side_pad) * 2
+		var k: float = w / float(bm.visible[2])
+		var anchor: Array = layout.stacks[i]
+		var floor_y: float = float(anchor[1]) + float(layout.stack_tile) * float(bm.tile_sink)
+		var left := float(anchor[0]) - float(bm.side_pad) if i == 0 else float(anchor[0]) - w + float(bm.side_pad)
+		var top := floor_y - float(bm.floor_y) * k
+		var base := TextureRect.new()
+		if tex:
+			base.texture = tex
+			base.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+			base.stretch_mode = TextureRect.STRETCH_SCALE
+			base.size = Vector2(tex.get_width(), tex.get_height()) * k
+			base.position = Vector2(left, top) - Vector2(bm.visible[0], bm.visible[1]) * k
+		base.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		board_layer.add_child(base)
+		board_layer.move_child(base, 0)
+		box_nodes.append(base)
+		var bsz: float = bm.badge_size
+		var bc := Vector2(left, top) + (Vector2(bm.badge_center[0], bm.badge_center[1]) - Vector2(bm.visible[0], bm.visible[1])) * k
+		var badge_tex := Art.ui("box_count_badge")
+		var badge: Control = _textured_label(Rect2(bc - Vector2(bsz, bsz) / 2, Vector2(bsz, bsz)), badge_tex, _text_style("box_count_text")) if badge_tex else _plaque(Rect2(bc - Vector2(bsz, bsz) / 2, Vector2(bsz, bsz)), Color("#E5484D"), Color.WHITE, 36)
+		badge.reparent(board_layer)
+		box_nodes.append(badge)
+		box_badges.append(badge)
+	_refresh_box_counts()
+
+func _refresh_box_counts() -> void:
+	for i in box_badges.size():
+		var left := state.board_tiles().filter(func(t): return t.has("stack") and int(t.stack) == i).size()
+		box_badges[i].get_child(0).text = str(left)
+		box_badges[i].visible = left > 0
 
 func _tile_side(t: Dictionary) -> float:
 	return float(layout.stack_tile) if t.has("stack") else tile_px
@@ -706,7 +770,7 @@ func _refresh_cover(animate: bool) -> void:
 	for t in state.board_tiles():
 		var v: Control = views[t.id]
 		var free := state.is_free(t.id)
-		if free and v.face_down:
+		if free and (v.face_down or v.blank):
 			_reveal(v, animate)
 		var target := 0.0 if free else 1.0
 		if animate and not is_equal_approx(v.dim, target):
@@ -718,10 +782,13 @@ func _refresh_cover(animate: bool) -> void:
 func _reveal(v: Control, animate: bool) -> void:
 	if not animate:
 		v.face_down = false
+		v.blank = false
 		return
 	var tw := v.create_tween()
 	tw.tween_property(v, "scale:x", 0.0, 0.12).set_ease(Tween.EASE_IN)
-	tw.tween_callback(func(): v.face_down = false)
+	tw.tween_callback(func():
+		v.face_down = false
+		v.blank = false)
 	tw.tween_property(v, "scale:x", 1.0, 0.16).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 
 func _unlock(ids: Array) -> void:
@@ -764,6 +831,7 @@ func _thaw(ids: Array) -> void:
 			_burst(v.global_position + v.size / 2, Color("#A8DBFF"))
 
 func _refresh_hud() -> void:
+	_refresh_box_counts()
 	var total := state.tiles.size()
 	var done := total - state.remaining()
 	var frac := float(done) / total
@@ -909,39 +977,37 @@ func _hide_hand() -> void:
 func _on_pause() -> void:
 	if popup != null:
 		return
-	_open_popup("暂停", "", [["继续", _close_popup], ["重新开始", func(): start_level(level_index)], ["选择关卡", _open_level_select]])
+	_open_popup("暂停", "", [["继续", _close_popup], ["重新开始", func(): start_level(level_index), "cream"], ["选择关卡", _open_level_select, "cream"]])
 
 func _open_level_select() -> void:
 	_close_popup()
-	_open_popup("选择关卡", "", [["返回", _close_popup]])
-	var panel: Control = popup.get_child(1)
+	var cols := 5
+	var cell := 140.0
+	var rows := ceili(levels.size() / float(cols))
+	var panel: Control = _open_popup("选择关卡", "", [["返回", _close_popup, "cream"]], -1, rows * cell + 20)
 	var unlocked := _unlocked()
-	var cols := 4
-	var cell := 150.0
+	var top: float = panel.get_meta("body_top")
 	var grid_w := cols * cell
-	var top := 170.0
 	for i in levels.size():
 		var b := Button.new()
-		b.text = str(levels[i].id)
+		b.text = str(int(levels[i].id))
 		b.size = Vector2(cell - 20, cell - 20)
 		b.position = Vector2((panel.size.x - grid_w) / 2 + (i % cols) * cell + 10, top + (i / cols) * cell)
-		b.add_theme_font_size_override("font_size", 52)
+		b.add_theme_font_size_override("font_size", 50)
 		var sb := StyleBoxFlat.new()
 		sb.bg_color = Color("#F48FB1") if i < unlocked else Color("#E8DCCF")
-		sb.set_corner_radius_all(30)
+		sb.border_color = Color("#E05A87") if i < unlocked else Color("#D9C7B8")
+		sb.set_border_width_all(5)
+		sb.set_corner_radius_all(32)
 		for st_name in ["normal", "hover", "pressed", "disabled"]:
 			b.add_theme_stylebox_override(st_name, sb)
 		b.add_theme_color_override("font_color", Color.WHITE)
+		b.add_theme_color_override("font_outline_color", Color("#9C3219"))
+		b.add_theme_constant_override("outline_size", 8)
 		b.focus_mode = Control.FOCUS_NONE
 		b.disabled = i >= unlocked
 		b.pressed.connect(func(): start_level(i))
 		panel.add_child(b)
-	var rows := ceili(levels.size() / float(cols))
-	var back: Control = panel.get_child(panel.get_child_count() - levels.size() - 1)
-	back.position.y = top + rows * cell + 20
-	panel.size.y = back.position.y + back.size.y + 50
-	panel.position = (size - panel.size) / 2
-	panel.pivot_offset = panel.size / 2
 
 ## Highest level the player may start (all levels are open in this test build).
 func _unlocked() -> int:
@@ -990,7 +1056,7 @@ func _show_lose() -> void:
 				display_tray = state.tray.duplicate()
 				_layout_hold()
 				_reflow(display_tray, [])
-				_refresh_hud()])
+				_refresh_hud(), "green"])
 	var titles := {"tray": ["托盘满了", "再想想顺序吧"], "candle": ["蜡烛烧完了", "下次早点把蜡烛拿走"], "stuck": ["没有可以拿的了", "冰块和锁挡住了去路"]}
 	var reason: String = state.lose_reason()
 	if reason == "candle" and state.can_undo():
@@ -999,93 +1065,187 @@ func _show_lose() -> void:
 			var u := state.undo()
 			if u.ok:
 				_animate_back(u.id, u.to)
-				_refresh_hud()])
+				_refresh_hud(), "green"])
 	var text: Array = titles.get(reason, titles.tray)
 	get_tree().create_timer(0.35).timeout.connect(func(): _open_popup(text[0], text[1], buttons))
 
-func _open_popup(title: String, subtitle: String, buttons: Array, stars := -1) -> void:
+## Popup built from the approved popup art (panel, ribbon, candy buttons).
+## Each button entry is [label, callable] or [label, callable, "pink"|"green"|"cream"].
+## Returns the panel so callers may add content; `body_height` reserves space
+## for that content above the buttons.
+func _open_popup(title: String, subtitle: String, buttons: Array, stars := -1, body_height := 0.0) -> Control:
 	_hide_hand()
 	popup = Control.new()
 	popup.size = size
 	add_child(popup)
 	var dimmer := ColorRect.new()
-	dimmer.color = Color(0.2, 0.1, 0.15, 0.55)
+	var dim: Array = layout.get("popup_dim", [47, 11, 0, 0.69])
+	dimmer.color = Color8(int(dim[0]), int(dim[1]), int(dim[2]), int(float(dim[3]) * 255))
 	dimmer.size = size
 	popup.add_child(dimmer)
-	var panel := Panel.new()
-	var sb := StyleBoxFlat.new()
-	sb.bg_color = Color("#FFF9F0")
-	sb.border_color = Color("#F48FB1")
-	sb.set_border_width_all(10)
-	sb.set_corner_radius_all(48)
-	panel.add_theme_stylebox_override("panel", sb)
-	panel.size = Vector2(780, 400)
+	var pl: Dictionary = layout.popup
+	var panel_w: float = pl.panel_width
+	var panel := Control.new()
+	panel.size = Vector2(panel_w, 400)
 	popup.add_child(panel)
-	var t := Label.new()
-	t.text = title
-	t.add_theme_font_size_override("font_size", 80)
-	t.add_theme_color_override("font_color", Color("#E05A87"))
-	t.size = Vector2(panel.size.x, 120)
-	t.position = Vector2(0, 40)
-	t.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	panel.add_child(t)
-	var y := 170.0
+	var frame: Control
+	if Art.ui("popup_panel"):
+		var np := NinePatchRect.new()
+		np.texture = Art.ui("popup_panel")
+		var m: Array = pl.panel_nine_slice
+		np.patch_margin_left = int(m[0]); np.patch_margin_right = int(m[1])
+		np.patch_margin_top = int(m[2]); np.patch_margin_bottom = int(m[3])
+		var vis: Array = pl.panel_visible
+		var k: float = panel_w / float(vis[2])
+		np.scale = Vector2(k, k)
+		np.position = -Vector2(vis[0], vis[1]) * k
+		frame = np
+	else:
+		var flat := Panel.new()
+		var sb := StyleBoxFlat.new()
+		sb.bg_color = Color("#FFF9F0"); sb.border_color = Color("#F48FB1")
+		sb.set_border_width_all(10); sb.set_corner_radius_all(48)
+		flat.add_theme_stylebox_override("panel", sb)
+		frame = flat
+	frame.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	panel.add_child(frame)
+	# Title ribbon overlaps the panel's top edge.
+	var ribbon_tex := Art.ui("popup_ribbon")
+	var rb: Array = pl.ribbon_rect
+	if ribbon_tex:
+		var rr := Rect2(rb[0], rb[1], rb[2], rb[3])
+		var ribbon := TextureRect.new()
+		ribbon.texture = ribbon_tex
+		ribbon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		ribbon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		ribbon.position = rr.position
+		ribbon.size = rr.size
+		ribbon.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		panel.add_child(ribbon)
+		var tb: Array = pl.ribbon_text_box
+		var kk: float = rr.size.x / ribbon_tex.get_width()
+		var t := Label.new()
+		t.text = title
+		t.position = rr.position + Vector2(tb[0], tb[1]) * kk
+		t.size = Vector2(tb[2], tb[3]) * kk
+		t.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		t.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+		_apply_text_style(t, _text_style("popup_title"))
+		_shrink_to_fit(t)
+		panel.add_child(t)
+	else:
+		var t := Label.new()
+		t.text = title
+		t.add_theme_font_size_override("font_size", 80)
+		t.add_theme_color_override("font_color", Color("#E05A87"))
+		t.size = Vector2(panel_w, 120)
+		t.position = Vector2(0, 40)
+		t.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		panel.add_child(t)
+	var y: float = pl.content_top
 	if stars >= 0:
+		var d: float = pl.star_size
+		var gap: float = pl.star_gap
 		for i in 3:
-			var s := Label.new()
-			s.text = "★"
-			s.add_theme_font_size_override("font_size", 130)
-			s.add_theme_color_override("font_color", Color("#E8DCCF"))
-			s.size = Vector2(150, 150)
-			s.position = Vector2(panel.size.x / 2 - 225 + i * 150, y)
-			s.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-			s.pivot_offset = s.size / 2
-			panel.add_child(s)
+			var star := TextureRect.new()
+			star.texture = Art.ui("star_off")
+			star.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+			star.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+			star.size = Vector2(d, d)
+			star.position = Vector2(panel_w / 2 + (i - 1) * gap - d / 2, y)
+			star.pivot_offset = star.size / 2
+			star.mouse_filter = Control.MOUSE_FILTER_IGNORE
+			panel.add_child(star)
 			if i < stars:
 				var tw := create_tween()
 				tw.tween_interval(0.3 + i * 0.18)
-				tw.tween_callback(func(): s.add_theme_color_override("font_color", Color("#FFC233")))
-				tw.tween_property(s, "scale", Vector2(1.25, 1.25), 0.1)
-				tw.tween_property(s, "scale", Vector2.ONE, 0.12)
-		y += 170
+				tw.tween_callback(func(): star.texture = Art.ui("star"))
+				tw.tween_property(star, "scale", Vector2(1.25, 1.25), 0.1)
+				tw.tween_property(star, "scale", Vector2.ONE, 0.12)
+		y += d + float(pl.block_gap)
 	if subtitle != "":
 		var st := Label.new()
 		st.text = subtitle
-		st.add_theme_font_size_override("font_size", 42)
-		st.add_theme_color_override("font_color", Color("#7A4A32"))
+		_apply_text_style(st, _text_style("popup_subtitle"))
 		var lines := subtitle.count("\n") + 1
-		st.size = Vector2(panel.size.x, 58 * lines)
-		st.position = Vector2(0, y)
+		var lh: float = pl.subtitle_line
+		st.size = Vector2(panel_w - 160, lh * lines)
+		st.position = Vector2(80, y)
 		st.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		st.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 		panel.add_child(st)
-		y += 58 * lines + 24
+		y += lh * lines + float(pl.block_gap)
+	panel.set_meta("body_top", y)
+	y += body_height
 	for entry in buttons:
-		var b := Button.new()
-		b.text = entry[0]
-		b.size = Vector2(520, 120)
-		b.position = Vector2((panel.size.x - 520) / 2, y + 20)
-		b.add_theme_font_size_override("font_size", 50)
-		var bs := StyleBoxFlat.new()
-		bs.bg_color = Color("#7CC8B4")
-		bs.set_corner_radius_all(60)
-		bs.shadow_color = Color(0.3, 0.5, 0.45, 0.4)
-		bs.shadow_size = 6
-		bs.shadow_offset = Vector2(0, 8)
-		for st_name in ["normal", "hover", "pressed"]:
-			b.add_theme_stylebox_override(st_name, bs)
-		b.add_theme_color_override("font_color", Color.WHITE)
-		b.focus_mode = Control.FOCUS_NONE
+		var style: String = entry[2] if entry.size() > 2 else "pink"
+		var b := _pill_button(entry[0], style, Vector2(pl.button_width, pl.button_height))
+		b.position = Vector2((panel_w - b.size.x) / 2, y)
 		b.pressed.connect(entry[1])
 		panel.add_child(b)
-		y += 150
-	panel.size.y = y + 50
-	panel.position = (size - panel.size) / 2
+		y += b.size.y + float(pl.button_gap)
+	panel.size.y = y - float(pl.button_gap) + float(pl.bottom_pad)
+	if frame is NinePatchRect:
+		# Visible frame maps onto the panel; keep the PNG's transparent padding outside it.
+		var tex := Art.ui("popup_panel")
+		var vis: Array = pl.panel_visible
+		frame.size = panel.size / frame.scale.x + Vector2(tex.get_width() - float(vis[2]), tex.get_height() - float(vis[3]))
+	else:
+		frame.size = panel.size
+	panel.position = (size - panel.size) / 2 + Vector2(0, float(pl.get("center_offset_y", 40)))
 	panel.pivot_offset = panel.size / 2
 	panel.scale = Vector2(0.7, 0.7)
 	panel.modulate.a = 0.0
 	var tw2 := create_tween().set_parallel()
 	tw2.tween_property(panel, "scale", Vector2.ONE, 0.22).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 	tw2.tween_property(panel, "modulate:a", 1.0, 0.15)
+	return panel
+
+## Candy pill button from the approved art: stretched horizontally by nine-slice.
+func _pill_button(label: String, style: String, sz: Vector2) -> BaseButton:
+	var tex := Art.ui("button_pill_" + style)
+	var b := TextureButton.new()
+	b.size = sz
+	b.pivot_offset = sz / 2
+	b.focus_mode = Control.FOCUS_NONE
+	b.button_down.connect(func(): create_tween().tween_property(b, "scale", Vector2(0.94, 0.94), 0.06))
+	b.button_up.connect(func(): create_tween().tween_property(b, "scale", Vector2.ONE, 0.1).set_trans(Tween.TRANS_BACK))
+	if tex:
+		# Height fits the button; width stretches through the nine-slice middle,
+		# so the round caps keep their drawn shape for every style.
+		var pm: Dictionary = layout.popup.pill[style]
+		var vis: Array = pm.visible
+		var nine: Array = pm.nine
+		var k: float = sz.y / float(vis[3])
+		var np := NinePatchRect.new()
+		np.texture = tex
+		np.patch_margin_left = int(nine[0]); np.patch_margin_right = int(nine[1])
+		np.patch_margin_top = int(nine[2]); np.patch_margin_bottom = int(nine[3])
+		np.scale = Vector2(k, k)
+		np.position = -Vector2(vis[0], vis[1]) * k
+		np.size = Vector2(sz.x / k + (tex.get_width() - float(vis[2])), tex.get_height())
+		np.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		b.add_child(np)
+	var l := Label.new()
+	l.text = label
+	l.size = sz - Vector2(60, 12)
+	l.position = Vector2(30, 0)
+	l.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	l.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	_apply_text_style(l, _text_style("pill_text_cream" if style == "cream" else "pill_text"))
+	_shrink_to_fit(l)
+	b.add_child(l)
+	return b
+
+## Reduce a label's font size until its text fits its box.
+func _shrink_to_fit(l: Label) -> void:
+	var fs := l.get_theme_font_size("font_size")
+	var font := l.get_theme_font("font")
+	var widest := 0.0
+	for line in l.text.split("\n"):
+		widest = maxf(widest, font.get_string_size(line, HORIZONTAL_ALIGNMENT_LEFT, -1, fs).x)
+	if widest > l.size.x and widest > 0:
+		l.add_theme_font_size_override("font_size", int(fs * l.size.x / widest))
 
 func _close_popup() -> void:
 	if popup:

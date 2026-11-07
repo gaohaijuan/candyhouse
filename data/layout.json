@@ -95,6 +95,36 @@
    "outline_size": 8,
    "shadow": "#00000030",
    "shadow_y": 3
+  },
+  "popup_title": {
+   "size": 104,
+   "color": "#FFF6D5",
+   "outline": "#742507",
+   "outline_size": 14,
+   "shadow": "#631907AF",
+   "shadow_x": 2,
+   "shadow_y": 6
+  },
+  "popup_subtitle": {
+   "size": 64,
+   "color": "#6B2404",
+   "outline": "#FFF7DE",
+   "outline_size": 6
+  },
+  "pill_text": {
+   "size": 76,
+   "color": "#FFF6D5",
+   "outline": "#6F2B08",
+   "outline_size": 12,
+   "shadow": "#601E0582",
+   "shadow_x": 1,
+   "shadow_y": 5
+  },
+  "pill_text_cream": {
+   "size": 72,
+   "color": "#6B2404",
+   "outline": "#FFF7E0",
+   "outline_size": 6
   }
  },
  "tray_texture_frame": [
@@ -161,17 +191,121 @@
  ],
  "stacks": [
   [
-   30,
-   1196
+   34,
+   1150
   ],
   [
-   1050,
-   1196
+   1046,
+   1150
   ]
  ],
  "stack_tile": 118,
  "stack_step": [
   13,
   -2
- ]
+ ],
+ "popup_dim": [
+  47,
+  11,
+  0,
+  0.6
+ ],
+ "popup": {
+  "panel_width": 907,
+  "panel_visible": [
+   20,
+   17,
+   860,
+   695
+  ],
+  "panel_nine_slice": [
+   189,
+   189,
+   186,
+   187
+  ],
+  "ribbon_rect": [
+   100,
+   -104,
+   707,
+   239
+  ],
+  "ribbon_text_box": [
+   177,
+   48,
+   408,
+   112
+  ],
+  "content_top": 170,
+  "star_size": 194,
+  "star_gap": 215,
+  "block_gap": 36,
+  "subtitle_line": 92,
+  "button_width": 700,
+  "button_height": 176,
+  "button_gap": 30,
+  "bottom_pad": 70,
+  "center_offset_y": 40,
+  "pill": {
+   "pink": {
+    "visible": [
+     17,
+     5,
+     727,
+     178
+    ],
+    "nine": [
+     109,
+     110,
+     41,
+     42
+    ]
+   },
+   "green": {
+    "visible": [
+     17,
+     5,
+     729,
+     171
+    ],
+    "nine": [
+     106,
+     105,
+     39,
+     39
+    ]
+   },
+   "cream": {
+    "visible": [
+     16,
+     6,
+     729,
+     223
+    ],
+    "nine": [
+     131,
+     132,
+     51,
+     51
+    ]
+   }
+  }
+ },
+ "box": {
+  "width": 330,
+  "visible": [
+   17,
+   6,
+   731,
+   209
+  ],
+  "floor_y": 112.6,
+  "badge_center": [
+   382.5,
+   166.9
+  ],
+  "badge_size": 64,
+  "side_pad": 22,
+  "tile_sink": 0.9
+ }
 }

@@ -41,6 +41,11 @@ var fuse := -1:
 		fuse = value
 		queue_redraw()
 const KEY_COLORS := [Color("#F2B233"), Color("#7CC8B4"), Color("#B58BE0")]
+## Buried box tile: only the plain biscuit shows, no dessert and no cover.
+var blank := false:
+	set(value):
+		blank = value
+		queue_redraw()
 ## Remaining ice; 0 means not frozen.
 var ice := 0:
 	set(value):
@@ -81,7 +86,9 @@ func _draw() -> void:
 		face.shadow_size = int(s * 0.05)
 		face.shadow_offset = Vector2(0, s * 0.06)
 		draw_style_box(face, Rect2(Vector2.ZERO, size))
-	if face_down:
+	if blank:
+		pass
+	elif face_down:
 		_draw_mystery(icon_rect, shade)
 	elif icon:
 		draw_texture_rect(icon, icon_rect, false, shade)
@@ -107,10 +114,26 @@ func _draw() -> void:
 		overlay.set_corner_radius_all(int(s * 0.2))
 		draw_style_box(overlay, Rect2(Vector2.ZERO, size))
 
+## Cover art boxes (texture pixels) for drawing overlays over the tile face.
+static var mystery_visible := Rect2(9, 9, 378, 382)
+static var ice_visible := Rect2(10, 9, 388, 382)
+
+func _face_rect() -> Rect2:
+	var s := size.x
+	var k := (s * face_fill) / face_box.size.x
+	var origin := (Vector2(s, s) - visible_box.size * k) / 2 - visible_box.position * k
+	return Rect2(origin + face_box.position * k, face_box.size * k)
+
+## Draws `tex` so its visible box lands exactly on `target`.
+func _draw_onto(tex: Texture2D, vis: Rect2, target: Rect2, modulate_color := Color.WHITE) -> void:
+	var k := target.size / vis.size
+	var full := Rect2(target.position - vis.position * k, Vector2(tex.get_width(), tex.get_height()) * k)
+	draw_texture_rect(tex, full, false, modulate_color)
+
 func _draw_mystery(rect: Rect2, shade: Color) -> void:
 	var cover := Art.ui("mystery_cover")
 	if cover:
-		draw_texture_rect(cover, rect.grow(rect.size.x * 0.1), false, shade)
+		_draw_onto(cover, mystery_visible, _face_rect().grow(-size.x * 0.01), shade)
 		return
 	var sb := StyleBoxFlat.new()
 	sb.bg_color = Color("#F7A8C4") * shade
@@ -120,13 +143,15 @@ func _draw_mystery(rect: Rect2, shade: Color) -> void:
 	draw_style_box(sb, rect)
 	var fs := int(rect.size.y * 0.7)
 	var w := Art.font.get_string_size("?", HORIZONTAL_ALIGNMENT_LEFT, -1, fs).x
-	draw_string_outline(Art.font, Vector2(rect.get_center().x - w / 2, rect.position.y + rect.size.y * 0.78), "?", HORIZONTAL_ALIGNMENT_LEFT, -1, fs, int(fs * 0.12), Color("#B8326A") * shade)
 	draw_string(Art.font, Vector2(rect.get_center().x - w / 2, rect.position.y + rect.size.y * 0.78), "?", HORIZONTAL_ALIGNMENT_LEFT, -1, fs, Color.WHITE * shade)
 
 func _draw_ice(rect: Rect2) -> void:
 	var overlay := Art.ui("ice_overlay")
 	if overlay:
-		draw_texture_rect(overlay, rect, false)
+		# The ice art is lighter than the approved mockup (centre alpha ~0.26);
+		# drawing it twice gives ~0.45, matching the mockup without repainting.
+		_draw_onto(overlay, ice_visible, _face_rect())
+		_draw_onto(overlay, ice_visible, _face_rect())
 	else:
 		var sb := StyleBoxFlat.new()
 		sb.bg_color = Color(0.72, 0.9, 1.0, 0.55)
@@ -134,15 +159,19 @@ func _draw_ice(rect: Rect2) -> void:
 		sb.set_border_width_all(int(rect.size.x * 0.05))
 		sb.set_corner_radius_all(int(rect.size.x * 0.2))
 		draw_style_box(sb, rect)
-		draw_line(rect.position + rect.size * Vector2(0.2, 0.25), rect.position + rect.size * Vector2(0.45, 0.15), Color(1, 1, 1, 0.8), rect.size.x * 0.04)
-	var r := rect.size.x * 0.17
-	var c := rect.position + Vector2(rect.size.x - r * 0.6, r * 0.6)
-	draw_circle(c, r, Color.WHITE)
-	draw_circle(c, r, Color("#4FA3E0"), false, r * 0.18)
+	var face := _face_rect()
+	var r := face.size.x * 0.17
+	var c := face.position + Vector2(face.size.x - r * 0.55, r * 0.55)
+	var badge := Art.ui("ice_badge")
+	if badge:
+		draw_texture_rect(badge, Rect2(c - Vector2(r, r), Vector2(r, r) * 2), false)
+	else:
+		draw_circle(c, r, Color.WHITE)
+		draw_circle(c, r, Color("#4FA3E0"), false, r * 0.18)
 	var label := str(ice)
-	var fs := int(r * 1.5)
+	var fs := int(r * 1.45)
 	var w := Art.font.get_string_size(label, HORIZONTAL_ALIGNMENT_LEFT, -1, fs).x
-	draw_string(Art.font, Vector2(c.x - w / 2, c.y + fs * 0.36), label, HORIZONTAL_ALIGNMENT_LEFT, -1, fs, Color("#2A7CC7"))
+	draw_string(Art.font, Vector2(c.x - w / 2, c.y + fs * 0.36), label, HORIZONTAL_ALIGNMENT_LEFT, -1, fs, Color("#1E5FB4"))
 
 func _badge_circle(c: Vector2, r: float, fill: Color, ring: Color) -> void:
 	draw_circle(c + Vector2(0, r * 0.12), r, Color(0, 0, 0, 0.18))
