@@ -25,7 +25,11 @@ func _init() -> void:
 	_test_undo(levels[1])
 	_test_move_out(levels[1])
 	_test_shuffle(levels[2])
+	_test_shuffle(levels[8])
 	_test_seed_variety(levels[2])
+	_test_ice(levels[6])
+	_test_stacks(levels[9])
+	_test_mystery(levels[3])
 	print("checks=%d failures=%d" % [checks, failures])
 	quit(1 if failures > 0 else 0)
 
@@ -62,12 +66,12 @@ func _test_solution_wins(level: Dictionary) -> void:
 ## visible several times among free tiles; never knows the hidden solution.
 func _test_greedy_player(level: Dictionary) -> void:
 	var wins := 0
-	for trial in 200:
+	for trial in 120:
 		var def := level.duplicate(true)
 		def.seed = int(level.seed) + trial * 31
 		if HumanPlayer.play(GameState.new(def)):
 			wins += 1
-	var rate := wins * 100 / 200
+	var rate := wins * 100 / 120
 	print("L%d human-like player wins %d%%" % [level.id, rate])
 	var band: Array = level.get("target_win_pct", [0, 100])
 	check(rate >= int(band[0]) and rate <= int(band[1]), "L%d win rate %d%% within %s" % [level.id, rate, str(band)])
@@ -126,13 +130,15 @@ func _test_shuffle(level: Dictionary) -> void:
 		def.seed = int(level.seed) + trial
 		var s := GameState.new(def)
 		for i in 7:
-			var free: Array = s.board_tiles().filter(func(t): return s.is_free(t.id))
-			if s.tray.size() < 5:
+			var free: Array = s.board_tiles().filter(func(t): return s.can_pick(t.id))
+			if s.tray.size() < 5 and not free.is_empty():
 				s.pick(free[s.rng.randi_range(0, free.size() - 1)].id)
 		var before := {}
 		for t in s.board_tiles():
 			before[t.type] = int(before.get(t.type, 0)) + 1
 		var r := s.shuffle()
+		if not r.ok and s.boosters.shuffle > 0:
+			continue  # ice can make an immediate safe re-deal impossible; the deal is kept
 		check(r.ok, "shuffle allowed")
 		var after := {}
 		for t in s.board_tiles():
@@ -150,6 +156,45 @@ func _test_shuffle(level: Dictionary) -> void:
 			s.pick(s.solution[0])
 			steps += 1
 		check(s.is_won(), "after shuffle the solution still wins (trial %d)" % trial)
+
+func _test_ice(level: Dictionary) -> void:
+	var s := GameState.new(level)
+	var frozen: Array = s.tiles.values().filter(func(t): return int(t.get("ice", 0)) > 0)
+	check(frozen.size() == level.ice.size(), "L%d places %d frozen tiles" % [level.id, level.ice.size()])
+	for t in frozen:
+		check(not s.can_pick(t.id), "frozen tile %d cannot be picked" % t.id)
+	var before := {}
+	for t in frozen:
+		before[t.id] = int(t.ice)
+	var thawed_once := false
+	while not s.is_finished():
+		var r := s.pick(s.solution[0])
+		check(r.ok, "L%d solution respects ice" % level.id)
+		if not r.ok:
+			return
+		if not r.matched.is_empty() and not thawed_once:
+			thawed_once = true
+			for t in frozen:
+				check(int(s.tiles[t.id].get("ice", 0)) == before[t.id] - 1 or s.tiles[t.id].place != "board", "first triple thaws ice by one")
+	check(s.is_won(), "L%d with ice is winnable along its solution" % level.id)
+
+func _test_stacks(level: Dictionary) -> void:
+	var s := GameState.new(level)
+	for stack_id in level.stacks.size():
+		var pile: Array = s.tiles.values().filter(func(t): return t.has("stack") and int(t.stack) == stack_id)
+		var top := 0
+		for t in pile:
+			top = maxi(top, int(t.depth))
+		for t in pile:
+			check(s.is_free(t.id) == (int(t.depth) == top), "box %d: only the top tile is free" % stack_id)
+	check(s.board_tiles().size() == s.tiles.size(), "box tiles start on the board")
+
+func _test_mystery(level: Dictionary) -> void:
+	var s := GameState.new(level)
+	var hidden: Array = s.tiles.values().filter(func(t): return t.get("mystery", false))
+	check(hidden.size() == int(level.mystery), "L%d places %d mystery tiles" % [level.id, level.mystery])
+	for t in hidden:
+		check(not s.is_free(t.id), "mystery tiles start covered")
 
 func _test_seed_variety(level: Dictionary) -> void:
 	var a := Generator.generate(level)

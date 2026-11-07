@@ -3,7 +3,9 @@ extends RefCounted
 
 static func play(s) -> bool:
 	while not s.is_finished():
-		var free: Array = s.board_tiles().filter(func(t): return s.is_free(t.id))
+		if s.board_tiles().filter(func(t): return s.can_pick(t.id)).is_empty():
+			return false
+		var free: Array = s.board_tiles().filter(func(t): return s.can_pick(t.id))
 		var in_tray := {}
 		for id in s.tray:
 			in_tray[s.tiles[id].type] = int(in_tray.get(s.tiles[id].type, 0)) + 1

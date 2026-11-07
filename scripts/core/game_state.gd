@@ -17,6 +17,7 @@ var boosters := {"undo": 1, "move_out": 1, "shuffle": 1}
 var boosters_used := 0
 var last_pick: Dictionary = {}   # undo record of the most recent unmatched pick
 var solution: Array = []         # board tile ids in an order known to win from now
+var cover: Dictionary = {}       # id -> ids that can cover it (fixed geometry)
 var rng := RandomNumberGenerator.new()
 
 func _init(level_def: Dictionary) -> void:
@@ -27,22 +28,31 @@ func _init(level_def: Dictionary) -> void:
 		t["place"] = "board"
 		tiles[t.id] = t
 	solution = made.order
+	cover = BoardRules.coverers(made.tiles)
 
 func board_tiles() -> Array:
 	return tiles.values().filter(func(t): return t.place == "board")
 
 func is_free(id: int) -> bool:
-	var t: Dictionary = tiles[id]
-	return t.place == "board" and not BoardRules.covered(t, board_tiles())
+	if tiles[id].place != "board":
+		return false
+	for c in cover[id]:
+		if tiles[c].place == "board":
+			return false
+	return true
+
+func is_frozen(id: int) -> bool:
+	return int(tiles[id].get("ice", 0)) > 0
 
 func can_pick(id: int) -> bool:
 	if not tiles.has(id) or tray.size() >= TRAY_SIZE or is_finished():
 		return false
 	var t: Dictionary = tiles[id]
-	return (t.place == "board" and is_free(id)) or t.place == "hold"
+	return (t.place == "board" and is_free(id) and not is_frozen(id)) or t.place == "hold"
 
 ## Moves a tile into the tray next to its kind and resolves a triple.
-## Returns {ok, index, from, matched: [ids], won, lost}.
+## Returns {ok, index, from, matched: [ids], thawed: [ids], won, lost};
+## `thawed` lists frozen tiles whose ice dropped because of this triple.
 func pick(id: int) -> Dictionary:
 	if not can_pick(id):
 		return {"ok": false}
@@ -56,8 +66,14 @@ func pick(id: int) -> Dictionary:
 	t.place = "tray"
 	var matched := _take_triple(int(t.type))
 	solution.erase(id)
+	var thawed: Array = []
+	if not matched.is_empty():
+		for other in tiles.values():
+			if other.place == "board" and int(other.get("ice", 0)) > 0:
+				other.ice = int(other.ice) - 1
+				thawed.append(other.id)
 	last_pick = {} if not matched.is_empty() else {"id": id, "from": from, "hold_index": hold_index}
-	return {"ok": true, "index": index, "from": from, "matched": matched, "won": is_won(), "lost": is_lost()}
+	return {"ok": true, "index": index, "from": from, "matched": matched, "thawed": thawed, "won": is_won(), "lost": is_lost()}
 
 func _insert_index(type: int) -> int:
 	var last := -1
@@ -137,9 +153,13 @@ func shuffle() -> Dictionary:
 	for i in range(groups.size() - 1, 0, -1):
 		var j := rng.randi_range(0, i)
 		var tmp = groups[i]; groups[i] = groups[j]; groups[j] = tmp
-	var order := Generator.removal_order(tiles.values(), rng, board_ids)
 	var free_slots := TRAY_SIZE - tray.size()
 	var max_open := clampi((free_slots - 1) / 2, 1, 3)
+	var ice_min := Generator.ice_min_positions(tiles.values(), max_open, pending.size())
+	var order := Generator.removal_order(tiles.values(), rng, board_ids, ice_min)
+	if order.size() != board_ids.size():
+		# Ice leaves no safe re-deal right now; keep the current deal.
+		return {"ok": false}
 	var types := Generator.assign_along(order.size(), groups, max_open, rng, pending)
 	for i in order.size():
 		tiles[order[i]].type = types[i]
@@ -158,8 +178,20 @@ func remaining() -> int:
 func is_won() -> bool:
 	return remaining() == 0
 
+## True while some tile could still be moved into the tray.
+func has_moves() -> bool:
+	if tray.size() >= TRAY_SIZE:
+		return false
+	if not hold.is_empty():
+		return true
+	for t in board_tiles():
+		if is_free(t.id) and not is_frozen(t.id):
+			return true
+	return false
+
+## Lost when the tray is full, or when only frozen tiles are left to take.
 func is_lost() -> bool:
-	return tray.size() >= TRAY_SIZE and not is_won()
+	return not is_won() and not has_moves()
 
 func is_finished() -> bool:
 	return is_won() or is_lost()

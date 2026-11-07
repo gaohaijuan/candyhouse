@@ -1,8 +1,10 @@
 extends RefCounted
 ## Builds a level whose tile types guarantee at least one winning order.
-## Tiles live on a half-cell grid: a tile at (x, y) covers [x, x+2) x [y, y+2).
+## Board tiles live on a half-cell grid: a tile at (x, y) covers [x, x+2) x [y, y+2).
+## Side boxes ("stacks") are piles where only the deepest-placed tile is free.
 
 const BoardRules = preload("res://scripts/core/board_rules.gd")
+const MAX_ATTEMPTS := 80
 
 static func positions(level: Dictionary) -> Array:
 	var tiles: Array = []
@@ -10,42 +12,93 @@ static func positions(level: Dictionary) -> Array:
 	for layer in level.layers:
 		var ox := int(layer.offset[0])
 		var oy := int(layer.offset[1])
+		var mask: Array = layer.get("mask", [])
 		for row in int(layer.rows):
 			for col in int(layer.cols):
+				if not mask.is_empty() and String(mask[row])[col] != "1":
+					continue
 				tiles.append({"id": tiles.size(), "layer": layer_index, "x": ox + col * 2, "y": oy + row * 2})
 		layer_index += 1
+	var s := 0
+	for stack in level.get("stacks", []):
+		for d in int(stack.count):
+			tiles.append({"id": tiles.size(), "layer": 100 + d, "x": 0, "y": 0, "stack": s, "depth": d})
+		s += 1
 	return tiles
 
-## Assigns types along a free-first removal order. At most `max_open` triples are
-## half-collected at any point of that order, so following it never fills the tray.
 static func generate(level: Dictionary) -> Array:
 	return generate_with_solution(level).tiles
 
-## Same as generate(), plus the removal order that is known to win.
+## Tiles plus a removal order known to win. Frozen tiles are only ordered after
+## enough triples are guaranteed to have been cleared to thaw them.
 static func generate_with_solution(level: Dictionary) -> Dictionary:
-	var tiles := positions(level)
-	assert(tiles.size() % 3 == 0, "tile count must be a multiple of 3")
-	var rng := RandomNumberGenerator.new()
-	rng.seed = int(level.seed)
-	var order := removal_order(tiles, rng)
-	var group_types := _group_types(tiles.size() / 3, int(level.types), rng)
-	var types := assign_along(order.size(), group_types, int(level.max_open), rng, [])
-	for i in order.size():
-		tiles[order[i]]["type"] = types[i]
-	return {"tiles": tiles, "order": order}
+	var max_open := int(level.max_open)
+	for attempt in MAX_ATTEMPTS:
+		var rng := RandomNumberGenerator.new()
+		rng.seed = int(level.seed) * 1000 + attempt
+		var tiles := positions(level)
+		assert(tiles.size() % 3 == 0, "tile count must be a multiple of 3")
+		_place_mechanics(tiles, level, rng)
+		var order := removal_order(tiles, rng, [], ice_min_positions(tiles, max_open, 0))
+		if order.size() != tiles.size():
+			continue
+		var group_types := _group_types(tiles.size() / 3, int(level.types), rng)
+		var types := assign_along(order.size(), group_types, max_open, rng, [])
+		for i in order.size():
+			tiles[order[i]]["type"] = types[i]
+		return {"tiles": tiles, "order": order}
+	push_error("level %s: no solvable layout after %d attempts" % [level.get("id"), MAX_ATTEMPTS])
+	return {"tiles": [], "order": []}
 
-## Random order that only ever removes tiles not covered by remaining tiles.
-static func removal_order(tiles: Array, rng: RandomNumberGenerator, only_ids: Array = []) -> Array:
+static func _place_mechanics(tiles: Array, level: Dictionary, rng: RandomNumberGenerator) -> void:
+	var board := tiles.filter(func(t): return not t.has("stack"))
+	var top := 0
+	for t in board:
+		top = maxi(top, int(t.layer))
+	var lower := board.filter(func(t): return int(t.layer) < top)
+	_shuffle(lower, rng)
+	for i in mini(int(level.get("mystery", 0)), lower.size()):
+		lower[i]["mystery"] = true
+	var upper := board.filter(func(t): return int(t.layer) >= top - 1 and not t.get("mystery", false))
+	_shuffle(upper, rng)
+	var ice: Array = level.get("ice", [])
+	for i in mini(ice.size(), upper.size()):
+		upper[i]["ice"] = int(ice[i])
+
+## Earliest order position for each frozen tile: with at most `max_open` triples
+## half-collected, k tiles taken guarantee at least (k - 2*max_open) / 3 triples.
+static func ice_min_positions(tiles: Array, max_open: int, already: int) -> Dictionary:
+	var out := {}
+	for t in tiles:
+		if int(t.get("ice", 0)) > 0 and t.get("place", "board") == "board":
+			out[t.id] = already + 3 * int(t.ice) + 2 * max_open
+	return out
+
+## Random order that only ever removes tiles not covered by remaining tiles and
+## never takes a frozen tile before its earliest position. Returns a shorter
+## array when it gets stuck.
+static func removal_order(tiles: Array, rng: RandomNumberGenerator, only_ids: Array = [], ice_min: Dictionary = {}) -> Array:
 	var remaining: Dictionary = {}
 	for t in tiles:
 		if only_ids.is_empty() or only_ids.has(t.id):
 			remaining[t.id] = t
+	var cover := BoardRules.coverers(remaining.values())
 	var order: Array = []
 	while not remaining.is_empty():
 		var free: Array = []
 		for id in remaining:
-			if not BoardRules.covered(remaining[id], remaining.values()):
-				free.append(id)
+			var blocked := false
+			for c in cover[id]:
+				if remaining.has(c):
+					blocked = true
+					break
+			if blocked:
+				continue
+			if ice_min.has(id) and order.size() < int(ice_min[id]):
+				continue
+			free.append(id)
+		if free.is_empty():
+			return order
 		var pick: int = free[rng.randi_range(0, free.size() - 1)]
 		order.append(pick)
 		remaining.erase(pick)
@@ -54,10 +107,7 @@ static func removal_order(tiles: Array, rng: RandomNumberGenerator, only_ids: Ar
 ## `pending` lists types that must be completed first (partial groups already
 ## outside the board); each entry appears once per missing tile.
 static func assign_along(count: int, group_types: Array, max_open: int, rng: RandomNumberGenerator, pending: Array) -> Array:
-	var out: Array = []
-	var queue := pending.duplicate()
-	for t in queue:
-		out.append(t)
+	var out: Array = pending.duplicate()
 	var open: Array = []  # [{type, have}]
 	var next_group := 0
 	while out.size() < count:
@@ -84,9 +134,12 @@ static func _group_types(groups: int, type_count: int, rng: RandomNumberGenerato
 	var out: Array = []
 	while out.size() < groups:
 		var round := pool.duplicate()
-		for i in range(round.size() - 1, 0, -1):
-			var j := rng.randi_range(0, i)
-			var tmp = round[i]; round[i] = round[j]; round[j] = tmp
+		_shuffle(round, rng)
 		out.append_array(round)
 	out.resize(groups)
 	return out
+
+static func _shuffle(a: Array, rng: RandomNumberGenerator) -> void:
+	for i in range(a.size() - 1, 0, -1):
+		var j := rng.randi_range(0, i)
+		var tmp = a[i]; a[i] = a[j]; a[j] = tmp
