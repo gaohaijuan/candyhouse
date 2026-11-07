@@ -14,11 +14,21 @@ static func play(s) -> bool:
 			visible[t.type] = int(visible.get(t.type, 0)) + 1
 		var best = free[0]
 		var best_score := -1
-		# Rescue a candle that is about to burn out.
-		for t in free:
-			if t.has("fuse") and int(t.fuse) <= 3:
-				best = t
+		# A player watching a countdown digs the candle out in time: take the
+		# candle when it is free, otherwise a free tile that covers it.
+		var urgent: Array = s.board_tiles().filter(func(t): return t.has("fuse") and int(t.fuse) <= 3 + 2 * s.cover[t.id].filter(func(c): return s.tiles[c].place == "board").size())
+		for c in urgent:
+			if s.can_pick(c.id):
+				best = c
 				best_score = 1000
+				break
+			for t in free:
+				if s.cover[c.id].has(t.id):
+					best = t
+					best_score = 1000
+					break
+			if best_score >= 1000:
+				break
 		for t in free:
 			var have := int(in_tray.get(t.type, 0))
 			var seen := int(visible[t.type])

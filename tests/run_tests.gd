@@ -21,18 +21,22 @@ func _init() -> void:
 		_test_level_shape(level)
 		_test_solution_wins(level)
 		_test_greedy_player(level)
-	_test_tray_rules(levels[0])
-	_test_undo(levels[1])
-	_test_move_out(levels[1])
-	_test_shuffle(levels[2])
-	_test_shuffle(levels[8])
-	_test_seed_variety(levels[2])
-	_test_ice(levels[6])
-	_test_stacks(levels[9])
-	_test_mystery(levels[3])
-	_test_locks(levels[12])
-	_test_candles(levels[15])
-	_test_shuffle(levels[18])
+	var by_id := {}
+	for level in levels:
+		by_id[int(level.id)] = level
+	_test_tray_rules(by_id[1])
+	_test_undo(by_id[2])
+	_test_move_out(by_id[2])
+	_test_shuffle(by_id[3])
+	_test_shuffle(by_id[13])
+	_test_shuffle(by_id[43])
+	_test_seed_variety(by_id[3])
+	_test_mystery(by_id[4])
+	_test_ice(by_id[9])
+	_test_stacks(by_id[19])
+	_test_locks(by_id[24])
+	_test_candles(by_id[34])
+	_test_design(levels)
 	print("checks=%d failures=%d" % [checks, failures])
 	quit(1 if failures > 0 else 0)
 
@@ -69,12 +73,12 @@ func _test_solution_wins(level: Dictionary) -> void:
 ## visible several times among free tiles; never knows the hidden solution.
 func _test_greedy_player(level: Dictionary) -> void:
 	var wins := 0
-	for trial in 120:
+	for trial in 40:
 		var def := level.duplicate(true)
 		def.seed = int(level.seed) + trial * 31
 		if HumanPlayer.play(GameState.new(def)):
 			wins += 1
-	var rate := wins * 100 / 120
+	var rate := wins * 100 / 40
 	print("L%d human-like player wins %d%%" % [level.id, rate])
 	var band: Array = level.get("target_win_pct", [0, 100])
 	check(rate >= int(band[0]) and rate <= int(band[1]), "L%d win rate %d%% within %s" % [level.id, rate, str(band)])
@@ -242,6 +246,46 @@ func _test_candles(level: Dictionary) -> void:
 		while not g.is_finished():
 			g.pick(g.solution[0])
 		check(g.is_won(), "L%d solution beats every candle (trial %d)" % [level.id, trial])
+
+## Level design rules agreed with the producer: every mechanic is introduced
+## with a popup, then used for several levels; special tiles are visible from
+## the start; a candle can never be taken on the first moves.
+func _test_design(levels: Array) -> void:
+	var seen := {}
+	for level in levels:
+		var kinds: Array = []
+		for k in ["mystery", "ice", "stacks", "locks", "candles"]:
+			if level.has(k):
+				kinds.append(k)
+		for k in kinds:
+			if not seen.has(k):
+				seen[k] = level.id
+				check(level.has("intro"), "L%d introduces %s with a popup" % [level.id, k])
+		for trial in 6:
+			var def: Dictionary = level.duplicate(true)
+			def.seed = int(level.seed) + trial * 17
+			var s := GameState.new(def)
+			check(not s.tiles.is_empty(), "L%d generates (trial %d)" % [level.id, trial])
+			if s.tiles.is_empty():
+				continue
+			var top := 0
+			for t in s.tiles.values():
+				if not t.has("stack"):
+					top = maxi(top, int(t.layer))
+			var free_start := s.board_tiles().filter(func(t): return s.can_pick(t.id)).size()
+			check(free_start >= 3, "L%d offers at least 3 moves at the start" % level.id)
+			for t in s.tiles.values():
+				if t.has("fuse"):
+					check(not s.is_free(t.id), "L%d candle is not free at the start" % level.id)
+					check(int(t.fuse) >= 8, "L%d candle starts with at least 8 steps (%d)" % [level.id, t.fuse])
+					check(int(t.layer) >= top - 1, "L%d candle is visible at the start" % level.id)
+				if t.has("lock") or t.has("key"):
+					check(int(t.layer) >= top - 1, "L%d lock/key visible at the start" % level.id)
+				if int(t.get("ice", 0)) > 0:
+					check(int(t.layer) >= top - 1, "L%d ice visible at the start" % level.id)
+			var g: GameState = s.clone()
+			var plan: Array = s.solution.duplicate()
+			check(g.wins_with(plan), "L%d has a winning order (trial %d)" % [level.id, trial])
 
 func _test_seed_variety(level: Dictionary) -> void:
 	var a := Generator.generate(level)

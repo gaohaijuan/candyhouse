@@ -1,0 +1,272 @@
+{
+ "3": {
+  "types": 6,
+  "target": 63
+ },
+ "4": {
+  "shape": "small",
+  "target": 83
+ },
+ "5": {
+  "types": 7,
+  "target": 76
+ },
+ "10": {
+  "types": 7,
+  "target": 66
+ },
+ "20": {
+  "shape": "small",
+  "target": 80
+ },
+ "23": {
+  "types": 8,
+  "mech": {
+   "stacks": [
+    8,
+    8
+   ]
+  },
+  "target": 38
+ },
+ "24": {
+  "shape": "small",
+  "target": 81
+ },
+ "25": {
+  "shape": "brick",
+  "target": 68
+ },
+ "27": {
+  "shape": "diamond",
+  "types": 6,
+  "mech": {
+   "locks": 2
+  },
+  "target": 55
+ },
+ "28": {
+  "shape": "butterfly",
+  "types": 7,
+  "mech": {
+   "locks": 3
+  },
+  "target": 45
+ },
+ "33": {
+  "types": 7,
+  "target": 33
+ },
+ "34": {
+  "shape": "brick",
+  "mech": {
+   "candles": [
+    14
+   ]
+  },
+  "target": 78
+ },
+ "35": {
+  "shape": "brick3",
+  "types": 6,
+  "mech": {
+   "candles": [
+    12
+   ]
+  },
+  "target": 70
+ },
+ "36": {
+  "mech": {
+   "candles": [
+    10
+   ]
+  },
+  "target": 58
+ },
+ "37": {
+  "mech": {
+   "candles": [
+    9,
+    11
+   ]
+  },
+  "target": 51
+ },
+ "38": {
+  "mech": {
+   "candles": [
+    8,
+    10
+   ]
+  },
+  "types": 8,
+  "target": 33
+ },
+ "39": {
+  "shape": "brick",
+  "mech": {
+   "candles": [
+    12
+   ]
+  },
+  "target": 80
+ },
+ "40": {
+  "mech": {
+   "candles": [
+    11
+   ]
+  },
+  "target": 55
+ },
+ "41": {
+  "mech": {
+   "candles": [
+    9,
+    11
+   ]
+  },
+  "target": 45
+ },
+ "42": {
+  "mech": {
+   "candles": [
+    8,
+    10
+   ]
+  },
+  "types": 8,
+  "target": 43
+ },
+ "43": {
+  "types": 8,
+  "mech": {
+   "candles": [
+    7,
+    9
+   ]
+  },
+  "target": 25
+ },
+ "46": {
+  "mech": {
+   "candles": [
+    10
+   ]
+  },
+  "target": 50
+ },
+ "47": {
+  "mech": {
+   "candles": [
+    9,
+    11
+   ]
+  },
+  "target": 41
+ },
+ "48": {
+  "mech": {
+   "candles": [
+    9
+   ]
+  },
+  "target": 28
+ },
+ "49": {
+  "types": 7,
+  "mech": {
+   "candles": [
+    9
+   ]
+  },
+  "target": 40
+ },
+ "50": {
+  "mech": {
+   "candles": [
+    8,
+    10
+   ]
+  },
+  "target": 30
+ },
+ "26": {
+  "shape": "heart3",
+  "types": 6,
+  "mech": {
+   "locks": 2
+  },
+  "target": 53
+ },
+ "1": {
+  "target": 90
+ },
+ "2": {
+  "target": 76
+ },
+ "6": {
+  "target": 60
+ },
+ "7": {
+  "target": 50
+ },
+ "8": {
+  "target": 43
+ },
+ "9": {
+  "target": 86
+ },
+ "11": {
+  "target": 53
+ },
+ "12": {
+  "target": 50
+ },
+ "13": {
+  "target": 41
+ },
+ "14": {
+  "target": 81
+ },
+ "15": {
+  "target": 60
+ },
+ "16": {
+  "target": 55
+ },
+ "17": {
+  "target": 43
+ },
+ "18": {
+  "target": 25
+ },
+ "19": {
+  "target": 80
+ },
+ "21": {
+  "target": 61
+ },
+ "22": {
+  "target": 50
+ },
+ "29": {
+  "target": 76
+ },
+ "30": {
+  "target": 51
+ },
+ "31": {
+  "target": 55
+ },
+ "32": {
+  "target": 40
+ },
+ "44": {
+  "target": 58
+ },
+ "45": {
+  "target": 58
+ }
+}

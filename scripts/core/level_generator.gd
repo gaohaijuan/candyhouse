@@ -48,7 +48,7 @@ static func generate_with_solution(level: Dictionary) -> Dictionary:
 			tiles[order[i]]["type"] = types[i]
 		if not _place_locks(tiles, order, int(level.get("locks", 0)), rng):
 			continue
-		if not _place_candles(tiles, order, level.get("candles", []), rng):
+		if not _place_candles(tiles, order, level.get("candles", []), rng, int(level.get("candle_min", 5))):
 			continue
 		return {"tiles": tiles, "order": order}
 	push_error("level %s: no solvable layout after %d attempts" % [level.get("id"), MAX_ATTEMPTS])
@@ -89,17 +89,27 @@ static func group_end(tiles: Array, order: Array, i: int) -> int:
 static func _plain(t: Dictionary) -> bool:
 	return not (t.get("mystery", false) or int(t.get("ice", 0)) > 0 or t.has("key") or t.has("lock") or t.has("fuse") or t.has("stack"))
 
-## Puts a key on a tile and a lock on a tile the winning order takes only after
-## the key's triple is complete, so following the order never hits a closed lock.
-static func _place_locks(tiles: Array, order: Array, count: int, rng: RandomNumberGenerator) -> bool:
+static func _top_layer(tiles: Array) -> int:
 	var top := 0
 	for t in tiles:
 		if not t.has("stack"):
 			top = maxi(top, int(t.layer))
+	return top
+
+## Board tile on one of the two highest layers: the player can see it from the start.
+static func _visible(t: Dictionary, top: int) -> bool:
+	return not t.has("stack") and int(t.layer) >= top - 1
+
+## Puts a key on a tile and a lock on a tile the winning order takes only after
+## the key's triple is complete, so following the order never hits a closed lock.
+## Both sit where the player can see them from the first move.
+static func _place_locks(tiles: Array, order: Array, count: int, rng: RandomNumberGenerator) -> bool:
+	var top := _top_layer(tiles)
 	for k in count:
 		var keys: Array = []
 		for i in range(0, order.size() / 2):
-			if _plain(tiles[order[i]]):
+			var t: Dictionary = tiles[order[i]]
+			if _plain(t) and _visible(t, top):
 				keys.append(i)
 		if keys.is_empty():
 			return false
@@ -108,12 +118,8 @@ static func _place_locks(tiles: Array, order: Array, count: int, rng: RandomNumb
 		var locks: Array = []
 		for j in range(end + 1, order.size()):
 			var t: Dictionary = tiles[order[j]]
-			if _plain(t) and int(t.layer) >= top - 1:
+			if _plain(t) and _visible(t, top):
 				locks.append(j)
-		if locks.is_empty():
-			for j in range(end + 1, order.size()):
-				if _plain(tiles[order[j]]):
-					locks.append(j)
 		if locks.is_empty():
 			return false
 		var li: int = locks[rng.randi_range(0, mini(locks.size(), 6) - 1)]
@@ -121,15 +127,21 @@ static func _place_locks(tiles: Array, order: Array, count: int, rng: RandomNumb
 		tiles[order[li]]["lock"] = k
 	return true
 
-## Candles burn one step per pick while on the board. Each gets enough steps to
-## be taken along the winning order, plus the level's slack.
-static func _place_candles(tiles: Array, order: Array, slacks: Array, rng: RandomNumberGenerator) -> bool:
+## Candles burn one step per pick while on the board. A candle starts covered
+## but visible, never earlier than `min_index` in the winning order, so the
+## player sees the countdown and has to work towards it. Steps = its place in
+## the winning order plus the level's slack.
+static func _place_candles(tiles: Array, order: Array, slacks: Array, rng: RandomNumberGenerator, min_index: int) -> bool:
+	if slacks.is_empty():
+		return true
+	var top := _top_layer(tiles)
+	var cover := BoardRules.coverers(tiles)
 	for slack in slacks:
-		var lo := order.size() / 5
-		var hi := order.size() * 3 / 5
+		var hi := maxi(min_index + 1, order.size() * 3 / 5)
 		var picks: Array = []
-		for i in range(lo, hi):
-			if _plain(tiles[order[i]]):
+		for i in range(min_index, mini(hi, order.size())):
+			var t: Dictionary = tiles[order[i]]
+			if _plain(t) and _visible(t, top) and not cover[t.id].is_empty():
 				picks.append(i)
 		if picks.is_empty():
 			return false

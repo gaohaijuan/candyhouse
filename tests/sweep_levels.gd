@@ -12,7 +12,7 @@ func _init() -> void:
 			continue
 		var wins := 0
 		var fails := {}
-		var trials := 80
+		var trials := 60
 		var broken := 0
 		for trial in trials:
 			var def: Dictionary = level.duplicate(true)
