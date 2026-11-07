@@ -445,42 +445,66 @@ func _board_pos(t: Dictionary) -> Vector2:
 		return Vector2(x, float(anchor[1]) + float(step[1]) * int(t.depth))
 	return board_origin + Vector2(t.x, t.y) * tile_px / 2 - Vector2(0, t.layer * layout.layer_lift)
 
-## Wooden box under each side pile, with a badge counting tiles left in it.
+## Wooden box under each side pile. The box is drawn behind the tiles and its
+## front wall (a crop of the same art) in front, so tiles stand inside the box.
 func _build_boxes() -> void:
 	for n in box_nodes:
 		n.queue_free()
 	box_nodes.clear()
 	box_badges.clear()
 	var stacks: Array = levels[level_index].get("stacks", [])
+	var bm: Dictionary = layout.box
+	var side := float(layout.stack_tile)
 	for i in stacks.size():
 		var tex := Art.ui("box_base_left" if i == 0 else "box_base_right")
-		var bm: Dictionary = layout.box
-		var pile_w := float(layout.stack_tile) + float(layout.stack_step[0]) * (int(stacks[i].count) - 1)
+		var anchor: Array = layout.stacks[i]
+		var pile_w := side + float(layout.stack_step[0]) * (int(stacks[i].count) - 1)
 		var w: float = pile_w + float(bm.side_pad) * 2
 		var k: float = w / float(bm.visible[2])
-		var anchor: Array = layout.stacks[i]
-		var floor_y: float = float(anchor[1]) + float(layout.stack_tile) * float(bm.tile_sink)
-		var left := float(anchor[0]) - float(bm.side_pad) if i == 0 else float(anchor[0]) - w + float(bm.side_pad)
-		var top := floor_y - float(bm.floor_y) * k
-		var base := TextureRect.new()
+		var pile_left := float(anchor[0]) if i == 0 else float(anchor[0]) - pile_w
+		var visible_left := pile_left - float(bm.side_pad)
+		# Tile bottoms rest on the box's inner floor line, behind the front wall.
+		var tile_bottom := float(anchor[1]) + _tile_visible_bottom(side)
+		var top := tile_bottom - float(bm.rest_y) * k
+		var origin := Vector2(visible_left, top) - Vector2(bm.visible[0], 0) * k
 		if tex:
-			base.texture = tex
-			base.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-			base.stretch_mode = TextureRect.STRETCH_SCALE
-			base.size = Vector2(tex.get_width(), tex.get_height()) * k
-			base.position = Vector2(left, top) - Vector2(bm.visible[0], bm.visible[1]) * k
-		base.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		board_layer.add_child(base)
-		board_layer.move_child(base, 0)
-		box_nodes.append(base)
+			var back := TextureRect.new()
+			back.texture = tex
+			back.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+			back.stretch_mode = TextureRect.STRETCH_SCALE
+			back.size = Vector2(tex.get_width(), tex.get_height()) * k
+			back.position = origin
+			back.mouse_filter = Control.MOUSE_FILTER_IGNORE
+			board_layer.add_child(back)
+			board_layer.move_child(back, 0)
+			box_nodes.append(back)
+			var lip_tex := AtlasTexture.new()
+			lip_tex.atlas = tex
+			var lip_y: float = bm.lip_y
+			lip_tex.region = Rect2(0, lip_y, tex.get_width(), tex.get_height() - lip_y)
+			var lip := TextureRect.new()
+			lip.texture = lip_tex
+			lip.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+			lip.stretch_mode = TextureRect.STRETCH_SCALE
+			lip.size = lip_tex.region.size * k
+			lip.position = origin + Vector2(0, lip_y * k)
+			lip.mouse_filter = Control.MOUSE_FILTER_IGNORE
+			fly_layer.add_child(lip)
+			fly_layer.move_child(lip, 0)
+			box_nodes.append(lip)
 		var bsz: float = bm.badge_size
-		var bc := Vector2(left, top) + (Vector2(bm.badge_center[0], bm.badge_center[1]) - Vector2(bm.visible[0], bm.visible[1])) * k
+		var bc := origin + Vector2(bm.badge_center[0], bm.badge_center[1]) * k
 		var badge_tex := Art.ui("box_count_badge")
 		var badge: Control = _textured_label(Rect2(bc - Vector2(bsz, bsz) / 2, Vector2(bsz, bsz)), badge_tex, _text_style("box_count_text")) if badge_tex else _plaque(Rect2(bc - Vector2(bsz, bsz) / 2, Vector2(bsz, bsz)), Color("#E5484D"), Color.WHITE, 36)
-		badge.reparent(board_layer)
+		badge.reparent(fly_layer)
 		box_nodes.append(badge)
 		box_badges.append(badge)
 	_refresh_box_counts()
+
+## Distance from a tile view's top to the bottom of its drawn biscuit.
+func _tile_visible_bottom(side: float) -> float:
+	var k := side * TileView.face_fill / TileView.face_box.size.x
+	return (side + TileView.visible_box.size.y * k) / 2
 
 func _refresh_box_counts() -> void:
 	for i in box_badges.size():
