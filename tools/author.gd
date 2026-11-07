@@ -69,8 +69,12 @@ func _init() -> void:
 		printerr("L%d cand %d types=%d skilled=%d%% casual=%d%% rating=%.1f" % [id, tried, spec_try.types, sk * 100, ca * 100, r])
 		if best.is_empty() or absf(r - target) < absf(best.rating - target):
 			best = {"rating": r, "skilled": sk, "casual": ca, "types": spec_try.types, "board": made}
+			_save(id, best)  # keep progress even if the run is cut short
+	_save(id, best)
+	print("L%d target=%.1f chosen rating=%.1f types=%d skilled=%d%% casual=%d%%" % [id, target, best.get("rating", -1), best.get("types", 0), best.get("skilled", 0) * 100, best.get("casual", 0) * 100])
+	quit()
+
+func _save(id: int, best: Dictionary) -> void:
 	DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path("res://build/boards"))
 	var f := FileAccess.open("res://build/boards/%d.json" % id, FileAccess.WRITE)
 	f.store_string(JSON.stringify(best))
-	print("L%d target=%.1f chosen rating=%.1f types=%d skilled=%d%% casual=%d%%" % [id, target, best.get("rating", -1), best.get("types", 0), best.get("skilled", 0) * 100, best.get("casual", 0) * 100])
-	quit()
