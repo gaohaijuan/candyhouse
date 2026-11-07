@@ -22,6 +22,16 @@ var dim := 0.0:
 	set(value):
 		dim = value
 		queue_redraw()
+## Mystery or buried box tile: the dessert is drawn face-down until revealed.
+var face_down := false:
+	set(value):
+		face_down = value
+		queue_redraw()
+## Remaining ice; 0 means not frozen.
+var ice := 0:
+	set(value):
+		ice = value
+		queue_redraw()
 
 func _init(id: int, kind: int, side: float) -> void:
 	tile_id = id
@@ -57,7 +67,9 @@ func _draw() -> void:
 		face.shadow_size = int(s * 0.05)
 		face.shadow_offset = Vector2(0, s * 0.06)
 		draw_style_box(face, Rect2(Vector2.ZERO, size))
-	if icon:
+	if face_down:
+		_draw_mystery(icon_rect, shade)
+	elif icon:
 		draw_texture_rect(icon, icon_rect, false, shade)
 	else:
 		var d: Dictionary = Art.DESSERTS[type]
@@ -67,8 +79,47 @@ func _draw() -> void:
 		var fs := int(s * 0.17)
 		var w := Art.font.get_string_size(label, HORIZONTAL_ALIGNMENT_LEFT, -1, fs).x
 		draw_string(Art.font, Vector2((s - w) / 2, s * 0.86), label, HORIZONTAL_ALIGNMENT_LEFT, -1, fs, Color("#7A4A32"))
+	if ice > 0:
+		_draw_ice(icon_rect.grow(icon_rect.size.x * 0.12))
 	if dim > 0.0 and not base:
 		var overlay := StyleBoxFlat.new()
 		overlay.bg_color = Color(cover_tint, cover_tint.a * dim)
 		overlay.set_corner_radius_all(int(s * 0.2))
 		draw_style_box(overlay, Rect2(Vector2.ZERO, size))
+
+func _draw_mystery(rect: Rect2, shade: Color) -> void:
+	var cover := Art.ui("mystery_cover")
+	if cover:
+		draw_texture_rect(cover, rect.grow(rect.size.x * 0.1), false, shade)
+		return
+	var sb := StyleBoxFlat.new()
+	sb.bg_color = Color("#F7A8C4") * shade
+	sb.border_color = Color("#E06A97") * shade
+	sb.set_border_width_all(int(rect.size.x * 0.05))
+	sb.set_corner_radius_all(int(rect.size.x * 0.22))
+	draw_style_box(sb, rect)
+	var fs := int(rect.size.y * 0.7)
+	var w := Art.font.get_string_size("?", HORIZONTAL_ALIGNMENT_LEFT, -1, fs).x
+	draw_string_outline(Art.font, Vector2(rect.get_center().x - w / 2, rect.position.y + rect.size.y * 0.78), "?", HORIZONTAL_ALIGNMENT_LEFT, -1, fs, int(fs * 0.12), Color("#B8326A") * shade)
+	draw_string(Art.font, Vector2(rect.get_center().x - w / 2, rect.position.y + rect.size.y * 0.78), "?", HORIZONTAL_ALIGNMENT_LEFT, -1, fs, Color.WHITE * shade)
+
+func _draw_ice(rect: Rect2) -> void:
+	var overlay := Art.ui("ice_overlay")
+	if overlay:
+		draw_texture_rect(overlay, rect, false)
+	else:
+		var sb := StyleBoxFlat.new()
+		sb.bg_color = Color(0.72, 0.9, 1.0, 0.55)
+		sb.border_color = Color(0.92, 0.98, 1.0, 0.95)
+		sb.set_border_width_all(int(rect.size.x * 0.05))
+		sb.set_corner_radius_all(int(rect.size.x * 0.2))
+		draw_style_box(sb, rect)
+		draw_line(rect.position + rect.size * Vector2(0.2, 0.25), rect.position + rect.size * Vector2(0.45, 0.15), Color(1, 1, 1, 0.8), rect.size.x * 0.04)
+	var r := rect.size.x * 0.17
+	var c := rect.position + Vector2(rect.size.x - r * 0.6, r * 0.6)
+	draw_circle(c, r, Color.WHITE)
+	draw_circle(c, r, Color("#4FA3E0"), false, r * 0.18)
+	var label := str(ice)
+	var fs := int(r * 1.5)
+	var w := Art.font.get_string_size(label, HORIZONTAL_ALIGNMENT_LEFT, -1, fs).x
+	draw_string(Art.font, Vector2(c.x - w / 2, c.y + fs * 0.36), label, HORIZONTAL_ALIGNMENT_LEFT, -1, fs, Color("#2A7CC7"))

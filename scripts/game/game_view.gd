@@ -35,6 +35,7 @@ var busy_until := 0.0
 
 # Debug capture: --autoplay plays the known solution, --capture=<dir> saves frames.
 var autoplay := false
+var level_from_args := false
 var autoplay_random := false
 var capture_dir := ""
 var capture_every := 0.1
@@ -60,7 +61,8 @@ func _ready() -> void:
 			capture_dir = arg.substr(10)
 			DirAccess.make_dir_recursive_absolute(capture_dir)
 		elif arg.begins_with("--level="):
-			level_index = clampi(int(arg.substr(8)) - 1, 0, 2)
+			level_index = clampi(int(arg.substr(8)) - 1, 0, levels.size() - 1)
+			level_from_args = true
 	if layout.has("tile_face_box"):
 		var fb: Array = layout.tile_face_box
 		var vb: Array = layout.tile_visible_box
@@ -71,6 +73,8 @@ func _ready() -> void:
 		var m: Array = layout.cover_multiply
 		TileView.cover_multiply = Color(m[0], m[1], m[2])
 	_build_static()
+	if not level_from_args:
+		level_index = clampi(int(_load_progress().get("unlocked", 1)) - 1, 0, levels.size() - 1)
 	start_level(level_index)
 
 func _rect(key: String) -> Rect2:
@@ -367,14 +371,16 @@ func start_level(index: int) -> void:
 	by_layer.sort_custom(func(a, b): return a.layer < b.layer or (a.layer == b.layer and (a.y < b.y or (a.y == b.y and a.x < b.x))))
 	var order := 0
 	for t in by_layer:
-		var v := TileView.new(t.id, t.type, tile_px)
+		var v := TileView.new(t.id, t.type, _tile_side(t))
+		v.face_down = t.get("mystery", false) or (t.has("stack") and not state.is_free(t.id))
+		v.ice = int(t.get("ice", 0))
 		board_layer.add_child(v)
 		views[t.id] = v
 		var target := _board_pos(t)
 		v.position = target - Vector2(0, 90)
 		v.modulate.a = 0.0
 		var tw := create_tween().set_parallel()
-		var delay: float = t.layer * 0.22 + order * 0.006
+		var delay: float = mini(int(t.layer), 4) * 0.22 + order * 0.006
 		tw.tween_property(v, "position", target, 0.25).set_delay(delay).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 		tw.tween_property(v, "modulate:a", 1.0, 0.18).set_delay(delay)
 		order += 1
@@ -383,10 +389,17 @@ func start_level(index: int) -> void:
 	busy_until = Time.get_ticks_msec() / 1000.0 + 1.2
 	if levels[index].get("tutorial", false):
 		_show_hand()
+	if levels[index].has("intro") and not autoplay:
+		var intro: Dictionary = levels[index].intro
+		get_tree().create_timer(1.25).timeout.connect(func():
+			if state.tiles.size() > 0 and popup == null:
+				_open_popup(intro.title, intro.text, [["知道了", _close_popup]]))
 
 func _fit_board() -> void:
 	var minx := 999; var maxx := -999; var miny := 999; var maxy := -999
 	for t in state.tiles.values():
+		if t.has("stack"):
+			continue
 		minx = mini(minx, t.x); maxx = maxi(maxx, t.x + 2)
 		miny = mini(miny, t.y); maxy = maxi(maxy, t.y + 2)
 	var area := _rect("board")
@@ -397,7 +410,19 @@ func _fit_board() -> void:
 	board_origin = area.position + (area.size - used) / 2 - Vector2(minx, miny) * tile_px / 2
 
 func _board_pos(t: Dictionary) -> Vector2:
+	if t.has("stack"):
+		var side := _tile_side(t)
+		var step: Array = layout.stack_step
+		var anchor: Array = layout.stacks[int(t.stack)]
+		var dir := 1.0 if int(t.stack) == 0 else -1.0
+		var x: float = anchor[0] + dir * float(step[0]) * int(t.depth)
+		if dir < 0:
+			x -= side
+		return Vector2(x, float(anchor[1]) + float(step[1]) * int(t.depth))
 	return board_origin + Vector2(t.x, t.y) * tile_px / 2 - Vector2(0, t.layer * layout.layer_lift)
+
+func _tile_side(t: Dictionary) -> float:
+	return float(layout.stack_tile) if t.has("stack") else tile_px
 
 ## Screen rect for the tray texture so that its visible wooden frame (measured
 ## inside the PNG) lands exactly on the layout's tray rect.
@@ -450,11 +475,16 @@ func _tile_at(point: Vector2) -> int:
 	var best := -1
 	var best_layer := -1
 	for t in state.board_tiles():
-		if Rect2(_board_pos(t), Vector2(tile_px, tile_px)).has_point(point) and t.layer > best_layer:
+		var side := _tile_side(t)
+		if Rect2(_board_pos(t), Vector2(side, side)).has_point(point) and t.layer > best_layer:
 			best = t.id
 			best_layer = t.layer
 	if best >= 0 and not state.is_free(best):
 		_nudge(best)
+		return -1
+	if best >= 0 and state.is_frozen(best):
+		_nudge(best)
+		_float_text(_board_pos(state.tiles[best]) + Vector2(tile_px / 2, -10), "还冻着", Color("#2A7CC7"), 40)
 		return -1
 	return best
 
@@ -494,6 +524,8 @@ func _pick(id: int) -> void:
 	_refresh_hud()
 	if not r.matched.is_empty():
 		get_tree().create_timer(FLY_TIME).timeout.connect(_merge.bind(r.matched))
+	if not r.thawed.is_empty():
+		get_tree().create_timer(FLY_TIME + MERGE_GATHER).timeout.connect(_thaw.bind(r.thawed))
 	if r.won:
 		get_tree().create_timer(FLY_TIME + MERGE_GATHER + MERGE_VANISH + 0.3).timeout.connect(_show_win)
 	elif r.lost:
@@ -614,6 +646,8 @@ func _on_booster(kind: String) -> void:
 				_reflow(display_tray, [])
 		"shuffle":
 			var r := state.shuffle()
+			if not r.ok and state.can_shuffle():
+				_float_text(Vector2(540, 1180), "冰块太多,现在无法洗牌", Color("#2A7CC7"), 40)
 			if r.ok:
 				for id in r.ids:
 					var v: Control = views[id]
@@ -657,11 +691,39 @@ func _layout_hold() -> void:
 func _refresh_cover(animate: bool) -> void:
 	for t in state.board_tiles():
 		var v: Control = views[t.id]
-		var target := 0.0 if state.is_free(t.id) else 1.0
+		var free := state.is_free(t.id)
+		if free and v.face_down:
+			_reveal(v, animate)
+		var target := 0.0 if free else 1.0
 		if animate and not is_equal_approx(v.dim, target):
 			create_tween().tween_property(v, "dim", target, DIM_TIME)
 		else:
 			v.dim = target
+
+## Flip a face-down tile (mystery or buried box tile) to show its dessert.
+func _reveal(v: Control, animate: bool) -> void:
+	if not animate:
+		v.face_down = false
+		return
+	var tw := v.create_tween()
+	tw.tween_property(v, "scale:x", 0.0, 0.12).set_ease(Tween.EASE_IN)
+	tw.tween_callback(func(): v.face_down = false)
+	tw.tween_property(v, "scale:x", 1.0, 0.16).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+
+## Ice loses one level per cleared triple; at zero it shatters.
+func _thaw(ids: Array) -> void:
+	for id in ids:
+		if not views.has(id):
+			continue
+		var v: Control = views[id]
+		var left := int(state.tiles[id].get("ice", 0))
+		var tw := v.create_tween()
+		tw.tween_property(v, "rotation", 0.08, 0.05)
+		tw.tween_property(v, "rotation", -0.08, 0.07)
+		tw.tween_property(v, "rotation", 0.0, 0.05)
+		tw.tween_callback(func(): v.ice = left)
+		if left == 0:
+			_burst(v.global_position + v.size / 2, Color("#A8DBFF"))
 
 func _refresh_hud() -> void:
 	var total := state.tiles.size()
@@ -809,9 +871,65 @@ func _hide_hand() -> void:
 func _on_pause() -> void:
 	if popup != null:
 		return
-	_open_popup("暂停", "", [["继续", _close_popup], ["重新开始", func(): start_level(level_index)]])
+	_open_popup("暂停", "", [["继续", _close_popup], ["重新开始", func(): start_level(level_index)], ["选择关卡", _open_level_select]])
+
+func _open_level_select() -> void:
+	_close_popup()
+	_open_popup("选择关卡", "", [["返回", _close_popup]])
+	var panel: Control = popup.get_child(1)
+	var unlocked := _unlocked()
+	var cols := 4
+	var cell := 150.0
+	var grid_w := cols * cell
+	var top := 170.0
+	for i in levels.size():
+		var b := Button.new()
+		b.text = str(levels[i].id)
+		b.size = Vector2(cell - 20, cell - 20)
+		b.position = Vector2((panel.size.x - grid_w) / 2 + (i % cols) * cell + 10, top + (i / cols) * cell)
+		b.add_theme_font_size_override("font_size", 52)
+		var sb := StyleBoxFlat.new()
+		sb.bg_color = Color("#F48FB1") if i < unlocked else Color("#E8DCCF")
+		sb.set_corner_radius_all(30)
+		for st_name in ["normal", "hover", "pressed", "disabled"]:
+			b.add_theme_stylebox_override(st_name, sb)
+		b.add_theme_color_override("font_color", Color.WHITE)
+		b.focus_mode = Control.FOCUS_NONE
+		b.disabled = i >= unlocked
+		b.pressed.connect(func(): start_level(i))
+		panel.add_child(b)
+	var rows := ceili(levels.size() / float(cols))
+	var back: Control = panel.get_child(panel.get_child_count() - levels.size() - 1)
+	back.position.y = top + rows * cell + 20
+	panel.size.y = back.position.y + back.size.y + 50
+	panel.position = (size - panel.size) / 2
+	panel.pivot_offset = panel.size / 2
+
+## Highest level the player may start (all levels are open in this test build).
+func _unlocked() -> int:
+	if bool(_build_flags().get("unlock_all", false)):
+		return levels.size()
+	return clampi(int(_load_progress().get("unlocked", 1)), 1, levels.size())
+
+func _build_flags() -> Dictionary:
+	if not FileAccess.file_exists("res://data/build.json"):
+		return {}
+	return JSON.parse_string(FileAccess.get_file_as_string("res://data/build.json"))
+
+func _load_progress() -> Dictionary:
+	if not FileAccess.file_exists("user://progress.json"):
+		return {}
+	var d = JSON.parse_string(FileAccess.get_file_as_string("user://progress.json"))
+	return d if d is Dictionary else {}
+
+func _save_progress(unlocked: int) -> void:
+	var f := FileAccess.open("user://progress.json", FileAccess.WRITE)
+	if f:
+		f.store_string(JSON.stringify({"unlocked": unlocked}))
 
 func _show_win() -> void:
+	var progress := int(_load_progress().get("unlocked", 1))
+	_save_progress(maxi(progress, mini(level_index + 2, levels.size())))
 	var stars := state.stars()
 	var last := level_index >= levels.size() - 1
 	var next_label := "再玩一次" if last else "下一关"
@@ -887,11 +1005,12 @@ func _open_popup(title: String, subtitle: String, buttons: Array, stars := -1) -
 		st.text = subtitle
 		st.add_theme_font_size_override("font_size", 42)
 		st.add_theme_color_override("font_color", Color("#7A4A32"))
-		st.size = Vector2(panel.size.x, 60)
+		var lines := subtitle.count("\n") + 1
+		st.size = Vector2(panel.size.x, 58 * lines)
 		st.position = Vector2(0, y)
 		st.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		panel.add_child(st)
-		y += 80
+		y += 58 * lines + 24
 	for entry in buttons:
 		var b := Button.new()
 		b.text = entry[0]
@@ -960,8 +1079,9 @@ func _process(delta: float) -> void:
 		if autoplay_clock >= 0.45 and not state.solution.is_empty():
 			autoplay_clock = 0.0
 			if autoplay_random:
-				var free: Array = state.board_tiles().filter(func(t): return state.is_free(t.id))
-				_pick(free[state.rng.randi_range(0, free.size() - 1)].id)
+				var free: Array = state.board_tiles().filter(func(t): return state.can_pick(t.id))
+				if not free.is_empty():
+					_pick(free[state.rng.randi_range(0, free.size() - 1)].id)
 			else:
 				_pick(state.solution[0])
 	if capture_dir != "":
