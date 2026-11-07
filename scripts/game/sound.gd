@@ -51,6 +51,10 @@ func set_effects(on: bool) -> void:
 			p.stop()
 
 func start_music() -> void:
+	# Headless runs (tests, smoke checks) have no audio device; a looping
+	# playback there is never released and shows up as a leak at exit.
+	if DisplayServer.get_name() == "headless":
+		return
 	if music_on and music.stream and not music.playing:
 		music.play()
 
