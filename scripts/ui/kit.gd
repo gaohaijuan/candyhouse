@@ -62,6 +62,61 @@ static func picture(name: String, size: Vector2, placeholder_text := "", placeho
 		p.add_child(l)
 	return p
 
+## Picture placed at a rect measured from the approved page mockup.
+static func art(parent: Control, name: String, rect: Rect2, placeholder_text := "", placeholder_color := Color("#F7C6D6")) -> Control:
+	var c := picture(name, rect.size, placeholder_text, placeholder_color)
+	c.position = rect.position
+	parent.add_child(c)
+	return c
+
+## Nine-slice picture stretched to `rect` (margins in texture pixels).
+## `k` scales the texture (and its corners) before stretching.
+static func nine(parent: Control, name: String, rect: Rect2, m: Array, placeholder_color := Color("#FFF1DC"), k := 1.0) -> Control:
+	var t := tex(name)
+	if t == null:
+		return art(parent, name, rect, "", placeholder_color)
+	var np := NinePatchRect.new()
+	np.texture = t
+	np.patch_margin_left = int(m[0]); np.patch_margin_top = int(m[1])
+	np.patch_margin_right = int(m[2]); np.patch_margin_bottom = int(m[3])
+	np.position = rect.position
+	np.size = rect.size / k
+	np.scale = Vector2(k, k)
+	np.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	parent.add_child(np)
+	return np
+
+## Text box placed at a rect measured from the mockup; shrinks long text.
+static func text_at(parent: Control, text: String, rect: Rect2, size: int, color := BROWN, outline := Color.TRANSPARENT, outline_size := 0) -> Label:
+	var l := label(text, size, color, outline, outline_size)
+	shrink_to_fit(l, rect.size.x)
+	l.position = rect.position
+	l.size = rect.size
+	parent.add_child(l)
+	return l
+
+## Invisible tap area over art (keeps the art's own look, adds press feedback).
+static func art_button(parent: Control, name: String, rect: Rect2, glyph := "", ring := PINK) -> TextureButton:
+	var b := round_button(name, minf(rect.size.x, rect.size.y), glyph, ring)
+	b.size = rect.size
+	b.custom_minimum_size = rect.size
+	b.pivot_offset = rect.size / 2
+	for ch in b.get_children():
+		(ch as Control).size = rect.size
+	b.position = rect.position
+	parent.add_child(b)
+	return b
+
+## Invisible tap area.
+static func hit_area(parent: Control, rect: Rect2) -> Button:
+	var b := Button.new()
+	b.flat = true
+	b.focus_mode = Control.FOCUS_NONE
+	b.position = rect.position
+	b.size = rect.size
+	parent.add_child(b)
+	return b
+
 ## Candy pill button (pink / green / cream) stretched by nine-slice.
 static func pill(text: String, style := "pink", sz := Vector2(700, 160)) -> TextureButton:
 	var b := TextureButton.new()
@@ -98,11 +153,28 @@ static func pill(text: String, style := "pink", sz := Vector2(700, 160)) -> Text
 		p.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		b.add_child(p)
 	var l := label(text, int(sz.y * 0.42), BROWN if style == "cream" else CREAM, CREAM if style == "cream" else OUTLINE, 6 if style == "cream" else 12)
+	shrink_to_fit(l, sz.x - 40)
 	l.size = sz - Vector2(40, 10)
 	l.position = Vector2(20, 0)
-	shrink_to_fit(l)
 	b.add_child(l)
 	return b
+
+## Puts an icon at the left end of a pill and keeps the text to its right.
+static func pill_icon(b: TextureButton, icon: String) -> void:
+	var sz := b.size
+	var h := sz.y * 0.72
+	var pic := picture(icon, Vector2(h, h), "▶", Color("#FFF6D5"))
+	pic.position = Vector2(sz.y * 0.42, (sz.y - h) / 2 - sz.y * 0.04)
+	b.add_child(pic)
+	for c in b.get_children():
+		if c is Label:
+			var l: Label = c
+			var x := pic.position.x + h + 8
+			var w := sz.x - x - sz.y * 0.4
+			l.add_theme_font_size_override("font_size", int(sz.y * 0.4))
+			shrink_to_fit(l, w)
+			l.position.x = x
+			l.size.x = w
 
 ## Round icon button; `glyph` is a placeholder caption when the art is missing.
 static func round_button(icon: String, sz: float, glyph := "", ring := PINK) -> TextureButton:
@@ -144,14 +216,17 @@ static func _press_feedback(b: BaseButton) -> void:
 	b.button_down.connect(func(): b.create_tween().tween_property(b, "scale", Vector2(0.93, 0.93), 0.06))
 	b.button_up.connect(func(): b.create_tween().tween_property(b, "scale", Vector2.ONE, 0.1).set_trans(Tween.TRANS_BACK))
 
-static func shrink_to_fit(l: Label) -> void:
+## Shrinks the font so the widest line fits `max_w` (default: the label's
+## width; pass it explicitly when the text may already have widened the label).
+static func shrink_to_fit(l: Label, max_w := 0.0) -> void:
+	var w := max_w if max_w > 0.0 else l.size.x
 	var fs := l.get_theme_font_size("font_size")
 	var font := l.get_theme_font("font")
 	var widest := 0.0
 	for line in l.text.split("\n"):
 		widest = maxf(widest, font.get_string_size(line, HORIZONTAL_ALIGNMENT_LEFT, -1, fs).x)
-	if widest > l.size.x and widest > 0:
-		l.add_theme_font_size_override("font_size", int(fs * l.size.x / widest))
+	if widest > w and widest > 0:
+		l.add_theme_font_size_override("font_size", int(fs * w / widest))
 
 ## Ribbon title over a pink-framed cream panel. Returns {root, panel, body, close}.
 ## Add content to `body` (a VBoxContainer), then call `finish_popup(info)`.
@@ -208,9 +283,9 @@ static func popup(host: Control, title: String, width := 907.0, closable := fals
 	var t := label(title, 96, CREAM, OUTLINE, 14)
 	t.add_theme_color_override("font_shadow_color", Color(0.39, 0.1, 0.03, 0.68))
 	t.add_theme_constant_override("shadow_offset_y", 6)
+	shrink_to_fit(t, tb[2] * kk)
 	t.position = rr.position + Vector2(tb[0], tb[1]) * kk
 	t.size = Vector2(tb[2], tb[3]) * kk
-	shrink_to_fit(t)
 	panel.add_child(t)
 	var body := VBoxContainer.new()
 	body.add_theme_constant_override("separation", 28)

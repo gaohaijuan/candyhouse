@@ -61,6 +61,11 @@
    }
   }
  ],
+ "chapter_chest": {
+  "every": 10,
+  "coins": 150,
+  "boosters": {"move_out": 1, "shuffle": 1}
+ },
  "star_chest": {
   "stars": 30,
   "coins": 100,

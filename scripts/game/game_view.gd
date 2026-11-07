@@ -1181,15 +1181,21 @@ func _show_win() -> void:
 	if app:
 		var stars := state.stars()
 		var coins: int = app.profile.record_win(level_index + 1, stars, app.difficulty(level_index))
+		var chapter: Dictionary = app.profile.claim_chapter_chest(level_index + 1)
 		app.save()
 		_confetti()
 		var last := level_index >= levels.size() - 1
 		var idx := level_index
-		app.popups.win(level_index, stars, coins, func():
+		var go_on := func():
 			if last:
 				app.goto("home")
 			else:
-				app.popups.level_start(idx + 1))
+				app.popups.level_start(idx + 1)
+		app.popups.win(level_index, stars, coins, func():
+			if chapter.is_empty():
+				go_on.call()
+			else:
+				app.popups.reward(chapter, go_on, "章节宝箱"))
 		return
 	var progress := int(_load_progress().get("unlocked", 1))
 	_save_progress(maxi(progress, mini(level_index + 2, levels.size())))

@@ -14,20 +14,22 @@ func setup(owner_app, with_lives := true) -> void:
 	app = owner_app
 	show_lives = with_lives
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
-	coin_label = _pill(Vector2(24, 40), "coin_pill", "金", Color("#F5B82E"), func(): app.goto("shop"))
+	# Rects measured from the home mockup (M3_B).
+	coin_label = _pill(Rect2(46, 54, 393, 117), Rect2(170, 80, 186, 66), "coin_pill", "金", Color("#F5B82E"), func(): app.goto("shop"))
 	if show_lives:
-		life_label = _pill(Vector2(300, 40), "life_pill", "♥", Color("#F06292"), func(): app.popups.lives())
-		timer_label = Kit.label("", 30, Color.WHITE, Color("#9C3219"), 8)
-		timer_label.position = Vector2(300, 122)
-		timer_label.size = Vector2(268, 40)
+		life_label = _pill(Rect2(473, 54, 364, 117), Rect2(600, 80, 120, 66), "life_pill", "♥", Color("#F06292"), func(): app.popups.lives())
+		timer_label = Kit.label("", 32, Color.WHITE, Color("#9C3219"), 8)
+		timer_label.position = Vector2(473, 166)
+		timer_label.size = Vector2(364, 42)
 		add_child(timer_label)
 	app.wallet_changed.connect(refresh)
 	refresh()
 
-func _pill(at: Vector2, art: String, glyph: String, color: Color, on_plus: Callable) -> Label:
-	var w := 268.0
-	var h := 92.0
-	var bg := Kit.picture(art, Vector2(w, h))
+func _pill(rect: Rect2, text_rect: Rect2, art: String, glyph: String, color: Color, on_plus: Callable) -> Label:
+	var at := rect.position
+	var w := rect.size.x
+	var h := rect.size.y
+	var bg := Kit.picture(art, rect.size)
 	if not Kit.tex(art):
 		bg.queue_free()
 		bg = Panel.new()
@@ -46,9 +48,9 @@ func _pill(at: Vector2, art: String, glyph: String, color: Color, on_plus: Calla
 	bg.position = at
 	bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(bg)
-	var value := Kit.label("", 44, Kit.BROWN)
-	value.position = at + Vector2(h * 0.85, 0)
-	value.size = Vector2(w - h * 1.7, h)
+	var value := Kit.label("", 54, Kit.BROWN)
+	value.position = text_rect.position
+	value.size = text_rect.size
 	add_child(value)
 	var hit := Button.new()
 	hit.flat = true

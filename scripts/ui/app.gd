@@ -56,7 +56,7 @@ func _ready() -> void:
 		DirAccess.remove_absolute(ProjectSettings.globalize_path(save_path))
 	profile.load_or_create(now())
 	# Test builds may open every level on the map without touching progress.
-	unlock_all = debug_args.has("unlock_all") or _build_flag("unlock_all")
+	unlock_all = str(debug_args.unlock_all) != "0" if debug_args.has("unlock_all") else _build_flag("unlock_all")
 	sound = Sound.new()
 	add_child(sound)
 	apply_settings()

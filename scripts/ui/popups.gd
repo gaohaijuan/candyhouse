@@ -42,16 +42,50 @@ func _button(info: Dictionary, text: String, style: String, action: Callable, sz
 ## Rewarded-ad button that respects the daily limit; `reward` runs on success.
 func _ad_button(info: Dictionary, text: String, kind: String, reward: Callable) -> TextureButton:
 	var left: int = app.profile.ads_left(kind, app.now())
-	var b := _button(info, "▶ " + text, "green", func():
+	var b := _button(info, text, "green", func():
 		app.ads.show_rewarded(kind, func(ok):
 			if ok:
 				app.profile.note_ad(kind, app.now())
 				reward.call()
 				app.save()))
+	Kit.pill_icon(b, "icon_ad_tv")
 	if left <= 0:
 		b.disabled = true
 		b.modulate.a = 0.5
 	return b
+
+## Pill placed at a mockup rect inside an absolute-layout box.
+func _pill_at(box: Control, text: String, style: String, rect: Rect2, action: Callable, icon := "") -> TextureButton:
+	var b := Kit.pill(text, style, rect.size)
+	b.position = rect.position
+	box.add_child(b)
+	if icon != "":
+		Kit.pill_icon(b, icon)
+	b.pressed.connect(func():
+		app.sound.play("tap")
+		action.call())
+	return b
+
+## Green rewarded-ad pill at a rect; greyed out when today's limit is used.
+func _ad_pill_at(box: Control, text: String, kind: String, rect: Rect2, reward: Callable) -> TextureButton:
+	var b := _pill_at(box, text, "green", rect, func():
+		app.ads.show_rewarded(kind, func(ok):
+			if ok:
+				app.profile.note_ad(kind, app.now())
+				reward.call()
+				app.save()), "icon_ad_tv")
+	if app.profile.ads_left(kind, app.now()) <= 0:
+		b.disabled = true
+		b.modulate.a = 0.5
+	return b
+
+## Starts an absolute layout: returns a box whose origin is mockup point `o`.
+func _abs_body(info: Dictionary, body_y: float, height: float) -> Control:
+	var body: VBoxContainer = info.body
+	body.position.y = body_y
+	var box := _fixed_row(height)
+	body.add_child(box)
+	return box
 
 # ---------------------------------------------------------------- privacy & settings
 
@@ -72,41 +106,61 @@ func privacy(on_accept: Callable) -> void:
 	Kit.finish_popup(info)
 
 func settings() -> void:
-	var info := _make("设置", true)
+	# Layout follows mockup M4_B (panel 917 wide; rows measured from it).
+	var info := _make("设置", true, 917.0)
+	var body: VBoxContainer = info.body
+	body.position.y = 120
+	body.add_theme_constant_override("separation", 0)
 	var st: Dictionary = app.profile.data.settings
-	for entry in [["music", "音乐"], ["sfx", "音效"], ["vibrate", "震动"]]:
+	for entry in [["music", "音乐", "icon_music"], ["sfx", "音效", "icon_sound"], ["vibrate", "震动", "icon_vibrate"]]:
 		var key: String = entry[0]
-		var name := Kit.label(entry[1], 56, Kit.BROWN)
-		name.custom_minimum_size = Vector2(420, 110)
-		name.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
+		var row := _fixed_row(120)
+		Kit.art(row, entry[2], Rect2(30, 12, 150, 96), "", Color("#F8BBD0"))
+		Kit.text_at(row, entry[1], Rect2(205, 25, 160, 70), 56, Kit.BROWN).horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
 		var toggle: Button = _toggle(bool(st[key]))
+		toggle.position = Vector2(525, 18)
 		toggle.toggled.connect(func(on):
 			st[key] = on
 			app.apply_settings()
 			app.save()
 			_style_toggle(toggle, on))
-		info.body.add_child(Kit.row([name, toggle], 110, 120))
-	for entry in [["用户协议", "用户协议内容将在正式版提供。"], ["隐私政策", "隐私政策内容将在正式版提供。"], ["联系我们", "客服邮箱将在正式版提供。"], ["恢复购买", ""]]:
-		var b := Button.new()
-		b.flat = true
-		b.text = entry[0] + "  ›"
-		b.alignment = HORIZONTAL_ALIGNMENT_LEFT
-		b.add_theme_font_size_override("font_size", 50)
-		b.add_theme_color_override("font_color", Kit.BROWN)
-		b.custom_minimum_size = Vector2(700, 90)
-		b.focus_mode = Control.FOCUS_NONE
-		var msg: String = entry[1]
-		var title: String = entry[0]
-		b.pressed.connect(func():
+		row.add_child(toggle)
+		body.add_child(row)
+	body.add_child(_fixed_row(14))
+	var links := [["用户协议", "用户协议内容将在正式版提供。"], ["隐私政策", "隐私政策内容将在正式版提供。"], ["联系我们", "客服邮箱将在正式版提供。"], ["恢复购买", ""]]
+	for i in links.size():
+		var title: String = links[i][0]
+		var msg: String = links[i][1]
+		var row := _fixed_row(97)
+		var hit := Button.new()
+		hit.flat = true
+		hit.focus_mode = Control.FOCUS_NONE
+		hit.size = Vector2(777, 97)
+		hit.pressed.connect(func():
 			if title == "恢复购买":
 				app.iap.restore(func(_list): app.toast("没有需要恢复的购买"))
 			else:
 				app.toast(msg))
-		info.body.add_child(Kit.centered(b))
-	var v := Kit.label("版本 1.0.0", 36, Kit.BROWN)
-	v.custom_minimum_size = Vector2(0, 50)
-	info.body.add_child(v)
-	Kit.finish_popup(info)
+		row.add_child(hit)
+		Kit.text_at(row, title, Rect2(45, 18, 300, 60), 50, Kit.BROWN).horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
+		if Kit.tex("row_arrow"):
+			Kit.art(row, "row_arrow", Rect2(694, 23, 31, 50))
+		else:
+			Kit.text_at(row, "›", Rect2(680, 18, 50, 60), 60, Kit.BROWN)
+		if i < links.size() - 1:
+			Kit.nine(row, "row_divider", Rect2(43, 93, 696, 4), [7, 0, 7, 0], Color("#F4B6C8"))
+		body.add_child(row)
+	var v := Kit.label("版本 1.0.0", 38, Kit.BROWN)
+	v.custom_minimum_size = Vector2(0, 70)
+	body.add_child(v)
+	Kit.finish_popup(info, 50.0)
+
+## A fixed-height row for absolute layouts inside a popup body.
+func _fixed_row(h: float) -> Control:
+	var c := Control.new()
+	c.custom_minimum_size = Vector2(777, h)
+	c.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	return c
 
 ## Pink (on) / grey (off) switch; uses toggle_on/off art when available.
 func _toggle(on: bool) -> Button:
@@ -114,7 +168,8 @@ func _toggle(on: bool) -> Button:
 	t.toggle_mode = true
 	t.button_pressed = on
 	t.focus_mode = Control.FOCUS_NONE
-	t.custom_minimum_size = Vector2(200, 100)
+	t.custom_minimum_size = Vector2(196, 84)
+	t.size = t.custom_minimum_size
 	var knob := Panel.new()
 	knob.name = "Knob"
 	knob.size = Vector2(80, 80)
@@ -152,22 +207,30 @@ func level_start(index: int) -> void:
 	if app.profile.level_costs_life(level_id) and app.profile.lives(t) <= 0:
 		lives()
 		return
-	var info := _make("第 %d 关" % level_id, true)
+	# Layout follows mockup M6_A; positions are mockup pixels minus the body origin.
+	var info := _make("第 %d 关" % level_id, true, 1020.0)
+	var body: VBoxContainer = info.body
+	body.position.y = 50
 	var tag: String = app.difficulty(index)
+	var dy := 0.0 if tag != "normal" else -100.0
+	var o := Vector2(98, 522 - dy)
+	var box := _fixed_row(1026 + dy)
+	body.add_child(box)
 	if tag != "normal":
-		var l := Kit.label("困难" if tag == "hard" else "超难", 48, Color.WHITE, Color("#B71C1C") if tag == "hard" else Color("#6A1B9A"), 10)
-		l.custom_minimum_size = Vector2(0, 70)
-		info.body.add_child(l)
-	var hint := Kit.label("选择开局道具", 56, Kit.BROWN)
-	hint.custom_minimum_size = Vector2(0, 80)
-	info.body.add_child(hint)
+		Kit.art(box, "tag_hard" if tag == "hard" else "tag_super", Rect2(Vector2(380, 521) - o, Vector2(319, 142)), "", Color("#E53935") if tag == "hard" else Color("#8E24AA"))
+		Kit.text_at(box, "困难" if tag == "hard" else "超难", Rect2(Vector2(459, 571) - o, Vector2(166, 64)), 60, Kit.CREAM, Color("#A9171C") if tag == "hard" else Color("#5E1A78"), 8)
+	Kit.text_at(box, "选择开局道具", Rect2(Vector2(286, 697) - o, Vector2(515, 75)), 66, Kit.BROWN)
 	var chosen := {}
-	var cards: Array = []
-	for entry in [["extra_slot", "多一格", "icon_extra_slot"], ["magnet", "磁铁", "icon_magnet"]]:
-		cards.append(_booster_card(entry[0], entry[1], entry[2], chosen))
-	info.body.add_child(Kit.row(cards, 360, 40))
+	_booster_card(box, Rect2(Vector2(104, 810) - o, Vector2(420, 485)), "extra_slot", "多一格", "icon_extra_slot", Rect2(45, 101, 337, 177), chosen)
+	_booster_card(box, Rect2(Vector2(546, 811) - o, Vector2(420, 485)), "magnet", "磁铁", "icon_magnet", Rect2(39, 33, 339, 279), chosen)
 	var cost_life: bool = app.profile.level_costs_life(level_id)
-	_button(info, "开始" + ("  (体力 -1)" if cost_life else ""), "pink", func():
+	var start := Kit.pill("开始", "pink", Vector2(624, 194))
+	start.position = Vector2(218, 1354) - o
+	box.add_child(start)
+	if cost_life:
+		Kit.art(box, "heart_cost_badge", Rect2(Vector2(678, 1322) - o, Vector2(139, 109)), "", Color("#E5484D"))
+		Kit.text_at(box, "-1", Rect2(Vector2(708, 1340) - o, Vector2(80, 62)), 54, Color.WHITE, Color("#B5262C"), 6)
+	start.pressed.connect(func():
 		for kind in chosen:
 			if not app.profile.use_booster(kind):
 				if not app.profile.buy_booster(kind):
@@ -177,73 +240,78 @@ func level_start(index: int) -> void:
 		app.save()
 		close(info)
 		app.goto("game", {"level": index, "start_boosters": chosen.duplicate()}))
-	Kit.finish_popup(info)
+	Kit.finish_popup(info, 80.0)
 
-func _booster_card(kind: String, title: String, icon: String, chosen: Dictionary) -> Control:
+## A start-booster card: owned count badge, or the coin price when none left.
+func _booster_card(parent: Control, rect: Rect2, kind: String, title: String, icon: String, icon_rect: Rect2, chosen: Dictionary) -> void:
 	var card := Button.new()
 	card.toggle_mode = true
+	card.flat = true
 	card.focus_mode = Control.FOCUS_NONE
-	card.custom_minimum_size = Vector2(330, 350)
-	var sb_off := StyleBoxFlat.new()
-	sb_off.bg_color = Color("#FFF4DE"); sb_off.border_color = Color("#EAC9A0")
-	sb_off.set_border_width_all(6); sb_off.set_corner_radius_all(40)
-	var sb_on := sb_off.duplicate()
-	sb_on.border_color = Color("#F0508A"); sb_on.set_border_width_all(12)
-	for s in ["normal", "hover", "disabled"]:
-		card.add_theme_stylebox_override(s, sb_off)
-	for s in ["pressed", "hover_pressed"]:
-		card.add_theme_stylebox_override(s, sb_on)
-	var pic := Kit.picture(icon, Vector2(220, 170), title, Color("#FDE0EA"))
-	pic.position = Vector2(55, 30)
-	card.add_child(pic)
-	var name := Kit.label(title, 50, Kit.BROWN)
-	name.position = Vector2(0, 205)
-	name.size = Vector2(330, 70)
-	card.add_child(name)
+	card.position = rect.position
+	card.size = rect.size
+	parent.add_child(card)
+	var face_off := Kit.picture("booster_card", rect.size, "", Color("#FFF4DE"))
+	var face_on := Kit.picture("booster_card_selected", rect.size, "", Color("#FFD6E4"))
+	face_on.visible = false
+	card.add_child(face_off)
+	card.add_child(face_on)
+	Kit.art(card, icon, icon_rect, title, Color("#FDE0EA"))
+	Kit.text_at(card, title, Rect2(60, 312, 300, 72), 60, Kit.BROWN)
 	var have: int = app.profile.booster_count(kind)
 	var price: int = int(app.economy.booster_price[kind])
-	var note := Kit.label("拥有 %d" % have if have > 0 else "%d 金币" % price, 40, Color("#E0457E") if have > 0 else Kit.BROWN)
-	note.position = Vector2(0, 272)
-	note.size = Vector2(330, 60)
-	card.add_child(note)
+	if have > 0:
+		Kit.art(card, "badge", Rect2(292, 380, 109, 80), "", Color("#E5484D"))
+		Kit.text_at(card, str(have), Rect2(292, 386, 109, 64), 52, Color.WHITE, Color("#B5291F"), 6)
+	else:
+		Kit.art(card, "price_chip", Rect2(172, 384, 226, 78), "", Color("#FFF4DE"))
+		Kit.text_at(card, str(price), Rect2(250, 392, 130, 58), 46, Kit.BROWN)
 	card.toggled.connect(func(on):
+		if on and have <= 0 and not app.profile.can_afford(price):
+			card.set_pressed_no_signal(false)
+			app.toast("金币不足")
+			return
+		face_on.visible = on
+		face_off.visible = not on
 		if on:
-			if have <= 0 and not app.profile.can_afford(price):
-				card.set_pressed_no_signal(false)
-				app.toast("金币不足")
-				return
 			chosen[kind] = true
 		else:
 			chosen.erase(kind))
-	return card
 
 # ---------------------------------------------------------------- lives
 
 func lives() -> void:
-	var info := _make("体力不足" if app.profile.lives(app.now()) <= 0 else "体力", true)
+	# Mockup M13_A: panel 949 wide at (63, 557); body origin (133, 667).
 	var t: int = app.now()
-	var hearts := Kit.label("♥".repeat(app.profile.lives(t)) + "♡".repeat(int(app.economy.lives.max) - app.profile.lives(t)), 90, Color("#F06292"), Color.WHITE, 8)
-	hearts.custom_minimum_size = Vector2(0, 120)
-	info.body.add_child(hearts)
-	var wait: int = app.profile.next_life_in(t)
-	var timer := Kit.label("体力已满" if wait <= 0 else "下一点体力 %02d:%02d" % [wait / 60, wait % 60], 52, Kit.BROWN)
-	timer.custom_minimum_size = Vector2(0, 80)
-	info.body.add_child(timer)
-	_button(info, "%d 金币 补满体力" % int(app.economy.lives.refill_price), "pink", func():
+	var have: int = app.profile.lives(t)
+	var info := _make("体力不足" if have <= 0 else "体力", true, 949.0)
+	var o := Vector2(133, 667)
+	var box := _abs_body(info, 110, 740)
+	for i in int(app.economy.lives.max):
+		Kit.art(box, "heart" if i < have else "heart_empty", Rect2(Vector2(194 + i * 140, 706) - o, Vector2(132, 119)), "♥" if i < have else "♡", Color("#F06292") if i < have else Color("#E0C9C9"))
+	var timer := Kit.text_at(box, "", Rect2(Vector2(240, 860) - o, Vector2(610, 62)), 58, Kit.BROWN)
+	var tick := func():
+		var wait: int = app.profile.next_life_in(app.now())
+		timer.text = "体力已满" if wait <= 0 else "下一点体力 %02d:%02d" % [wait / 60, wait % 60]
+	tick.call()
+	var clock := Timer.new()
+	clock.wait_time = 1.0
+	clock.autostart = true
+	clock.timeout.connect(tick)
+	box.add_child(clock)
+	_pill_at(box, "%d 金币 补满体力" % int(app.economy.lives.refill_price), "pink", Rect2(Vector2(154, 954) - o, Vector2(774, 178)), func():
 		if app.profile.refill_lives(app.now()):
 			app.save()
 			app.toast("体力已补满")
 			close(info)
 		else:
-			app.toast("金币不足" if app.profile.lives(app.now()) < int(app.economy.lives.max) else "体力已满"))
-	_ad_button(info, "看广告 +1 体力", "life", func():
+			app.toast("金币不足" if app.profile.lives(app.now()) < int(app.economy.lives.max) else "体力已满"), "coin_small")
+	_ad_pill_at(box, "看广告 +1 体力", "life", Rect2(Vector2(154, 1154) - o, Vector2(774, 177)), func():
 		app.profile.add_life(app.now())
 		app.toast("+1 体力")
 		close(info))
-	var left := Kit.label("今日剩余 %d 次" % app.profile.ads_left("life", t), 36, Kit.BROWN)
-	left.custom_minimum_size = Vector2(0, 50)
-	info.body.add_child(left)
-	Kit.finish_popup(info)
+	Kit.text_at(box, "今日剩余 %d 次" % app.profile.ads_left("life", t), Rect2(Vector2(340, 1353) - o, Vector2(400, 56)), 50, Kit.BROWN)
+	Kit.finish_popup(info, 95.0)
 
 # ---------------------------------------------------------------- boosters & purchases
 
@@ -321,121 +389,137 @@ func purchase_done(p: Dictionary) -> void:
 
 ## Win: stars, coins, double-by-ad, next level (with interstitial pacing).
 func win(index: int, stars: int, coins: int, on_next: Callable) -> void:
-	var info := _make("过关!")
-	var s := Kit.label("★".repeat(stars) + "☆".repeat(3 - stars), 130, Color("#FFC233"), Color("#7A4A12"), 10)
-	s.custom_minimum_size = Vector2(0, 170)
-	info.body.add_child(s)
-	var c := Kit.label("金币 +%d" % coins, 64, Kit.BROWN)
-	c.custom_minimum_size = Vector2(0, 90)
-	info.body.add_child(c)
-	var doubled := {"done": false}
-	var ad := _ad_button(info, "看广告 双倍金币", "win_double", func():
+	# Mockup M11_A: panel 971 wide at (54, 544); body origin (124, 644).
+	var info := _make("过关!", false, 971.0)
+	var o := Vector2(124, 644)
+	var box := _abs_body(info, 100, 849)
+	for i in 3:
+		var r := Rect2(Vector2(191 + i * 242.5, 657) - o, Vector2(213, 210))
+		Kit.art(box, "star_off", r, "☆", Color("#D7C2B5"))
+		if i < stars:
+			var st := Kit.art(box, "star", r, "★", Color("#FFC233"))
+			st.pivot_offset = r.size / 2
+			st.scale = Vector2.ZERO
+			st.create_tween().tween_property(st, "scale", Vector2.ONE, 0.32).set_delay(0.25 + i * 0.22).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	Kit.art(box, "coin_reward_chip", Rect2(Vector2(303, 906) - o, Vector2(465, 156)), "", Color("#FFF4DE"))
+	var c := Kit.text_at(box, "+%d" % coins, Rect2(Vector2(510, 930) - o, Vector2(220, 88)), 80, Kit.BROWN)
+	c.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
+	var ad := _ad_pill_at(box, "看广告 双倍金币", "win_double", Rect2(Vector2(153, 1121) - o, Vector2(775, 184)), func():
 		app.profile.add_coins(coins)
-		doubled.done = true
-		c.text = "金币 +%d" % (coins * 2)
+		c.text = "+%d" % (coins * 2)
 		app.toast("金币翻倍!"))
 	ad.pressed.connect(func(): ad.disabled = true; ad.modulate.a = 0.5, CONNECT_DEFERRED)
+	Kit.nine(box, "tag_x2", Rect2(Vector2(449, 1078) - o, Vector2(182, 84)), [45, 20, 45, 20], Color("#F06292"))
+	Kit.text_at(box, "×2", Rect2(Vector2(480, 1092) - o, Vector2(120, 54)), 50, Kit.CREAM, Color("#B5262C"), 6)
 	var last: bool = index >= app.levels.size() - 1
-	_button(info, "再玩一次" if last else "下一关", "pink", func():
+	_pill_at(box, "再玩一次" if last else "下一关", "pink", Rect2(Vector2(153, 1318) - o, Vector2(775, 175)), func():
 		close(info)
+		app.save()
 		if app.profile.interstitial_due(index + 1, app.now()):
-			app.save()
 			app.ads.show_interstitial(on_next)
 		else:
-			app.save()
 			on_next.call())
-	Kit.finish_popup(info)
+	Kit.finish_popup(info, 87.0)
 
 ## Loss: revive by coins or ad once per level, or restart / go home (costs a life).
 func lose(index: int, title: String, subtitle: String, can_revive: bool, revive: Callable, give_up: Callable) -> void:
-	var info := _make(title)
-	info.body.add_child(Kit.centered(Kit.picture("macaron_cry", Vector2(300, 240), "呜呜", Color("#F8BBD0"))))
-	info.body.add_child(Kit.text_block(subtitle if not can_revive else "移出 3 块甜点,继续挑战!"))
+	# Mockup M12_A: panel 932 wide at (73, 412); body origin (143, 482).
+	var info := _make(title, false, 932.0)
+	var o := Vector2(143, 482)
+	var dy := 0.0 if can_revive else -330.0
+	var box := _abs_body(info, 70, 1030 + dy)
+	Kit.art(box, "macaron_cry", Rect2(Vector2(357, 479) - o, Vector2(352, 296)), "呜呜", Color("#F8BBD0"))
+	var desc := Kit.text_at(box, "移出 3 块甜点,继续挑战!" if can_revive else subtitle, Rect2(Vector2(172, 795) - o, Vector2(736, 66)), 64, Kit.BROWN)
+	desc.autowrap_mode = TextServer.AUTOWRAP_OFF
 	if can_revive:
 		var price := int(app.economy.revive_price)
-		_button(info, "%d 金币复活" % price, "pink", func():
+		_pill_at(box, "%d 金币复活" % price, "pink", Rect2(Vector2(172, 892) - o, Vector2(720, 154)), func():
 			if app.profile.spend(price):
 				app.save()
 				close(info)
 				revive.call()
 			else:
-				app.toast("金币不足"))
-		var ad := Kit.pill("▶ 看广告复活", "green", Vector2(700, 150))
-		ad.pressed.connect(func():
-			app.ads.show_rewarded("revive", func(ok):
-				if ok:
-					close(info)
-					revive.call()))
-		info.body.add_child(Kit.centered(ad))
-	var cost: String = "  (体力 -1)" if app.profile.level_costs_life(index + 1) else ""
-	_button(info, "重新开始" + cost, "cream", func():
+				app.toast("金币不足"), "coin_small")
+		_ad_pill_at(box, "看广告复活", "revive", Rect2(Vector2(171, 1063) - o, Vector2(723, 157)), func():
+			close(info)
+			revive.call())
+	var y := 1246 + dy
+	_pill_at(box, "重新开始", "cream", Rect2(Vector2(172, y) - o, Vector2(723, 173)), func():
 		close(info)
 		give_up.call("restart"))
-	_button(info, "返回主页", "cream", func():
+	if app.profile.level_costs_life(index + 1):
+		Kit.art(box, "heart_cost_badge", Rect2(Vector2(732, y - 20) - o, Vector2(131, 119)), "", Color("#E5484D"))
+		Kit.text_at(box, "-1", Rect2(Vector2(756, y + 2) - o, Vector2(80, 60)), 52, Color.WHITE, Color("#B5262C"), 6)
+	var home := Kit.hit_area(box, Rect2(Vector2(372, y + 185) - o, Vector2(320, 80)))
+	Kit.text_at(home, "返回主页", Rect2(0, 0, 320, 80), 50, Kit.BROWN)
+	home.pressed.connect(func():
 		close(info)
 		give_up.call("home"))
-	Kit.finish_popup(info)
+	Kit.finish_popup(info, 60.0)
 
 # ---------------------------------------------------------------- rewards
 
 func checkin() -> void:
+	# Mockup M14_A: panel 992 wide at (44, 317); body origin (114, 417).
 	var t: int = app.now()
 	var today: int = app.profile.checkin_today(t)
-	var info := _make("每日签到", true, 960)
-	var grid := GridContainer.new()
-	grid.columns = 3
-	grid.add_theme_constant_override("h_separation", 20)
-	grid.add_theme_constant_override("v_separation", 20)
+	var info := _make("每日签到", true, 992.0)
+	var o := Vector2(114, 417)
+	var box := _abs_body(info, 100, 1332 if today >= 0 else 1120)
 	var claimed_upto: int = int(app.profile.data.checkin.day) if today < 0 else today
-	var wide: Panel = null
+	var icons := {"undo": "icon_undo", "move_out": "icon_move_out", "shuffle": "icon_shuffle", "extra_slot": "icon_extra_slot", "magnet": "icon_magnet"}
 	for i in 7:
 		var r: Dictionary = app.economy.checkin[i]
-		var cell := Panel.new()
-		var sb := StyleBoxFlat.new()
-		sb.bg_color = Color("#FFF4DE") if i >= claimed_upto else Color("#E8DCCB")
-		sb.border_color = Color("#F0508A") if i == today else Color("#EAC9A0")
-		sb.set_border_width_all(10 if i == today else 5)
-		sb.set_corner_radius_all(32)
-		cell.add_theme_stylebox_override("panel", sb)
-		var cw := 250.0 if i < 6 else 790.0
-		cell.custom_minimum_size = Vector2(cw, 220)
-		var d := Kit.label("第%d天" % (i + 1), 40, Kit.BROWN)
-		d.position = Vector2(0, 12); d.size = Vector2(cw, 50)
-		cell.add_child(d)
-		var what := "%d 金币" % int(r.coins) if r.has("coins") else ""
-		if r.has("boosters"):
-			what += (" + " if what != "" else "") + "道具"
-		var w := Kit.label(what, 44, Color("#C2185B"))
-		w.position = Vector2(0, 80); w.size = Vector2(cw, 80)
-		Kit.shrink_to_fit(w)
-		cell.add_child(w)
-		if i < claimed_upto:
-			var ok := Kit.label("✔ 已领", 38, Color("#2E7D32"))
-			ok.position = Vector2(0, 160); ok.size = Vector2(cw, 50)
-			cell.add_child(ok)
-		if i < 6:
-			grid.add_child(cell)
+		var claimed := i < claimed_upto
+		var rect := Rect2(126, 1014, 824, 338) if i == 6 else Rect2(127 + (i % 3) * 281, 426 + (i / 3) * 292, 265, 270)
+		rect.position -= o
+		var cell := Control.new()
+		cell.position = rect.position
+		cell.size = rect.size
+		cell.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		box.add_child(cell)
+		var art := "checkin_cell_wide" if i == 6 else ("checkin_cell_claimed" if claimed else ("checkin_cell_today" if i == today else "checkin_cell"))
+		var margin := 62 if art == "checkin_cell_today" else (74 if i == 6 else 57)
+		var frame_rect := Rect2(Vector2.ZERO, rect.size)
+		if i == today and i < 6:
+			frame_rect = frame_rect.grow(8)
+		Kit.nine(cell, art, frame_rect, [margin, margin, margin, margin], Color("#E8DCCB") if claimed else Color("#FFF4DE"))
+		if i == 6 and claimed:
+			cell.modulate = Color(0.85, 0.8, 0.76)
+		var ink := Color("#915C41") if claimed else Kit.BROWN
+		var w := rect.size.x
+		Kit.text_at(cell, "第%d天" % (i + 1), Rect2(0, 14, w, 52), 50, ink)
+		var amount := ""
+		if i == 6:
+			Kit.art(cell, "chest_small", Rect2(w / 2 - 138, 72, 275, 177), "宝箱", Color("#F8BBD0"))
+			amount = "%d+道具" % int(r.get("coins", 0))
+			Kit.text_at(cell, amount, Rect2(w / 2 - 200, 254, 400, 60), 58, ink)
 		else:
-			wide = cell
-	info.body.add_child(Kit.centered(grid))
-	info.body.add_child(Kit.centered(wide))
+			if r.has("coins"):
+				Kit.art(cell, "coin_small", Rect2(w / 2 - 62, 72, 124, 121), "金", Color("#F5B82E"))
+				amount = str(int(r.coins))
+			else:
+				var k: String = r.boosters.keys()[0]
+				Kit.art(cell, icons.get(k, "icon_shuffle"), Rect2(w / 2 - 76, 80, 151, 104), "道具", Color("#C8E6C9"))
+				amount = "×%d" % int(r.boosters[k])
+			Kit.text_at(cell, amount, Rect2(0, 196, w, 54), 52, ink)
+		if claimed:
+			Kit.art(cell, "check_stamp", Rect2(w / 2 + 34, 135, 72, 71), "✔", Color("#7CC84A"))
 	if today >= 0:
-		_ad_button(info, "看广告 双倍领取", "checkin_double", func():
+		_ad_pill_at(box, "看广告 双倍领取", "checkin_double", Rect2(Vector2(141, 1383) - o, Vector2(793, 176)), func():
 			app.profile.claim_checkin(app.now(), true)
 			app.sound.play("win")
 			close(info)
 			app.toast("签到奖励已翻倍领取"))
-		_button(info, "领取", "pink", func():
+		_pill_at(box, "领取", "pink", Rect2(Vector2(141, 1572) - o, Vector2(793, 177)), func():
 			app.profile.claim_checkin(app.now())
 			app.save()
 			app.sound.play("match")
 			close(info)
 			app.toast("签到成功"))
 	else:
-		var l := Kit.label("今天已签到,明天再来哦", 48, Kit.BROWN)
-		l.custom_minimum_size = Vector2(0, 80)
-		info.body.add_child(l)
-	Kit.finish_popup(info)
+		Kit.text_at(box, "今天已签到,明天再来哦", Rect2(Vector2(141, 1400) - o, Vector2(793, 90)), 56, Kit.BROWN)
+	Kit.finish_popup(info, 77.0)
 
 func star_chest() -> void:
 	var p: Vector2i = app.profile.chest_progress()
@@ -446,28 +530,83 @@ func star_chest() -> void:
 	app.save()
 	reward(r)
 
-## "Congratulations" popup listing coins and boosters, with ad doubling.
-func reward(r: Dictionary) -> void:
+## "Congratulations" (mockup M7_A): open chest in a glow, one card per
+## reward, ad doubling and claim. Full screen, no panel.
+func reward(r: Dictionary, then := Callable(), title := "恭喜获得") -> void:
 	app.sound.play("win")
-	var info := _make("恭喜获得")
-	info.body.add_child(Kit.centered(Kit.picture("chest_big_open", Vector2(420, 320), "宝箱", Color("#FFE7A8"))))
-	var names := {"undo": "撤回", "move_out": "移出", "shuffle": "洗牌", "extra_slot": "多一格", "magnet": "磁铁"}
-	var parts: Array = []
+	var root := Control.new()
+	root.size = Vector2(1080, 1920)
+	root.mouse_filter = Control.MOUSE_FILTER_STOP
+	app.popup_layer.add_child(root)
+	open.append(root)
+	var info := {"root": root}
+	var dim := ColorRect.new()
+	dim.color = Color(0.133, 0.078, 0.094, 0.72)
+	dim.size = root.size
+	root.add_child(dim)
+	var glow := Kit.art(root, "glow_rays", Rect2(130, 280, 820, 820))
+	glow.pivot_offset = glow.size / 2
+	glow.modulate.a = 0.9
+	glow.create_tween().set_loops().tween_property(glow, "rotation", TAU, 12.0).from(0.0)
+	var chest := Kit.art(root, "chest_big_open", Rect2(287, 410, 485, 524), "宝箱", Color("#FFE7A8"))
+	chest.pivot_offset = chest.size / 2
+	chest.scale = Vector2(0.3, 0.3)
+	chest.create_tween().tween_property(chest, "scale", Vector2.ONE, 0.45).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	Kit.art(root, "popup_ribbon", Rect2(100, 125, 877, 295))
+	var t := Kit.text_at(root, title, Rect2(262, 168, 571, 140), 120, Kit.CREAM, Kit.OUTLINE, 16)
+	t.add_theme_color_override("font_shadow_color", Color(0.39, 0.1, 0.03, 0.68))
+	t.add_theme_constant_override("shadow_offset_y", 6)
+	var items: Array = []
 	if int(r.get("coins", 0)) > 0:
-		parts.append("金币 +%d" % int(r.coins))
+		items.append(["coin_pile_small", "+%d" % int(r.coins), Rect2(32, 40, 239, 194)])
+	var icons := {"undo": "icon_undo", "move_out": "icon_move_out", "shuffle": "icon_shuffle", "extra_slot": "icon_extra_slot", "magnet": "icon_magnet"}
 	for k in r.get("boosters", {}):
-		parts.append("%s ×%d" % [names.get(k, k), int(r.boosters[k])])
-	info.body.add_child(Kit.text_block("   ".join(parts), 56))
-	_ad_button(info, "看广告 双倍领取", "chest_double", func():
-		app.profile.add_coins(int(r.get("coins", 0)))
-		for k in r.get("boosters", {}):
-			app.profile.add_booster(k, int(r.boosters[k]))
+		items.append([icons.get(k, "icon_shuffle"), "×%d" % int(r.boosters[k]), Rect2(45, 45, 220, 190)])
+	var cw := 306.0
+	var gap := 14.0
+	var x0 := (1080 - items.size() * cw - (items.size() - 1) * gap) / 2
+	for i in items.size():
+		var it: Array = items[i]
+		var card := Control.new()
+		card.position = Vector2(x0 + i * (cw + gap), 967)
+		card.size = Vector2(cw, 352)
+		root.add_child(card)
+		Kit.art(card, "reward_card", Rect2(Vector2.ZERO, card.size), "", Color("#FFF4DE"))
+		Kit.art(card, it[0], it[2])
+		Kit.text_at(card, it[1], Rect2(30, 250, cw - 60, 66), 62, Kit.BROWN)
+		card.pivot_offset = card.size / 2
+		card.scale = Vector2.ZERO
+		card.create_tween().tween_property(card, "scale", Vector2.ONE, 0.3).set_delay(0.25 + i * 0.1).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	var finish := func():
 		close(info)
-		app.toast("奖励翻倍!"))
-	_button(info, "领取", "pink", func():
 		app.save()
-		close(info))
-	Kit.finish_popup(info)
+		if then.is_valid():
+			then.call()
+	var left: int = app.profile.ads_left("chest_double", app.now())
+	var ad := Kit.pill("看广告 双倍领取", "green", Vector2(861, 203))
+	ad.position = Vector2(108, 1381)
+	root.add_child(ad)
+	Kit.pill_icon(ad, "icon_ad_tv")
+	if left <= 0:
+		ad.disabled = true
+		ad.modulate.a = 0.5
+	ad.pressed.connect(func():
+		app.sound.play("tap")
+		app.ads.show_rewarded("chest_double", func(ok):
+			if not ok:
+				return
+			app.profile.note_ad("chest_double", app.now())
+			app.profile.add_coins(int(r.get("coins", 0)))
+			for k in r.get("boosters", {}):
+				app.profile.add_booster(k, int(r.boosters[k]))
+			app.toast("奖励翻倍!")
+			finish.call()))
+	var claim := Kit.pill("领取", "pink", Vector2(861, 209))
+	claim.position = Vector2(108, 1604)
+	root.add_child(claim)
+	claim.pressed.connect(func():
+		app.sound.play("tap")
+		finish.call())
 
 # ---------------------------------------------------------------- debug
 
@@ -477,7 +616,7 @@ func debug_open(name: String) -> void:
 		"privacy": privacy(func(): pass)
 		"lives": lives()
 		"checkin": checkin()
-		"chest": reward({"coins": 100, "boosters": {"shuffle": 1}})
+		"chest": reward({"coins": 100, "boosters": {"shuffle": 1, "move_out": 1}})
 		"start": level_start(app.current_level_index())
 		"shortage": booster_shortage("shuffle", func(): pass)
 		"purchase": purchase("coins_3300")

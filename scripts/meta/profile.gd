@@ -19,7 +19,7 @@ func _fresh(now: int) -> Dictionary:
 		"boosters": economy.start_boosters.duplicate(),
 		"lives": int(economy.lives.max), "lives_at": now,
 		"unlocked": 1, "stars": {},
-		"chests_opened": 0,
+		"chests_opened": 0, "chapter_chests": [],
 		"checkin": {"day": 0, "last": ""},
 		"purchases": {}, "no_ads": false,
 		"settings": {"music": true, "sfx": true, "vibrate": true},
@@ -55,8 +55,12 @@ func _normalize() -> void:
 	for k in economy.start_boosters:
 		data.boosters[k] = int(data.boosters.get(k, 0))
 
+## Calendar day in the player's local time zone (check-in and daily limits
+## reset at local midnight).
+static var tz_seconds := int(Time.get_time_zone_from_system().get("bias", 0)) * 60
+
 static func day_key(now: int) -> String:
-	var d := Time.get_datetime_dict_from_unix_time(now)
+	var d := Time.get_datetime_dict_from_unix_time(now + tz_seconds)
 	return "%04d-%02d-%02d" % [d.year, d.month, d.day]
 
 # ---------------------------------------------------------------- coins
@@ -161,6 +165,22 @@ func record_win(level_id: int, stars: int, difficulty := "normal") -> int:
 	add_coins(int(coins))
 	return int(coins)
 
+## The chest at the end of each chapter: granted once, on the first win of
+## levels 10, 20, ... Returns the reward, or {} when there is none.
+func claim_chapter_chest(level_id: int) -> Dictionary:
+	var c: Dictionary = economy.get("chapter_chest", {})
+	if c.is_empty() or level_id % int(c.every) != 0:
+		return {}
+	var got: Array = data.get("chapter_chests", [])
+	if got.has(level_id):
+		return {}
+	got.append(level_id)
+	data.chapter_chests = got
+	add_coins(int(c.coins))
+	for k in c.boosters:
+		add_booster(k, int(c.boosters[k]))
+	return {"coins": int(c.coins), "boosters": c.boosters.duplicate()}
+
 func total_stars() -> int:
 	var n := 0
 	for k in data.stars:
@@ -255,10 +275,18 @@ func iap_available(id: String, now: int) -> bool:
 	if p.get("once", false) and data.purchases.has(id):
 		return false
 	if p.has("days"):
-		var first: int = Time.get_unix_time_from_datetime_string(data.first_day + "T00:00:00")
+		var first: int = Time.get_unix_time_from_datetime_string(data.first_day + "T00:00:00") - tz_seconds
 		if now - first > int(p.days) * 86400:
 			return false
 	return true
+
+## Whole days left before a time-limited offer disappears (0 if none).
+func iap_days_left(id: String, now: int) -> int:
+	var p := iap(id)
+	if not p.has("days"):
+		return 0
+	var first: int = Time.get_unix_time_from_datetime_string(data.first_day + "T00:00:00") - tz_seconds
+	return maxi(0, ceili((first + int(p.days) * 86400 - now) / 86400.0))
 
 ## Grants a completed purchase.
 func grant_purchase(id: String, now: int) -> bool:
