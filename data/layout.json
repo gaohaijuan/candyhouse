@@ -16,10 +16,10 @@
   157
  ],
  "coin_pill": [
-  791,
-  34,
-  274,
-  94
+  756,
+  30,
+  310,
+  92
  ],
  "progress_bar": [
   106,
@@ -47,7 +47,7 @@
   1033,
   232
  ],
- "tray_slot": 134,
+ "tray_slot": 138,
  "boosters_y": 1711,
  "booster_size": 225,
  "booster_x": [
@@ -55,7 +55,6 @@
   536,
   856
  ],
- "progress_fill_inset": 14,
  "star_size": 66,
  "stars_x": [
   449,
@@ -78,10 +77,9 @@
    "shadow_y": 5
   },
   "coin_text": {
-   "size": 44,
+   "size": 46,
    "color": "#692908",
-   "outline_size": 0,
-   "offset_x": 12
+   "outline_size": 0
   },
   "badge_text": {
    "size": 46,
@@ -99,53 +97,65 @@
   }
  },
  "tray_texture_frame": [
-  79,
-  16,
-  1721,
-  279
+  30,
+  10,
+  1321,
+  292
  ],
  "tray_texture_slots": {
   "cx": [
-   264,
-   486,
-   714,
-   940,
-   1166,
-   1394,
-   1620
+   170,
+   344.5,
+   518.5,
+   692.5,
+   867.5,
+   1041.5,
+   1216
   ],
-  "cy": 148,
-  "w": 206,
-  "h": 160
+  "cy": 149.5,
+  "w": 165,
+  "h": 171
  },
  "ribbon_text_box": [
-  150,
+  136,
   40,
-  540,
-  120
+  478,
+  107
  ],
  "coin_text_box": [
-  140,
-  20,
-  220,
-  128
+  171,
+  39,
+  278,
+  81
  ],
- "hand_size": 170,
+ "hand_size": 190,
  "hand_tip": [
-  48,
-  28
+  25,
+  22
  ],
  "tile_face_box": [
-  17,
-  18,
-  349,
-  336
+  11,
+  11,
+  344,
+  354
  ],
  "tile_visible_box": [
-  17,
-  18,
-  349,
-  370
+  9,
+  10,
+  348,
+  387
  ],
- "tile_face_fill": 0.97
+ "tile_face_fill": 0.97,
+ "progress_inner_slot": [
+  42,
+  17,
+  897,
+  35
+ ],
+ "progress_fill_visible": [
+  19,
+  3,
+  845,
+  50
+ ]
 }

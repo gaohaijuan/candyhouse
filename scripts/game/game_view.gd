@@ -112,16 +112,22 @@ func _build_static() -> void:
 		hud.coins.get_child(0).text = "● 1280"
 	var bar_rect := _rect("progress_bar")
 	if Art.ui("progress_bg") and Art.ui("progress_fill"):
-		_texture_rect(bar_rect, Art.ui("progress_bg"))
+		var bg_rect := _fit_rect(bar_rect, Art.ui("progress_bg"))
+		_texture_rect(bg_rect, Art.ui("progress_bg"))
+		hud.bar_inner = _progress_inner(bg_rect)
 		var fill := NinePatchRect.new()
 		fill.texture = Art.ui("progress_fill")
-		var cap := int(Art.ui("progress_fill").get_height() / 2)
-		fill.patch_margin_left = cap
-		fill.patch_margin_right = cap
-		var inset: float = layout.get("progress_fill_inset", 6)
-		fill.position = bar_rect.position + Vector2(inset, inset)
-		fill.size = Vector2(0, bar_rect.size.y - inset * 2)
+		var vis: Array = layout.progress_fill_visible
+		var cap := float(vis[3]) / 2.0
+		fill.patch_margin_left = int(vis[0] + cap)
+		fill.patch_margin_right = int(Art.ui("progress_fill").get_width() - vis[0] - vis[2] + cap)
+		# Scale the whole strip uniformly so the round caps stay round.
+		var k: float = (hud.bar_inner.size.y - 2.0) / float(vis[3])
+		fill.scale = Vector2(k, k)
+		fill.position = Vector2(hud.bar_inner.position.x - float(vis[0]) * k, hud.bar_inner.position.y + 1.0 - float(vis[1]) * k)
+		fill.size = Vector2(0, Art.ui("progress_fill").get_height())
 		fill.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		fill.visible = false
 		add_child(fill)
 		hud.bar_fill = fill
 	else:
@@ -319,7 +325,7 @@ func _texture_button(rect: Rect2, base: Texture2D, icon: Texture2D) -> TextureBu
 func _text_style(key: String) -> Dictionary:
 	var defaults := {
 		"level_text": {"size": 56, "color": "#FFFFFF", "outline": "#E05A87", "outline_size": 10},
-		"coin_text": {"size": 44, "color": "#7A4A32", "outline": "#FFFFFF", "outline_size": 0, "offset_x": 24.0},
+		"coin_text": {"size": 44, "color": "#7A4A32", "outline": "#FFFFFF", "outline_size": 0},
 		"badge_text": {"size": 36, "color": "#FFFFFF", "outline": "#B8323A", "outline_size": 0},
 		"booster_text": {"size": 44, "color": "#6B3A26", "outline": "#FFFFFF", "outline_size": 10},
 	}
@@ -662,11 +668,18 @@ func _refresh_hud() -> void:
 	var done := total - state.remaining()
 	var frac := float(done) / total
 	var bar_rect := _rect("progress_bar")
-	var inset: float = layout.get("progress_fill_inset", 4)
-	var fill_w := maxf(0.0, (bar_rect.size.x - inset * 2) * frac)
-	if hud.bar_fill is NinePatchRect and fill_w > 0.0:
-		fill_w = maxf(fill_w, hud.bar_fill.patch_margin_left * 2.0)
-	create_tween().tween_property(hud.bar_fill, "size:x", fill_w, 0.2)
+	if hud.bar_fill is NinePatchRect:
+		var fill: NinePatchRect = hud.bar_fill
+		var vis: Array = layout.progress_fill_visible
+		var pad := float(fill.texture.get_width() - vis[2])
+		var inner: Rect2 = hud.bar_inner
+		var shown: float = inner.size.x * frac / fill.scale.x
+		var min_shown := float(vis[3])
+		fill.visible = frac > 0.0
+		create_tween().tween_property(fill, "size:x", maxf(shown, min_shown) + pad, 0.2)
+	else:
+		var fill_w := maxf(0.0, (bar_rect.size.x - 8) * frac)
+		create_tween().tween_property(hud.bar_fill, "size:x", fill_w, 0.2)
 	for i in 3:
 		var threshold: float = (i + 1) / 3.0
 		if layout.has("stars_x"):
@@ -701,6 +714,13 @@ void fragment() {
 	var m := ShaderMaterial.new()
 	m.shader = sh
 	return m
+
+## Inner groove of the progress bar on screen, from the groove measured in the PNG.
+func _progress_inner(bg_rect: Rect2) -> Rect2:
+	var tex := Art.ui("progress_bg")
+	var k := bg_rect.size.x / tex.get_width()
+	var r: Array = layout.get("progress_inner_slot", [0, 0, tex.get_width(), tex.get_height()])
+	return Rect2(bg_rect.position + Vector2(r[0], r[1]) * k, Vector2(r[2], r[3]) * k)
 
 ## Lit stars use the gold art at 1.2x after a pop; unlit stars are solid and muted.
 func _set_star_lit(star: TextureRect, lit: bool) -> void:
