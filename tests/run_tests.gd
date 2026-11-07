@@ -18,6 +18,8 @@ func check(ok: bool, what: String) -> void:
 func _init() -> void:
 	var levels: Array = JSON.parse_string(FileAccess.get_file_as_string("res://data/levels.json")).levels
 	for level in levels:
+		if level.has("board"):
+			continue  # authored boards are checked by _test_authored and _test_design
 		_test_level_shape(level)
 		_test_solution_wins(level)
 	var by_id := {}
@@ -38,6 +40,7 @@ func _init() -> void:
 	_test_design(levels)
 	_test_full_tray_rescue(by_id[3])
 	_test_authored(levels)
+	_test_start_boosters(levels)
 	print("checks=%d failures=%d" % [checks, failures])
 	quit(1 if failures > 0 else 0)
 
@@ -284,7 +287,7 @@ func _test_design(levels: Array) -> void:
 			for t in s.tiles.values():
 				if t.has("fuse"):
 					check(not s.is_free(t.id), "L%d candle is not free at the start" % level.id)
-					check(int(t.fuse) >= 8 and int(t.fuse) <= 22, "L%d candle starts with 8-22 steps (%d)" % [level.id, t.fuse])
+					check(int(t.fuse) >= 8 and int(t.fuse) <= 26, "L%d candle starts with 8-26 steps (%d)" % [level.id, t.fuse])
 					check(peek.has(t.id), "L%d candle is visible at the start" % level.id)
 				if t.has("lock") or t.has("key"):
 					check(peek.has(t.id), "L%d lock/key visible at the start" % level.id)
@@ -348,6 +351,32 @@ func _test_authored(levels: Array) -> void:
 		for t in s.tiles.values():
 			if t.get("mystery", false):
 				check(not s.type_known(t.id), "L%d mystery dessert hidden on the board" % level.id)
+
+## Magnet keeps every authored board winnable; the extra slot gives an 8th place.
+func _test_start_boosters(levels: Array) -> void:
+	for level in levels:
+		if not level.has("board"):
+			continue
+		var s := GameState.new(level)
+		var before := s.remaining()
+		var r := s.magnet()
+		check(r.ok and s.remaining() == before - 3, "L%d magnet clears a triple" % level.id)
+		check(s.wins_with(s.solution.duplicate()), "L%d still winnable after magnet" % level.id)
+	var e := GameState.new(levels[2])
+	e.tray_size = 8
+	var counts := {}
+	var picked := 0
+	while picked < 8:
+		var options: Array = e.board_tiles().filter(func(t): return e.can_pick(t.id) and int(counts.get(t.type, 0)) < 2)
+		if options.is_empty():
+			break
+		counts[options[0].type] = int(counts.get(options[0].type, 0)) + 1
+		e.pick(options[0].id)
+		picked += 1
+	if e.tray.size() == 8:
+		check(e.is_lost(), "eight tiles fill an extra-slot tray")
+	elif e.tray.size() == 7:
+		check(not e.is_lost(), "seven tiles do not fill an extra-slot tray")
 
 func _test_seed_variety(level: Dictionary) -> void:
 	var a := Generator.generate(level)

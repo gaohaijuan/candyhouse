@@ -14,6 +14,7 @@ var tiles: Dictionary = {}       # id -> {id, layer, x, y, type, place}
 var tray: Array = []             # tile ids, left to right
 var hold: Array = []             # tile ids parked by "move out"
 var boosters := {"undo": 1, "move_out": 1, "shuffle": 1}
+var tray_size := TRAY_SIZE       # 8 with the "extra slot" start booster
 var boosters_used := 0
 var last_pick: Dictionary = {}   # undo record of the most recent unmatched pick
 var solution: Array = []         # board tile ids in an order known to win from now
@@ -81,7 +82,7 @@ func is_takeable(id: int) -> bool:
 	return is_free(id) and not is_frozen(id) and not is_locked(id)
 
 func can_pick(id: int) -> bool:
-	if not tiles.has(id) or tray.size() >= TRAY_SIZE or is_finished():
+	if not tiles.has(id) or tray.size() >= tray_size or is_finished():
 		return false
 	var t: Dictionary = tiles[id]
 	return (t.place == "board" and is_takeable(id)) or t.place == "hold"
@@ -212,7 +213,7 @@ func shuffle() -> Dictionary:
 	for i in range(groups.size() - 1, 0, -1):
 		var j := rng.randi_range(0, i)
 		var tmp = groups[i]; groups[i] = groups[j]; groups[j] = tmp
-	var free_slots := TRAY_SIZE - tray.size()
+	var free_slots := tray_size - tray.size()
 	var max_open := clampi((free_slots - 1) / 2, 1, 3)
 	var ice_min := Generator.ice_min_positions(tiles.values(), max_open, pending.size())
 	var old_types := {}
@@ -241,6 +242,54 @@ func shuffle() -> Dictionary:
 	_spend("shuffle")
 	return {"ok": true, "ids": board_ids}
 
+## "Magnet" start booster: clears one whole triple from the board before play.
+## Picks the dessert of the earliest winning move whose three tiles are all on
+## the board and not locked or frozen, so the stored winning order stays valid.
+## Counts as a match (thaws ice, opens locks). Returns {ok, ids, unlocked, thawed}.
+func magnet() -> Dictionary:
+	var tried := {}
+	for sid in solution:
+		var type: int = tiles[sid].type
+		if tried.has(type):
+			continue
+		tried[type] = true
+		# The first three of this dessert along the winning order form one
+		# complete triple there, so removing exactly them keeps the order valid.
+		var ids: Array = []
+		for oid in solution:
+			if int(tiles[oid].type) == type:
+				ids.append(oid)
+			if ids.size() == MATCH:
+				break
+		if ids.size() < MATCH:
+			continue
+		var blocked := false
+		for id in ids:
+			if tiles[id].place != "board" or tiles[id].has("lock") or int(tiles[id].get("ice", 0)) > 0:
+				blocked = true
+		if blocked:
+			continue
+		var keys: Array = []
+		for id in ids:
+			tiles[id].place = "gone"
+			tiles[id]["revealed"] = true
+			solution.erase(id)
+			if tiles[id].has("key"):
+				keys.append(int(tiles[id].key))
+		var unlocked: Array = []
+		var thawed: Array = []
+		for other in tiles.values():
+			if other.place != "board":
+				continue
+			if int(other.get("ice", 0)) > 0:
+				other.ice = int(other.ice) - 1
+				thawed.append(other.id)
+			if other.has("lock") and keys.has(int(other.lock)):
+				other.erase("lock")
+				unlocked.append(other.id)
+		return {"ok": true, "ids": ids, "unlocked": unlocked, "thawed": thawed}
+	return {"ok": false}
+
 ## Copy of the rules state for look-ahead checks.
 func clone():
 	var c = get_script().new({}, true)
@@ -252,6 +301,7 @@ func clone():
 	c.cover = cover
 	c.covers = covers
 	c.burned = burned
+	c.tray_size = tray_size
 	return c
 
 ## True when taking `plan` (hold tiles, then board tiles) in order wins.
@@ -274,7 +324,7 @@ func is_won() -> bool:
 
 ## True while some tile could still be moved into the tray.
 func has_moves() -> bool:
-	if tray.size() >= TRAY_SIZE:
+	if tray.size() >= tray_size:
 		return false
 	if not hold.is_empty():
 		return true
@@ -290,7 +340,7 @@ func is_lost() -> bool:
 func lose_reason() -> String:
 	if burned:
 		return "candle"
-	return "tray" if tray.size() >= TRAY_SIZE else "stuck"
+	return "tray" if tray.size() >= tray_size else "stuck"
 
 func is_finished() -> bool:
 	return is_won() or is_lost()

@@ -531,8 +531,8 @@
    },
    "target_rating": 4.5,
    "types_range": [
-    9,
-    13
+    11,
+    14
    ]
   },
   {
@@ -591,7 +591,7 @@
    "target_rating": 5.5,
    "types_range": [
     9,
-    13
+    11
    ]
   },
   {
@@ -652,8 +652,8 @@
    ],
    "target_rating": 6.0,
    "types_range": [
-    10,
-    15
+    13,
+    16
    ]
   },
   {
@@ -716,7 +716,7 @@
    "target_rating": 6.5,
    "types_range": [
     9,
-    13
+    11
    ]
   },
   {
@@ -1913,8 +1913,8 @@
    "locks": 1,
    "target_rating": 6.0,
    "types_range": [
-    9,
-    13
+    13,
+    16
    ]
   },
   {
@@ -1980,7 +1980,7 @@
    "locks": 2,
    "target_rating": 6.5,
    "types_range": [
-    10,
+    12,
     15
    ]
   },
@@ -2205,7 +2205,7 @@
    "target_rating": 4.5,
    "types_range": [
     8,
-    11
+    12
    ]
   },
   {
@@ -2388,8 +2388,8 @@
    ],
    "target_rating": 6.5,
    "types_range": [
-    10,
-    15
+    15,
+    18
    ]
   },
   {
@@ -2526,8 +2526,8 @@
    ],
    "target_rating": 5.5,
    "types_range": [
-    10,
-    15
+    8,
+    12
    ]
   },
   {
@@ -2591,7 +2591,7 @@
    ],
    "target_rating": 6.0,
    "types_range": [
-    9,
+    10,
     13
    ]
   },
@@ -2657,8 +2657,8 @@
    ],
    "target_rating": 6.5,
    "types_range": [
-    10,
-    15
+    12,
+    14
    ]
   },
   {
@@ -2737,8 +2737,8 @@
    ],
    "target_rating": 7.0,
    "types_range": [
-    10,
-    14
+    12,
+    15
    ]
   },
   {
@@ -2818,8 +2818,8 @@
    ],
    "target_rating": 8.0,
    "types_range": [
-    11,
-    15
+    14,
+    17
    ]
   },
   {

@@ -1,0 +1,27 @@
+{
+ "start_coins": 200,
+ "start_boosters": {"undo": 3, "move_out": 3, "shuffle": 3, "extra_slot": 1, "magnet": 1},
+ "win_coins": {"base": 10, "per_star": 10, "hard_mult": 1.5, "super_mult": 2.0},
+ "booster_price": {"undo": 60, "move_out": 90, "shuffle": 70, "extra_slot": 120, "magnet": 100},
+ "booster_bundle": {"price": 450, "each": 3},
+ "revive_price": 150,
+ "lives": {"max": 5, "regen_seconds": 1800, "refill_price": 200, "free_until_level": 5},
+ "checkin": [
+  {"coins": 50}, {"coins": 80}, {"coins": 100}, {"boosters": {"shuffle": 1}},
+  {"coins": 150}, {"coins": 200}, {"coins": 300, "boosters": {"undo": 1, "move_out": 1, "shuffle": 1}}
+ ],
+ "star_chest": {"stars": 30, "coins": 100, "random_booster": 1},
+ "ad_limits": {"free_coins": 5, "booster": 3, "life": 5, "checkin_double": 1},
+ "ad_free_coins": 50,
+ "interstitial": {"from_level": 8, "every_levels": 3, "min_seconds": 90},
+ "iap": [
+  {"id": "coins_600", "price": 6, "coins": 600},
+  {"id": "coins_3300", "price": 30, "coins": 3300, "bonus": "+10%"},
+  {"id": "coins_8000", "price": 68, "coins": 8000, "bonus": "+18%"},
+  {"id": "coins_16000", "price": 128, "coins": 16000, "bonus": "+25%"},
+  {"id": "coins_45000", "price": 328, "coins": 45000, "bonus": "+35%"},
+  {"id": "coins_95000", "price": 648, "coins": 95000, "bonus": "+45%"},
+  {"id": "starter", "price": 6, "coins": 1000, "boosters": {"undo": 3, "move_out": 3, "shuffle": 3}, "once": true, "days": 3},
+  {"id": "no_ads", "price": 18, "no_ads": true, "once": true}
+ ]
+}
