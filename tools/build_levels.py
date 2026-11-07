@@ -54,11 +54,16 @@ PAIRS = {
     "grand": (["0111110", "1111111", "1111111", "1111111", "0111110"], ["111111"] * 4),
 }
 
-def dense(shape, depth):
+def dense(shape, depth, airy=False):
+    """`airy`: the top copy of the base keeps a checkerboard of its tiles, so
+    lower tiles peek through (needed where candles must be covered yet seen)."""
     a, b = PAIRS[shape]
     base = rect(len(a[0]), len(a), 0, 0, a)
     inner = rect(len(b[0]), len(b), 1, 1, b)
-    layers = [base, inner, json.loads(json.dumps(base))]
+    top = json.loads(json.dumps(base))
+    if airy:
+        top["mask"] = ["".join(ch if (r + c) % 2 == 0 else "0" for c, ch in enumerate(row)) for r, row in enumerate(a)]
+    layers = [base, inner, top]
     if depth >= 4:
         layers.append(json.loads(json.dumps(inner)))
     return layers
@@ -212,7 +217,7 @@ def plan():
     levels = build({})
     for L, t in zip(levels, targets()):
         stacks = [s["count"] for s in L.get("stacks", [])]
-        L["layers"] = trim(dense(L["shape"], 4 if t >= 7.0 else 3), stacks)
+        L["layers"] = trim(dense(L["shape"], 4 if t >= 7.0 else 3, airy=bool(L.get("candles"))), stacks)
         L["target_rating"] = t
         L["types_range"] = types_range(t)
         L["types"] = sum(types_range(t)) // 2

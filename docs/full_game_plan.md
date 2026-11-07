@@ -109,8 +109,14 @@
 ## 9. 进度
 | 项 | 状态 |
 |---|---|
-| 定时提醒(Windows 计划任务:2h、7h、之后每5h) | 已派 reminder-schedule |
-| 50 关难度重做(机制关按“确实露出”规则重出) | 后台出题中(build/redo4.log) |
-| 美术 A/B/C/D 效果图 | 已派 art-pages-a/b/c/d(阶段1效果图);任务单 /tmp/briefs/art-pages-*.md |
-| 存档/经济/体力/广告/内购服务 | 待写 |
-| 各页面代码 | 待写 |
+| 定时提醒(Windows:2h、7h、之后每5h,另有用户加的12h) | 完成 |
+| 美术阶段1效果图(14页) | 完成,总指挥已验收:M1=A M2=A M3=B M4=B M5=B M6=A M7=A M8=A M9=A M10=A M11=A M12=A M13=A M14=A |
+| 美术阶段2切图 | 进行中:art-pages-a/b/c/d,任务单 /tmp/briefs/art-pages-*-s2.md,回传 /tmp/art-pages-?_slices_* |
+| 存档/经济/体力/签到/宝箱/广告频控/内购(scripts/meta/profile.gd,data/economy.json) | 完成,tests/meta_tests.gd 47 项通过 |
+| 广告、内购服务(模拟实现) | 完成 scripts/services/ |
+| 应用外壳与页面(启动/隐私/主页/地图/商店/游戏)及全部弹窗 | 完成(占位图),scripts/ui/;主场景 scenes/app.tscn |
+| 游戏页接入:道具库存、道具不足、开局道具(多一格/磁铁)、胜利金币、复活、体力 | 完成 |
+| 50 关难度重做 | 机制关已按“确实露出”规则重出;蜡烛关改为棋盘格顶层后重出中(build/redo8.log);完成后 python3 tools/merge_boards.py 并跑 tests/run_tests.gd |
+| 切图到位后替换占位图 | 待做:按 measurements.json 排版 |
+| 多一格的 8 格托盘美术 | 待定:目前 8 块方块缩小放在 7 格托盘上 |
+| 更新桌面试玩包 | 待做(合并关卡 + 切图后) |

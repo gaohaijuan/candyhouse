@@ -8,7 +8,9 @@ const SFX := ["tap", "match", "win", "lose", "booster", "nope", "unlock"]
 var music: AudioStreamPlayer
 var pool: Array = []
 var streams := {}
-var enabled := true
+var enabled := true      # effects
+var music_on := true
+var vibrate_on := true
 
 func _ready() -> void:
 	music = AudioStreamPlayer.new()
@@ -30,19 +32,31 @@ func _ready() -> void:
 		pool.append(p)
 		add_child(p)
 
+## Legacy single switch (standalone game page): music and effects together.
 func set_enabled(on: bool) -> void:
-	enabled = on
+	set_music(on)
+	set_effects(on)
+
+func set_music(on: bool) -> void:
+	music_on = on
 	if on:
-		if not music.playing:
-			music.play()
+		start_music()
 	else:
 		music.stop()
+
+func set_effects(on: bool) -> void:
+	enabled = on
+	if not on:
 		for p in pool:
 			p.stop()
 
 func start_music() -> void:
-	if enabled and music.stream and not music.playing:
+	if music_on and music.stream and not music.playing:
 		music.play()
+
+func vibrate(ms := 30) -> void:
+	if vibrate_on:
+		Input.vibrate_handheld(ms)
 
 ## `pitch` lets combos climb; `db` adjusts loudness per use.
 func play(name: String, pitch := 1.0, db := 0.0) -> void:
@@ -62,7 +76,7 @@ func play(name: String, pitch := 1.0, db := 0.0) -> void:
 
 ## Lowers the music briefly so a jingle stands out.
 func duck(seconds: float) -> void:
-	if not enabled:
+	if not music_on:
 		return
 	var tw := create_tween()
 	tw.tween_property(music, "volume_db", MUSIC_DB - 12.0, 0.15)

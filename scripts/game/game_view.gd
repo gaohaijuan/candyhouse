@@ -29,6 +29,9 @@ var hud: Dictionary = {}
 var booster_buttons: Dictionary = {}
 var popup: Control
 var hand: Control
+var app = null                  # set by the app shell; null when run on its own
+var start_boosters := {}
+var revived := false
 var sound: Node
 var box_nodes: Array = []
 var box_badges: Array = []
@@ -82,13 +85,19 @@ func _ready() -> void:
 	if layout.has("cover_multiply"):
 		var m: Array = layout.cover_multiply
 		TileView.cover_multiply = Color(m[0], m[1], m[2])
-	sound = Sound.new()
-	add_child(sound)
-	sound.set_enabled(bool(_load_progress().get("sound", true)))
-	sound.start_music()
+	if app:
+		sound = app.sound
+		capture_dir = ""
+	else:
+		sound = Sound.new()
+		add_child(sound)
+		sound.set_enabled(bool(_load_progress().get("sound", true)))
+		sound.start_music()
 	_build_static()
-	if not level_from_args:
+	if not level_from_args and app == null:
 		level_index = clampi(int(_load_progress().get("unlocked", 1)) - 1, 0, levels.size() - 1)
+	if app:
+		app.wallet_changed.connect(_refresh_hud)
 	start_level(level_index)
 	if debug_open != "":
 		get_tree().create_timer(1.4).timeout.connect(_debug_open_popup)
@@ -103,6 +112,9 @@ func _debug_open_popup() -> void:
 		_show_win()
 	elif debug_open == "lose":
 		_show_lose()
+
+func _blocked() -> bool:
+	return popup != null or (app != null and app.popups.is_open())
 
 func _rect(key: String) -> Rect2:
 	var r: Array = layout[key]
@@ -384,6 +396,12 @@ func _apply_text_style(l: Label, style: Dictionary) -> void:
 func start_level(index: int) -> void:
 	level_index = index
 	state = GameState.new(levels[index])
+	revived = false
+	if app:
+		# In the full game boosters come from the player's inventory.
+		state.boosters = {"undo": 9999, "move_out": 9999, "shuffle": 9999}
+		if start_boosters.get("extra_slot", false):
+			state.tray_size = GameState.TRAY_SIZE + 1
 	for v in views.values():
 		v.queue_free()
 	views.clear()
@@ -420,12 +438,14 @@ func start_level(index: int) -> void:
 	_refresh_cover(false)
 	_refresh_hud()
 	busy_until = Time.get_ticks_msec() / 1000.0 + 1.2
+	if app and start_boosters.get("magnet", false):
+		get_tree().create_timer(1.3).timeout.connect(_use_magnet)
 	if levels[index].get("tutorial", false):
 		_show_hand()
 	if levels[index].has("intro") and not autoplay:
 		var intro: Dictionary = levels[index].intro
 		get_tree().create_timer(1.25).timeout.connect(func():
-			if state.tiles.size() > 0 and popup == null:
+			if state.tiles.size() > 0 and not _blocked():
 				_open_popup(intro.title, intro.text, [["知道了", _close_popup]]))
 
 func _fit_board() -> void:
@@ -535,7 +555,19 @@ func _tray_texture_rect() -> Rect2:
 	var k := Vector2(target.size.x / f[2], target.size.y / f[3])
 	return Rect2(target.position - Vector2(f[0], f[1]) * k, Vector2(tex.get_width(), tex.get_height()) * k)
 
+## Tile size in the tray; a little smaller when the tray holds eight.
+func _tray_tile() -> float:
+	var side: float = layout.tray_slot
+	return side * 0.86 if state and state.tray_size > GameState.TRAY_SIZE else side
+
 func _tray_slot(i: int) -> Vector2:
+	if state and state.tray_size > GameState.TRAY_SIZE:
+		var a := _tray_slot7(0)
+		var b := _tray_slot7(GameState.TRAY_SIZE - 1)
+		return a.lerp(b, float(i) / (state.tray_size - 1))
+	return _tray_slot7(i)
+
+func _tray_slot7(i: int) -> Vector2:
 	if Art.ui("tray") and layout.has("tray_texture_slots"):
 		var r := _tray_texture_rect()
 		var tex := Art.ui("tray")
@@ -562,7 +594,7 @@ func _hold_slot(i: int) -> Vector2:
 func _gui_input(event: InputEvent) -> void:
 	var press: bool = event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT
 	press = press or (event is InputEventScreenTouch and event.pressed)
-	if not press or popup != null or Time.get_ticks_msec() / 1000.0 < busy_until:
+	if not press or _blocked() or Time.get_ticks_msec() / 1000.0 < busy_until:
 		return
 	var id := _tile_at(event.position)
 	if id >= 0:
@@ -622,11 +654,11 @@ func _pick(id: int) -> void:
 		for i in r.matched.size():
 			display_tray.insert(at + i, r.matched[i])
 	_reflow(display_tray, [id])
-	var slot: Vector2 = _tray_slot(display_tray.find(id)) - _tile_anchor(layout.tray_slot)
+	var slot: Vector2 = _tray_slot(display_tray.find(id)) - _tile_anchor(_tray_tile())
 	var press := create_tween()
 	press.tween_property(v, "scale", Vector2(0.93, 0.93), 0.06)
 	press.tween_property(v, "scale", Vector2.ONE, 0.06)
-	_fly(v, start, slot, FLY_TIME, layout.tray_slot)
+	_fly(v, start, slot, FLY_TIME, _tray_tile())
 	if r.from == "hold":
 		_layout_hold()
 	_refresh_cover(true)
@@ -662,7 +694,7 @@ func _reflow(order: Array, skip: Array) -> void:
 		if skip.has(id):
 			continue
 		var v: Control = views[id]
-		var target: Vector2 = _tray_slot(i) - _tile_anchor(layout.tray_slot)
+		var target: Vector2 = _tray_slot(i) - _tile_anchor(_tray_tile())
 		create_tween().tween_property(v, "global_position", target, REFLOW_TIME).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
 
 func _merge(ids: Array) -> void:
@@ -678,7 +710,7 @@ func _merge(ids: Array) -> void:
 		tw.parallel().tween_property(v, "modulate:a", 0.0, MERGE_VANISH)
 		tw.tween_callback(v.queue_free)
 		views.erase(id)
-	var burst_at: Vector2 = center + _tile_anchor(layout.tray_slot)
+	var burst_at: Vector2 = center + _tile_anchor(_tray_tile())
 	get_tree().create_timer(MERGE_GATHER).timeout.connect(func():
 		_burst(burst_at, color)
 		_float_text(burst_at + Vector2(0, -90), "+30", Color("#E5484D"), 46)
@@ -745,7 +777,12 @@ func _float_text(at: Vector2, text: String, color: Color, font_size: int) -> voi
 	tw.tween_callback(l.queue_free)
 
 func _on_booster(kind: String) -> void:
-	if popup != null:
+	if _blocked():
+		return
+	if app and app.profile.booster_count(kind) <= 0:
+		app.popups.booster_shortage(kind, func():
+			app.save()
+			_refresh_hud())
 		return
 	var used_before: int = state.boosters_used
 	match kind:
@@ -772,6 +809,9 @@ func _on_booster(kind: String) -> void:
 					tw.tween_property(v, "scale", Vector2.ONE, 0.14).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 	if state.boosters_used > used_before:
 		sound.play("booster")
+		if app:
+			app.profile.use_booster(kind)
+			app.save()
 	_refresh_hud()
 
 func _animate_back(id: int, to: String) -> void:
@@ -806,7 +846,7 @@ func _layout_hold() -> void:
 		var start := v.global_position
 		v.reparent(fly_layer)
 		v.global_position = start
-		_fly(v, start, _hold_slot(i) - _tile_anchor(layout.tray_slot), 0.22, layout.tray_slot)
+		_fly(v, start, _hold_slot(i) - _tile_anchor(_tray_tile()), 0.22, _tray_tile())
 
 func _refresh_cover(animate: bool) -> void:
 	for t in state.board_tiles():
@@ -834,6 +874,34 @@ func _reveal(v: Control, animate: bool) -> void:
 		v.face_down = false
 		v.blank = false)
 	tw.tween_property(v, "scale:x", 1.0, 0.16).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+
+## Start booster: a magnet pulls one whole triple off the board.
+func _use_magnet() -> void:
+	var r := state.magnet()
+	if not r.ok:
+		return
+	sound.play("booster")
+	var center := Vector2(540, 1250)
+	for id in r.ids:
+		var v: Control = views[id]
+		var start := v.global_position
+		v.reparent(fly_layer)
+		v.global_position = start
+		_fly(v, start, center - Vector2(tile_px, tile_px) / 2, 0.45, tile_px)
+	get_tree().create_timer(0.5).timeout.connect(func():
+		for id in r.ids:
+			var v: Control = views[id]
+			var tw := v.create_tween()
+			tw.tween_property(v, "scale", Vector2(0.2, 0.2), 0.2)
+			tw.parallel().tween_property(v, "modulate:a", 0.0, 0.2)
+			tw.tween_callback(v.queue_free)
+			views.erase(id)
+		_burst(center, Color("#F48FB1"))
+		sound.play("match")
+		_unlock(r.unlocked)
+		_thaw(r.thawed)
+		_refresh_cover(true)
+		_refresh_hud())
 
 func _unlock(ids: Array) -> void:
 	if not ids.is_empty():
@@ -911,8 +979,17 @@ func _refresh_hud() -> void:
 		var entry: Dictionary = booster_buttons[key]
 		entry.button.disabled = not enabled[key]
 		entry.button.modulate.a = 1.0 if enabled[key] else 0.55
-		entry.badge.get_child(0).text = str(state.boosters[key])
-		entry.badge.visible = state.boosters[key] > 0
+		if app:
+			var have: int = app.profile.booster_count(key)
+			entry.badge.get_child(0).text = str(have) if have > 0 else "+"
+			entry.badge.visible = true
+			entry.button.disabled = not enabled[key] and have > 0
+			entry.button.modulate.a = 1.0 if (enabled[key] or have <= 0) else 0.55
+		else:
+			entry.badge.get_child(0).text = str(state.boosters[key])
+			entry.badge.visible = state.boosters[key] > 0
+	if app and is_instance_valid(hud.coins):
+		hud.coins.get_child(0).text = str(app.profile.data.coins)
 
 func _unlit_star_material() -> ShaderMaterial:
 	var sh := Shader.new()
@@ -954,7 +1031,7 @@ func _set_star_lit(star: TextureRect, lit: bool) -> void:
 # ---------------------------------------------------------------- tutorial hand
 
 func _show_hand() -> void:
-	if popup != null or state.is_finished() or state.solution.is_empty():
+	if _blocked() or state.is_finished() or state.solution.is_empty():
 		return
 	_hide_hand()
 	var target: int = state.solution[0]
@@ -1022,7 +1099,13 @@ func _hide_hand() -> void:
 # ---------------------------------------------------------------- popups
 
 func _on_pause() -> void:
-	if popup != null:
+	if _blocked():
+		return
+	if app:
+		var cost: String = "  (体力 -1)" if app.profile.level_costs_life(level_index + 1) else ""
+		_open_popup("暂停", "", [["继续", _close_popup], ["重新开始" + cost, func(): _give_up("restart"), "cream"], ["返回主页" + cost, func(): _give_up("home"), "cream"], ["设置", func():
+			_close_popup()
+			app.popups.settings(), "cream"]])
 		return
 	var sound_label := "声音:开" if sound.enabled else "声音:关"
 	_open_popup("暂停", "", [["继续", _close_popup], ["重新开始", func(): start_level(level_index), "cream"], ["选择关卡", _open_level_select, "cream"], [sound_label, _toggle_sound, "cream"]])
@@ -1095,6 +1178,19 @@ func _write_progress(progress: Dictionary) -> void:
 func _show_win() -> void:
 	sound.play("win")
 	sound.duck(2.2)
+	if app:
+		var stars := state.stars()
+		var coins: int = app.profile.record_win(level_index + 1, stars, app.difficulty(level_index))
+		app.save()
+		_confetti()
+		var last := level_index >= levels.size() - 1
+		var idx := level_index
+		app.popups.win(level_index, stars, coins, func():
+			if last:
+				app.goto("home")
+			else:
+				app.popups.level_start(idx + 1))
+		return
 	var progress := int(_load_progress().get("unlocked", 1))
 	_save_progress(maxi(progress, mini(level_index + 2, levels.size())))
 	var stars := state.stars()
@@ -1106,6 +1202,14 @@ func _show_win() -> void:
 
 func _show_lose() -> void:
 	sound.play("lose")
+	if app:
+		var reason: String = state.lose_reason()
+		var texts := {"tray": ["托盘满了", "再想想顺序吧"], "candle": ["蜡烛烧完了", "下次早点把蜡烛拿走"], "stuck": ["没有可以拿的了", "冰块和锁挡住了去路"]}
+		var tx: Array = texts.get(reason, texts.tray)
+		var can_revive := not revived and (state.can_undo() if reason == "candle" else state.can_move_out())
+		get_tree().create_timer(0.35).timeout.connect(func():
+			app.popups.lose(level_index, tx[0], tx[1], can_revive, _revive, _give_up))
+		return
 	var tw := create_tween()
 	var rest_x: float = hud.tray.position.x
 	for i in 4:
@@ -1138,6 +1242,33 @@ func _show_lose() -> void:
 ## Each button entry is [label, callable] or [label, callable, "pink"|"green"|"cream"].
 ## Returns the panel so callers may add content; `body_height` reserves space
 ## for that content above the buttons.
+## Revive after a loss: undo the burned-out candle pick, or park three tray tiles.
+func _revive() -> void:
+	revived = true
+	if state.lose_reason() == "candle" and state.can_undo():
+		var u := state.undo()
+		if u.ok:
+			_animate_back(u.id, u.to)
+	else:
+		var r := state.move_out()
+		if r.ok:
+			display_tray = state.tray.duplicate()
+			_layout_hold()
+			_reflow(display_tray, [])
+	_refresh_cover(true)
+	_refresh_hud()
+
+## Leaving a level without winning costs a life (outside the first levels).
+func _give_up(where: String) -> void:
+	_close_popup()
+	if not state.is_won() and state.tiles.size() - state.remaining() > 0 or state.is_lost():
+		app.profile.lose_life(app.now(), level_index + 1)
+		app.save()
+	if where == "restart":
+		app.popups.level_start(level_index)
+	else:
+		app.goto("home")
+
 func _open_popup(title: String, subtitle: String, buttons: Array, stars := -1, body_height := 0.0) -> Control:
 	_hide_hand()
 	popup = Control.new()
@@ -1267,7 +1398,7 @@ func _open_popup(title: String, subtitle: String, buttons: Array, stars := -1, b
 	if debug_press_first and not buttons.is_empty():
 		var first: Callable = buttons[0][1]
 		get_tree().create_timer(1.0).timeout.connect(func():
-			if popup != null:
+			if _blocked():
 				print("debug: pressing ", buttons[0][0])
 				first.call())
 	return panel
@@ -1353,7 +1484,7 @@ func _confetti() -> void:
 # ---------------------------------------------------------------- debug capture
 
 func _process(delta: float) -> void:
-	if autoplay and popup == null and not state.is_finished() and Time.get_ticks_msec() / 1000.0 >= busy_until:
+	if autoplay and not _blocked() and not state.is_finished() and Time.get_ticks_msec() / 1000.0 >= busy_until:
 		autoplay_clock += delta
 		if autoplay_clock >= 0.45 and not state.solution.is_empty():
 			autoplay_clock = 0.0
