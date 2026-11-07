@@ -38,6 +38,7 @@ var busy_until := 0.0
 # Debug capture: --autoplay plays the known solution, --capture=<dir> saves frames.
 var autoplay := false
 var debug_open := ""
+var debug_press_first := false  # debug: auto-press a popup's first button
 var level_from_args := false
 var autoplay_random := false
 var capture_dir := ""
@@ -63,6 +64,8 @@ func _ready() -> void:
 		elif arg.begins_with("--capture="):
 			capture_dir = arg.substr(10)
 			DirAccess.make_dir_recursive_absolute(capture_dir)
+		elif arg == "--press-first":
+			debug_press_first = true
 		elif arg.begins_with("--open="):
 			debug_open = arg.substr(7)
 		elif arg.begins_with("--level="):
@@ -1072,7 +1075,17 @@ func _show_lose() -> void:
 		tw.tween_property(hud.tray, "position:x", rest_x + (14 if i % 2 == 0 else -14), 0.05)
 	tw.tween_property(hud.tray, "position:x", rest_x, 0.05)
 	var buttons := [["重新开始", func(): start_level(level_index)]]
-	if state.boosters.move_out > 0 and state.hold.is_empty():
+	var titles := {"tray": ["托盘满了", "再想想顺序吧"], "candle": ["蜡烛烧完了", "下次早点把蜡烛拿走"], "stuck": ["没有可以拿的了", "冰块和锁挡住了去路"]}
+	var reason: String = state.lose_reason()
+	if state.can_undo():
+		buttons.push_front(["用“撤回”救一下", func():
+			_close_popup()
+			var u := state.undo()
+			if u.ok:
+				_animate_back(u.id, u.to)
+				_refresh_cover(true)
+				_refresh_hud(), "green"])
+	if state.can_move_out():
 		buttons.push_front(["用“移出”继续", func():
 			_close_popup()
 			var r := state.move_out()
@@ -1080,15 +1093,6 @@ func _show_lose() -> void:
 				display_tray = state.tray.duplicate()
 				_layout_hold()
 				_reflow(display_tray, [])
-				_refresh_hud(), "green"])
-	var titles := {"tray": ["托盘满了", "再想想顺序吧"], "candle": ["蜡烛烧完了", "下次早点把蜡烛拿走"], "stuck": ["没有可以拿的了", "冰块和锁挡住了去路"]}
-	var reason: String = state.lose_reason()
-	if reason == "candle" and state.can_undo():
-		buttons.push_front(["用“撤回”救一下", func():
-			_close_popup()
-			var u := state.undo()
-			if u.ok:
-				_animate_back(u.id, u.to)
 				_refresh_hud(), "green"])
 	var text: Array = titles.get(reason, titles.tray)
 	get_tree().create_timer(0.35).timeout.connect(func(): _open_popup(text[0], text[1], buttons))
@@ -1223,6 +1227,12 @@ func _open_popup(title: String, subtitle: String, buttons: Array, stars := -1, b
 	var tw2 := create_tween().set_parallel()
 	tw2.tween_property(panel, "scale", Vector2.ONE, 0.22).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 	tw2.tween_property(panel, "modulate:a", 1.0, 0.15)
+	if debug_press_first and not buttons.is_empty():
+		var first: Callable = buttons[0][1]
+		get_tree().create_timer(1.0).timeout.connect(func():
+			if popup != null:
+				print("debug: pressing ", buttons[0][0])
+				first.call())
 	return panel
 
 ## Candy pill button from the approved art: stretched horizontally by nine-slice.

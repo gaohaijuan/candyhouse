@@ -118,9 +118,9 @@ func _take_triple(type: int) -> Array:
 		tiles[id].place = "gone"
 	return matched
 
-## Undo also rescues a pick that burned out a candle.
+## Undo also rescues the pick that filled the tray or burned out a candle.
 func can_undo() -> bool:
-	return boosters.undo > 0 and not last_pick.is_empty() and (not is_finished() or burned)
+	return boosters.undo > 0 and not last_pick.is_empty() and not is_won()
 
 ## Returns the tile to where it came from. Result {ok, id, to}.
 func undo() -> Dictionary:
@@ -141,8 +141,10 @@ func undo() -> Dictionary:
 	_spend("undo")
 	return {"ok": true, "id": id, "to": to}
 
+## Also allowed after a full or stuck tray ends the round: parking tiles frees
+## the tray and play continues. A burned-out candle cannot be saved this way.
 func can_move_out() -> bool:
-	return boosters.move_out > 0 and hold.is_empty() and not tray.is_empty() and not is_finished()
+	return boosters.move_out > 0 and hold.is_empty() and not tray.is_empty() and not is_won() and not burned
 
 ## Parks up to three leftmost tray tiles in the hold row. Result {ok, ids}.
 func move_out() -> Dictionary:

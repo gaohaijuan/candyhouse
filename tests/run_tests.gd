@@ -37,6 +37,7 @@ func _init() -> void:
 	_test_locks(by_id[24])
 	_test_candles(by_id[34])
 	_test_design(levels)
+	_test_full_tray_rescue(by_id[3])
 	print("checks=%d failures=%d" % [checks, failures])
 	quit(1 if failures > 0 else 0)
 
@@ -286,6 +287,47 @@ func _test_design(levels: Array) -> void:
 			var g: GameState = s.clone()
 			var plan: Array = s.solution.duplicate()
 			check(g.wins_with(plan), "L%d has a winning order (trial %d)" % [level.id, trial])
+
+## BUG-1: after the tray fills up, "move out" must free it and play must go on.
+func _test_full_tray_rescue(level: Dictionary) -> void:
+	var filled := 0
+	for trial in 20:
+		var def := level.duplicate(true)
+		def.seed = int(level.seed) + trial * 7
+		var s := GameState.new(def)
+		# Fill the tray without ever completing a triple.
+		while s.tray.size() < GameState.TRAY_SIZE:
+			var counts := {}
+			for id in s.tray:
+				counts[s.tiles[id].type] = int(counts.get(s.tiles[id].type, 0)) + 1
+			var options: Array = s.board_tiles().filter(func(t): return s.can_pick(t.id) and int(counts.get(t.type, 0)) < 2)
+			if options.is_empty():
+				break
+			s.pick(options[0].id)
+		if s.tray.size() < GameState.TRAY_SIZE:
+			continue
+		filled += 1
+		check(s.is_lost() and s.lose_reason() == "tray", "full tray loses (trial %d)" % trial)
+		check(s.can_move_out(), "move out is offered on a full tray (trial %d)" % trial)
+		var r := s.move_out()
+		check(r.ok and s.tray.size() == GameState.TRAY_SIZE - 3 and s.hold.size() == 3, "move out parks three tiles (trial %d)" % trial)
+		check(not s.is_lost() and not s.is_finished(), "round continues after move out (trial %d)" % trial)
+		var movable: Array = s.board_tiles().filter(func(t): return s.can_pick(t.id))
+		check(not movable.is_empty() or not s.hold.is_empty(), "something can be picked after move out (trial %d)" % trial)
+		check(s.pick(s.hold[0]).ok, "a parked tile can be picked back (trial %d)" % trial)
+	check(filled > 0, "found boards that fill the tray")
+	# Undo also rescues the pick that filled the tray.
+	var u := GameState.new(level)
+	while not u.is_finished():
+		var counts := {}
+		for id in u.tray:
+			counts[u.tiles[id].type] = int(counts.get(u.tiles[id].type, 0)) + 1
+		var options: Array = u.board_tiles().filter(func(t): return u.can_pick(t.id) and int(counts.get(t.type, 0)) < 2)
+		if options.is_empty():
+			break
+		u.pick(options[0].id)
+	if u.lose_reason() == "tray":
+		check(u.can_undo() and u.undo().ok and not u.is_lost(), "undo rescues a full tray")
 
 func _test_seed_variety(level: Dictionary) -> void:
 	var a := Generator.generate(level)
