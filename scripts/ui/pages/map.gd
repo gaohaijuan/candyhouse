@@ -27,13 +27,15 @@ func setup(owner_app, _args: Dictionary) -> void:
 	app = owner_app
 	var bg := ColorRect.new()
 	bg.color = Color("#9CCB5A")
-	bg.size = Vector2(1080, 1920)
+	bg.position = Kit.screen_rect().position
+	bg.size = Kit.screen_rect().size
 	add_child(bg)
 	var n: int = app.levels.size()
 	chapters = ceili(n / float(PER))
 	height = chapters * BLOCK + TOP_PAD + BOTTOM_PAD
 	scroll = ScrollContainer.new()
-	scroll.size = Vector2(1080, 1920)
+	scroll.position = Kit.screen_rect().position
+	scroll.size = Kit.screen_rect().size
 	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_SHOW_NEVER
 	add_child(scroll)

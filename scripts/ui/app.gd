@@ -9,6 +9,7 @@ const Sound = preload("res://scripts/game/sound.gd")
 const AdService = preload("res://scripts/services/ad_service.gd")
 const PurchaseService = preload("res://scripts/services/purchase_service.gd")
 const Popups = preload("res://scripts/ui/popups.gd")
+const Kit = preload("res://scripts/ui/kit.gd")
 const Art = preload("res://scripts/game/art.gd")
 const PAGES := {
 	"splash": preload("res://scripts/ui/pages/splash.gd"),
@@ -38,6 +39,12 @@ var unlock_all := false
 
 func _ready() -> void:
 	size = Vector2(1080, 1920)
+	_fit_screen()
+	get_viewport().size_changed.connect(func():
+		var before := Kit.extra
+		_fit_screen()
+		if before != Kit.extra and page_name != "" and page_name != "game":
+			goto(page_name))
 	var app_theme := Theme.new()
 	app_theme.default_font = Art.font
 	app_theme.default_font_size = 40
@@ -78,6 +85,14 @@ func _ready() -> void:
 		goto("splash")
 	if debug_args.has("open"):
 		get_tree().create_timer(1.2).timeout.connect(func(): popups.debug_open(debug_args.open))
+
+## Centres the 1080x1920 design on screens taller than 9:16 (e.g. folding
+## phones' cover screens, 21:9 phones). Wider screens get side bars from the
+## stretch mode; the clear colour keeps them soft.
+func _fit_screen() -> void:
+	var h: float = get_viewport().get_visible_rect().size.y
+	Kit.extra = maxf(0.0, (h - 1920.0) / 2.0)
+	position.y = Kit.extra
 
 func _build_flag(name: String) -> bool:
 	if not FileAccess.file_exists("res://data/build.json"):

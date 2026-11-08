@@ -23,7 +23,9 @@ static func background(page: Control, art: String) -> void:
 		bg.texture = t
 		bg.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 		bg.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
-		bg.size = Vector2(1080, 1920)
+		var sr := Kit.screen_rect()
+		bg.position = sr.position
+		bg.size = sr.size
 		bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		page.add_child(bg)
 	else:

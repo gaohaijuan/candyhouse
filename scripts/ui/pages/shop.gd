@@ -18,7 +18,7 @@ func setup(owner_app, _args: Dictionary) -> void:
 	Common.background(self, "shop_bg")
 	scroll = ScrollContainer.new()
 	scroll.position = Vector2(0, TOP)
-	scroll.size = Vector2(1080, 1920 - TOP)
+	scroll.size = Vector2(1080, 1920 - TOP + Kit.extra)
 	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_SHOW_NEVER
 	add_child(scroll)

@@ -36,7 +36,9 @@ func _play(placement: String, done: Callable, rewarded: bool) -> void:
 	o.mouse_filter = Control.MOUSE_FILTER_STOP
 	var bg := ColorRect.new()
 	bg.color = Color(0.08, 0.06, 0.1, 0.94)
-	bg.size = o.size
+	var extra: float = preload("res://scripts/ui/kit.gd").extra
+	bg.position = Vector2(0, -extra)
+	bg.size = Vector2(1080, 1920 + 2 * extra)
 	o.add_child(bg)
 	var l := Label.new()
 	l.text = "广告播放中…\n(测试版模拟广告)"

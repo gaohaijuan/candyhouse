@@ -571,7 +571,8 @@ func reward(r: Dictionary, then := Callable(), title := "恭喜获得") -> void:
 	var info := {"root": root}
 	var dim := ColorRect.new()
 	dim.color = Color(0.133, 0.078, 0.094, 0.72)
-	dim.size = root.size
+	dim.position = Kit.screen_rect().position
+	dim.size = Kit.screen_rect().size
 	root.add_child(dim)
 	var glow := Kit.art(root, "glow_rays", Rect2(130, 280, 820, 820))
 	glow.pivot_offset = glow.size / 2

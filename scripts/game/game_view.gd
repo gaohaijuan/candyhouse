@@ -4,6 +4,7 @@ extends Control
 
 const GameState = preload("res://scripts/core/game_state.gd")
 const TileView = preload("res://scripts/game/tile_view.gd")
+const Kit = preload("res://scripts/ui/kit.gd")
 const Art = preload("res://scripts/game/art.gd")
 const PulseRing = preload("res://scripts/game/pulse_ring.gd")
 const Sound = preload("res://scripts/game/sound.gd")
@@ -127,7 +128,8 @@ func _build_static() -> void:
 	if bg_tex:
 		var bg := TextureRect.new()
 		bg.texture = bg_tex
-		bg.size = size
+		bg.position = Vector2(0, -Kit.extra)
+		bg.size = Vector2(size.x, size.y + 2 * Kit.extra)
 		bg.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
 		bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		add_child(bg)
@@ -611,8 +613,9 @@ func _hold_slot(i: int) -> Vector2:
 # ---------------------------------------------------------------- input
 
 func _gui_input(event: InputEvent) -> void:
+	# Touches also arrive as emulated mouse clicks; handle only the mouse
+	# event, otherwise one tap picks two tiles (top tile, then the one it uncovered).
 	var press: bool = event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT
-	press = press or (event is InputEventScreenTouch and event.pressed)
 	if not press or _blocked() or Time.get_ticks_msec() / 1000.0 < busy_until:
 		return
 	var id := _tile_at(event.position)

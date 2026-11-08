@@ -11,6 +11,13 @@ const PINK := Color("#F06292")
 const OUTLINE := Color("#742507")
 
 static var layout: Dictionary = {}
+## Extra height above and below the 1080x1920 design canvas on screens taller
+## than 9:16 (the canvas is centred; full-screen layers extend by this much).
+static var extra := 0.0
+
+## A full-screen rect in canvas coordinates that covers the whole screen.
+static func screen_rect() -> Rect2:
+	return Rect2(0, -extra, 1080, 1920 + 2 * extra)
 
 static func _layout() -> Dictionary:
 	if layout.is_empty():
@@ -238,7 +245,9 @@ static func popup(host: Control, title: String, width := 907.0, closable := fals
 	var dim: Array = _layout().get("popup_dim", [47, 11, 0, 0.6])
 	var dimmer := ColorRect.new()
 	dimmer.color = Color8(int(dim[0]), int(dim[1]), int(dim[2]), int(float(dim[3]) * 255))
-	dimmer.size = root.size
+	var sr := screen_rect()
+	dimmer.position = sr.position
+	dimmer.size = sr.size
 	root.add_child(dimmer)
 	var panel := Control.new()
 	panel.size = Vector2(width, 400)
