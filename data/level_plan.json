@@ -1110,11 +1110,10 @@
      ]
     }
    ],
-   "mystery": 12,
+   "mystery": 10,
    "ice": [
     3,
     3,
-    4,
     4
    ],
    "target_rating": 8.0,

@@ -114,7 +114,7 @@ PLAN = [
     ("brick3", 7, {"mystery": 6, "ice": [2, 2, 3]}, 60),
     ("diamond", 7, {"mystery": 8, "ice": [2, 3, 3]}, 50),
     ("flower", 8, {"mystery": 10, "ice": [3, 3, 4]}, 40),
-    ("tower", 8, {"mystery": 12, "ice": [3, 3, 4, 4]}, 32),
+    ("tower", 8, {"mystery": 10, "ice": [3, 3, 4]}, 32),  # eased 2026-11-09: rarely winnable without boosters
     # Box x5
     ("small", 6, {"stacks": [6, 6], "intro": "box"}, 84),
     ("brick", 6, {"stacks": [6, 6]}, 72),

@@ -460,7 +460,7 @@ func start_level(index: int) -> void:
 		get_tree().create_timer(1.6).timeout.connect(_run_demo)
 	if levels[index].get("tutorial", false):
 		_show_hand()
-	if levels[index].has("intro") and not autoplay:
+	if levels[index].has("intro") and not autoplay and debug_demo == "":
 		var intro: Dictionary = levels[index].intro
 		get_tree().create_timer(1.25).timeout.connect(func():
 			if state.tiles.size() > 0 and not _blocked():
@@ -644,7 +644,7 @@ func _build_hold_row(area: Rect2) -> Control:
 	var pad := 16.0
 	var w: float = c.pitch * (GameState.HOLD_SIZE - 1) + c.size.x + pad * 2
 	var h: float = c.size.y + pad * 2
-	var panel := _panel(Rect2(area.get_center() - Vector2(w, h) / 2, Vector2(w, h)), Color(1, 0.97, 0.92, 0.7), Color("#E9B98F"), 30)
+	var panel := _panel(Rect2(area.get_center() - Vector2(w, h) / 2, Vector2(w, h)), Color(1, 0.96, 0.9, 0.95), Color("#D9A57A"), 30)
 	for i in GameState.HOLD_SIZE:
 		var at: Vector2 = _hold_slot(i) - panel.position - c.size / 2
 		if c.tex:
@@ -778,7 +778,10 @@ func _pick(id: int) -> void:
 	elif levels[level_index].get("tutorial", false) and tutorial_picks < 3:
 		get_tree().create_timer(FLY_TIME + 0.4).timeout.connect(_show_hand)
 
+## `from` is the tile's global position, `to` a point in this view (slots and
+## board positions are local; on tall screens the view itself is offset).
 func _fly(v: Control, from: Vector2, to: Vector2, duration: float, side: float) -> void:
+	to += global_position
 	var lift := Vector2(0, -minf(220.0, from.distance_to(to) * 0.35))
 	var mid := (from + to) / 2 + lift
 	var start_side := v.size.x
@@ -795,7 +798,7 @@ func _reflow(order: Array, skip: Array) -> void:
 		if skip.has(id):
 			continue
 		var v: Control = views[id]
-		var target: Vector2 = _tray_slot(i) - _tile_anchor(_tray_tile())
+		var target: Vector2 = global_position + _tray_slot(i) - _tile_anchor(_tray_tile())
 		create_tween().tween_property(v, "global_position", target, REFLOW_TIME).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
 
 func _merge(ids: Array) -> void:
@@ -811,7 +814,7 @@ func _merge(ids: Array) -> void:
 		tw.parallel().tween_property(v, "modulate:a", 0.0, MERGE_VANISH)
 		tw.tween_callback(v.queue_free)
 		views.erase(id)
-	var burst_at: Vector2 = center + _tile_anchor(_tray_tile())
+	var burst_at: Vector2 = center - global_position + _tile_anchor(_tray_tile())
 	get_tree().create_timer(MERGE_GATHER).timeout.connect(func():
 		_burst(burst_at, color)
 		_float_text(burst_at + Vector2(0, -90), "+30", Color("#E5484D"), 46)
@@ -1086,6 +1089,7 @@ func _run_demo() -> void:
 		elif debug_demo == "magnet":
 			state.boosters.magnet = 1
 			_place_boosters()
+			_refresh_hud()
 			get_tree().create_timer(0.8).timeout.connect(func():
 				_on_booster("magnet")
 				var deep: Dictionary = state.board_tiles().reduce(func(a, t): return t if int(t.layer) < int(a.layer) else a)
@@ -1102,7 +1106,7 @@ func _unlock(ids: Array) -> void:
 		tw.tween_property(v, "scale", Vector2(1.15, 1.15), 0.1)
 		tw.tween_callback(func(): v.lock_id = -1)
 		tw.tween_property(v, "scale", Vector2.ONE, 0.16).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
-		_burst(v.global_position + v.size / 2, Color("#F2B233"))
+		_burst(v.global_position - global_position + v.size / 2, Color("#F2B233"))
 
 ## Candles show their remaining steps; the last three pulse as a warning.
 func _burn(ids: Array) -> void:
@@ -1131,7 +1135,7 @@ func _thaw(ids: Array) -> void:
 		tw.tween_callback(func(): v.ice = left)
 		if left == 0:
 			sound.play("unlock", 1.2)
-			_burst(v.global_position + v.size / 2, Color("#A8DBFF"))
+			_burst(v.global_position - global_position + v.size / 2, Color("#A8DBFF"))
 
 func _refresh_hud() -> void:
 	_refresh_box_counts()
@@ -1217,7 +1221,7 @@ func _set_star_lit(star: TextureRect, lit: bool) -> void:
 		var tw := create_tween()
 		tw.tween_property(star, "scale", Vector2(1.5, 1.5), 0.14).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 		tw.tween_property(star, "scale", Vector2(1.2, 1.2), 0.18)
-		_burst(star.global_position + star.size / 2, Color("#FFC233"))
+		_burst(star.global_position - global_position + star.size / 2, Color("#FFC233"))
 	else:
 		star.texture = Art.ui("star_off") if Art.ui("star_off") else Art.ui("star")
 		star.material = null if Art.ui("star_off") else _unlit_star_material()

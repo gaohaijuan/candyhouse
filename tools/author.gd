@@ -86,4 +86,4 @@ func _save(id: int, best: Dictionary) -> void:
 
 static func _miss(r: float, skilled: float, target: float) -> float:
 	var gap := (r - target) * 2.0 if r > target else target - r
-	return gap + (20.0 if skilled < (0.3 if target <= 7.0 else 0.15) else 0.0)
+	return gap + (20.0 if skilled < (0.3 if target <= 7.0 else 0.25) else 0.0)

@@ -31,6 +31,13 @@ func _ready() -> void:
 		var p := AudioStreamPlayer.new()
 		pool.append(p)
 		add_child(p)
+	# Stop each player while it is still in the tree when the game quits;
+	# a playback left running is reported as a leak at exit.
+	for p in pool + [music]:
+		var player: AudioStreamPlayer = p
+		player.tree_exiting.connect(func():
+			player.stop()
+			player.stream = null)
 
 ## Legacy single switch (standalone game page): music and effects together.
 func set_enabled(on: bool) -> void:
@@ -55,6 +62,8 @@ func start_music() -> void:
 	# playback there is never released and shows up as a leak at exit.
 	if DisplayServer.get_name() == "headless":
 		return
+	if silent:
+		return
 	if music_on and music.stream and not music.playing:
 		music.play()
 
@@ -63,8 +72,12 @@ func vibrate(ms := 30) -> void:
 		Input.vibrate_handheld(ms)
 
 ## `pitch` lets combos climb; `db` adjusts loudness per use.
+## Debug screenshot runs (--capture) are silent: they end with --quit-after
+## while sounds may still be releasing, which the engine reports as leaks.
+static var silent := Array(OS.get_cmdline_user_args()).any(func(x): return String(x).begins_with("--capture"))
+
 func play(name: String, pitch := 1.0, db := 0.0) -> void:
-	if not enabled or not streams.has(name):
+	if silent or not enabled or not streams.has(name):
 		return
 	var p: AudioStreamPlayer = null
 	for q in pool:
@@ -86,3 +99,10 @@ func duck(seconds: float) -> void:
 	tw.tween_property(music, "volume_db", MUSIC_DB - 12.0, 0.15)
 	tw.tween_interval(seconds)
 	tw.tween_property(music, "volume_db", MUSIC_DB, 0.6)
+
+## Closing the window: stop all sound at once.
+func _notification(what: int) -> void:
+	if what == NOTIFICATION_WM_CLOSE_REQUEST:
+		music.stop()
+		for p in pool:
+			p.stop()
