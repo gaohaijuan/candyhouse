@@ -316,6 +316,10 @@ func _spend(kind: String) -> void:
 	boosters[kind] -= 1
 	boosters_used += 1
 
+## True once the player has taken any tile (leaving now costs a life).
+func started() -> bool:
+	return tiles.values().any(func(t): return t.place != "board")
+
 func remaining() -> int:
 	return tiles.values().filter(func(t): return t.place != "gone").size()
 

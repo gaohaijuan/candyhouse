@@ -402,6 +402,7 @@ func start_level(index: int) -> void:
 		state.boosters = {"undo": 9999, "move_out": 9999, "shuffle": 9999}
 		if start_boosters.get("extra_slot", false):
 			state.tray_size = GameState.TRAY_SIZE + 1
+	_apply_tray_art()
 	for v in views.values():
 		v.queue_free()
 	views.clear()
@@ -555,12 +556,30 @@ func _tray_texture_rect() -> Rect2:
 	var k := Vector2(target.size.x / f[2], target.size.y / f[3])
 	return Rect2(target.position - Vector2(f[0], f[1]) * k, Vector2(tex.get_width(), tex.get_height()) * k)
 
-## Tile size in the tray; a little smaller when the tray holds eight.
+## True when this level uses the eight-slot tray art ("多一格").
+func _tray8_art() -> bool:
+	return state != null and state.tray_size > GameState.TRAY_SIZE and Art.ui("tray_8") != null and layout.has("tray_texture_slots_8")
+
+## Shows the seven- or eight-slot tray picture for the current level. Both
+## pictures share one canvas, so the frame rect is the same.
+func _apply_tray_art() -> void:
+	if hud.get("tray") is TextureRect and Art.ui("tray"):
+		(hud.tray as TextureRect).texture = Art.ui("tray_8") if _tray8_art() else Art.ui("tray")
+
+## Tile size in the tray; smaller when the tray holds eight.
 func _tray_tile() -> float:
 	var side: float = layout.tray_slot
+	if _tray8_art():
+		return side * float(layout.tray_texture_slots_8.w) / float(layout.tray_texture_slots.w)
 	return side * 0.86 if state and state.tray_size > GameState.TRAY_SIZE else side
 
 func _tray_slot(i: int) -> Vector2:
+	if _tray8_art():
+		var r := _tray_texture_rect()
+		var tex := Art.ui("tray")
+		var k := r.size / Vector2(tex.get_width(), tex.get_height())
+		var s8: Dictionary = layout.tray_texture_slots_8
+		return r.position + Vector2(float(s8.cx[i]), float(s8.cy)) * k
 	if state and state.tray_size > GameState.TRAY_SIZE:
 		var a := _tray_slot7(0)
 		var b := _tray_slot7(GameState.TRAY_SIZE - 1)
@@ -1102,10 +1121,8 @@ func _on_pause() -> void:
 	if _blocked():
 		return
 	if app:
-		var cost: String = "  (体力 -1)" if app.profile.level_costs_life(level_index + 1) else ""
-		_open_popup("暂停", "", [["继续", _close_popup], ["重新开始" + cost, func(): _give_up("restart"), "cream"], ["返回主页" + cost, func(): _give_up("home"), "cream"], ["设置", func():
-			_close_popup()
-			app.popups.settings(), "cream"]])
+		var spends: bool = app.profile.level_costs_life(level_index + 1) and state.started() and not state.is_won()
+		app.popups.pause(spends, func(): pass, func(): _give_up("restart"), func(): _give_up("home"))
 		return
 	var sound_label := "声音:开" if sound.enabled else "声音:关"
 	_open_popup("暂停", "", [["继续", _close_popup], ["重新开始", func(): start_level(level_index), "cream"], ["选择关卡", _open_level_select, "cream"], [sound_label, _toggle_sound, "cream"]])
@@ -1267,7 +1284,7 @@ func _revive() -> void:
 ## Leaving a level without winning costs a life (outside the first levels).
 func _give_up(where: String) -> void:
 	_close_popup()
-	if not state.is_won() and state.tiles.size() - state.remaining() > 0 or state.is_lost():
+	if not state.is_won() and state.started() or state.is_lost():
 		app.profile.lose_life(app.now(), level_index + 1)
 		app.save()
 	if where == "restart":

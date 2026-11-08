@@ -395,6 +395,25 @@ func purchase_done(product_id: String, p: Dictionary) -> void:
 	_pill_at(box, "好的", "pink", Rect2(Vector2(270, 1621) - o, Vector2(539, 171)), func(): close(info))
 	Kit.finish_popup(info, 72.0)
 
+## In-level pause: continue, restart / home (heart badge when a life is
+## spent) and settings; the close button also continues.
+func pause(costs_life: bool, resume: Callable, restart: Callable, home: Callable) -> void:
+	var info := _make("暂停", true, 907.0)
+	info.close.pressed.connect(resume)
+	var box := _abs_body(info, 165, 4 * 190 - 30)
+	var rows := [["继续", "pink", resume, false], ["重新开始", "cream", restart, costs_life], ["返回主页", "cream", home, costs_life], ["设置", "cream", func(): settings(), false]]
+	for i in rows.size():
+		var r: Array = rows[i]
+		var rect := Rect2(52, i * 190, 663, 160)
+		var act: Callable = r[2]
+		_pill_at(box, r[0], r[1], rect, func():
+			close(info)
+			act.call())
+		if r[3]:
+			Kit.art(box, "heart_cost_badge", Rect2(rect.end.x - 110, rect.position.y - 22, 120, 103), "", Color("#E5484D"))
+			Kit.text_at(box, "-1", Rect2(rect.end.x - 92, rect.position.y - 4, 84, 56), 48, Color.WHITE, Color("#B5262C"), 6)
+	Kit.finish_popup(info, 60.0)
+
 # ---------------------------------------------------------------- results
 
 ## Win: stars, coins, double-by-ad, next level (with interstitial pacing).
