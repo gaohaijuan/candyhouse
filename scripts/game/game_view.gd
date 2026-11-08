@@ -119,7 +119,16 @@ func _blocked() -> bool:
 
 func _rect(key: String) -> Rect2:
 	var r: Array = layout[key]
-	return Rect2(r[0], r[1], r[2], r[3])
+	return Rect2(r[0], r[1] + _band(key), r[2], r[3])
+
+## Tall screens: the HUD goes up to the screen top and the boosters down to the
+## bottom; the board and the tray move by a share, so the gaps grow evenly and
+## the playing area stays in the middle.
+const BANDS := {"pause_button": 0.0, "level_plaque": 0.0, "coin_pill": 0.0, "progress_bar": 0.0,
+	"board": 0.4, "hold_row": 0.6, "tray": 0.6, "boosters": 1.0}
+
+func _band(key: String) -> float:
+	return Kit.band_shift(BANDS[key]) if BANDS.has(key) else 0.0
 
 # ---------------------------------------------------------------- building
 
@@ -215,7 +224,7 @@ func _build_static() -> void:
 		var key: String = ["undo", "move_out", "shuffle"][i]
 		var label: String = ["撤回", "移出", "洗牌"][i]
 		var glyph: String = ["↶", "⇪", "⟲"][i]
-		var c := Vector2(layout.booster_x[i], layout.boosters_y)
+		var c := Vector2(layout.booster_x[i], layout.boosters_y + _band("boosters"))
 		var side: float = layout.booster_size
 		var b: BaseButton
 		var disc := Art.ui("button_round_green" if key == "move_out" else "button_round_pink")
@@ -469,13 +478,18 @@ func _board_pos(t: Dictionary) -> Vector2:
 	if t.has("stack"):
 		var side := _tile_side(t)
 		var step: Array = layout.stack_step
-		var anchor: Array = layout.stacks[int(t.stack)]
+		var anchor := _stack_anchor(int(t.stack))
 		var dir := 1.0 if int(t.stack) == 0 else -1.0
-		var x: float = anchor[0] + dir * float(step[0]) * int(t.depth)
+		var x: float = anchor.x + dir * float(step[0]) * int(t.depth)
 		if dir < 0:
 			x -= side
-		return Vector2(x, float(anchor[1]) + float(step[1]) * int(t.depth))
+		return Vector2(x, anchor.y + float(step[1]) * int(t.depth))
 	return board_origin + Vector2(t.x, t.y) * tile_px / 2 - Vector2(0, t.layer * layout.layer_lift)
+
+## Side piles sit beside the hold row and move with it on tall screens.
+func _stack_anchor(i: int) -> Vector2:
+	var a: Array = layout.stacks[i]
+	return Vector2(float(a[0]), float(a[1]) + _band("hold_row"))
 
 ## Wooden box under each side pile. The box is drawn behind the tiles and its
 ## front wall (a crop of the same art) in front, so tiles stand inside the box.
@@ -489,14 +503,14 @@ func _build_boxes() -> void:
 	var side := float(layout.stack_tile)
 	for i in stacks.size():
 		var tex := Art.ui("box_base_left" if i == 0 else "box_base_right")
-		var anchor: Array = layout.stacks[i]
+		var anchor := _stack_anchor(i)
 		var pile_w := side + float(layout.stack_step[0]) * (int(stacks[i].count) - 1)
 		var w: float = pile_w + float(bm.side_pad) * 2
 		var k: float = w / float(bm.visible[2])
-		var pile_left := float(anchor[0]) if i == 0 else float(anchor[0]) - pile_w
+		var pile_left := anchor.x if i == 0 else anchor.x - pile_w
 		var visible_left := pile_left - float(bm.side_pad)
 		# Tile bottoms rest on the box's inner floor line, behind the front wall.
-		var tile_bottom := float(anchor[1]) + _tile_visible_bottom(side)
+		var tile_bottom := anchor.y + _tile_visible_bottom(side)
 		var top := tile_bottom - float(bm.rest_y) * k
 		var origin := Vector2(visible_left, top) - Vector2(bm.visible[0], 0) * k
 		if tex:
@@ -821,7 +835,7 @@ func _on_booster(kind: String) -> void:
 		"shuffle":
 			var r := state.shuffle()
 			if not r.ok and state.can_shuffle():
-				_float_text(Vector2(540, 1180), "冰块太多,现在无法洗牌", Color("#2A7CC7"), 40)
+				_float_text(Vector2(540, 1180 + _band("hold_row")), "冰块太多,现在无法洗牌", Color("#2A7CC7"), 40)
 			if r.ok:
 				for id in r.ids:
 					var v: Control = views[id]
@@ -903,7 +917,7 @@ func _use_magnet() -> void:
 	if not r.ok:
 		return
 	sound.play("booster")
-	var center := Vector2(540, 1250)
+	var center := Vector2(540, 1250 + _band("hold_row"))
 	for id in r.ids:
 		var v: Control = views[id]
 		var start := v.global_position
@@ -1327,7 +1341,8 @@ func _open_popup(title: String, subtitle: String, buttons: Array, stars := -1, b
 	var dimmer := ColorRect.new()
 	var dim: Array = layout.get("popup_dim", [47, 11, 0, 0.69])
 	dimmer.color = Color8(int(dim[0]), int(dim[1]), int(dim[2]), int(float(dim[3]) * 255))
-	dimmer.size = size
+	dimmer.position = Kit.screen_rect().position
+	dimmer.size = Kit.screen_rect().size
 	popup.add_child(dimmer)
 	var pl: Dictionary = layout.popup
 	var panel_w: float = pl.panel_width
@@ -1419,6 +1434,7 @@ func _open_popup(title: String, subtitle: String, buttons: Array, stars := -1, b
 		st.position = Vector2(80, y)
 		st.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		st.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+		_shrink_to_fit(st)
 		panel.add_child(st)
 		y += lh * lines + float(pl.block_gap)
 	panel.set_meta("body_top", y)
@@ -1510,7 +1526,7 @@ func _confetti() -> void:
 	for i in 4:
 		var p := CPUParticles2D.new()
 		p.z_index = 100
-		p.position = Vector2(540, -30)
+		p.position = Vector2(540, -30 - Kit.extra)
 		p.emission_shape = CPUParticles2D.EMISSION_SHAPE_RECTANGLE
 		p.emission_rect_extents = Vector2(560, 10)
 		p.amount = 26

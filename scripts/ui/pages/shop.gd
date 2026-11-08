@@ -17,20 +17,22 @@ func setup(owner_app, _args: Dictionary) -> void:
 	app = owner_app
 	Common.background(self, "shop_bg")
 	scroll = ScrollContainer.new()
-	scroll.position = Vector2(0, TOP)
-	scroll.size = Vector2(1080, 1920 - TOP + Kit.extra)
+	var top := Kit.band(self, 0.0)
+	scroll.position = Vector2(0, TOP + top.position.y)
+	scroll.size = Vector2(1080, 1920 - TOP - top.position.y + Kit.extra)
 	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_SHOW_NEVER
 	add_child(scroll)
+	move_child(top, get_child_count() - 1)
 	content = Control.new()
 	content.mouse_filter = Control.MOUSE_FILTER_PASS
 	scroll.add_child(content)
-	var back := Kit.art_button(self, "button_back", Rect2(18, 14, 131, 132), "返")
+	var back := Kit.art_button(top, "button_back", Rect2(18, 14, 131, 132), "返")
 	back.pressed.connect(func(): app.goto("home"))
-	Kit.art(self, "popup_ribbon", Rect2(283, 13, 505, 152))
-	Kit.text_at(self, "商店", Rect2(400, 30, 280, 82), 70, Kit.CREAM, Kit.OUTLINE, 12)
-	Kit.art(self, "coin_pill", Rect2(792, 36, 272, 92))
-	balance = Kit.text_at(self, "", Rect2(868, 57, 135, 50), 42, Kit.BROWN)
+	Kit.art(top, "popup_ribbon", Rect2(283, 13, 505, 152))
+	Kit.text_at(top, "商店", Rect2(400, 30, 280, 82), 70, Kit.CREAM, Kit.OUTLINE, 12)
+	Kit.art(top, "coin_pill", Rect2(792, 36, 272, 92))
+	balance = Kit.text_at(top, "", Rect2(868, 57, 135, 50), 42, Kit.BROWN)
 	app.wallet_changed.connect(_rebuild)
 	_rebuild()
 

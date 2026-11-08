@@ -87,12 +87,22 @@ func _ready() -> void:
 		get_tree().create_timer(1.2).timeout.connect(func(): popups.debug_open(debug_args.open))
 
 ## Centres the 1080x1920 design on screens taller than 9:16 (e.g. folding
-## phones' cover screens, 21:9 phones). Wider screens get side bars from the
-## stretch mode; the clear colour keeps them soft.
+## phones' cover screens, 21:9 phones); pages then move their top and bottom
+## menus out to the screen edges (Kit.band_shift). Wider screens get side bars
+## from the stretch mode; the clear colour keeps them soft.
 func _fit_screen() -> void:
 	var h: float = get_viewport().get_visible_rect().size.y
 	Kit.extra = maxf(0.0, (h - 1920.0) / 2.0)
 	position.y = Kit.extra
+	Kit.inset_top = 0.0
+	Kit.inset_bottom = 0.0
+	if OS.has_feature("mobile"):
+		var screen := DisplayServer.screen_get_size()
+		var safe := DisplayServer.get_display_safe_area()
+		if screen.x > 0:
+			var k := 1080.0 / screen.x
+			Kit.inset_top = safe.position.y * k
+			Kit.inset_bottom = (screen.y - safe.end.y) * k
 
 func _build_flag(name: String) -> bool:
 	if not FileAccess.file_exists("res://data/build.json"):

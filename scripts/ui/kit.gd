@@ -19,6 +19,31 @@ static var extra := 0.0
 static func screen_rect() -> Rect2:
 	return Rect2(0, -extra, 1080, 1920 + 2 * extra)
 
+## Screen-edge insets (camera cutout, gesture bar) in canvas units.
+static var inset_top := 0.0
+static var inset_bottom := 0.0
+const EDGE_TOP := 40.0
+const EDGE_BOTTOM := 24.0
+
+## On tall screens the top menu moves up towards the screen top and the bottom
+## menu down towards the bottom, each keeping a small gap from the edge (and
+## clear of any cutout). Bands between move by a share of both, so the empty
+## space is spread between the parts instead of piling up at the ends.
+## t = 0 is the top menu, 1 the bottom menu.
+static func band_shift(t: float) -> float:
+	var up := -maxf(0.0, extra - maxf(inset_top, EDGE_TOP))
+	var down := maxf(0.0, extra - maxf(inset_bottom, EDGE_BOTTOM))
+	return lerpf(up, down, t)
+
+## A full-canvas container for one band; build the band's widgets into it.
+static func band(parent: Control, t: float) -> Control:
+	var c := Control.new()
+	c.size = Vector2(1080, 1920)
+	c.position.y = band_shift(t)
+	c.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	parent.add_child(c)
+	return c
+
 static func _layout() -> Dictionary:
 	if layout.is_empty():
 		layout = JSON.parse_string(FileAccess.get_file_as_string("res://data/layout.json"))

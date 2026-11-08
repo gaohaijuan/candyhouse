@@ -60,7 +60,7 @@ func setup(owner_app, _args: Dictionary) -> void:
 	_bottom_bar()
 	scroll.get_v_scroll_bar().value_changed.connect(func(_v): _update_chapter())
 	await get_tree().process_frame
-	scroll.scroll_vertical = int(points[current].y - 1000)
+	scroll.scroll_vertical = int(points[current].y - 1000 - Kit.extra)
 	_update_chapter()
 
 ## Chapter c spans [top, top + BLOCK); chapter 0 is at the bottom.
@@ -198,36 +198,38 @@ func _node(content: Control, i: int, p: Vector2, state: String) -> void:
 		Kit.text_at(content, "困难" if tag == "hard" else "超难", Rect2(tr.position.x + 32, tr.position.y + 27, 86, 28), 30, Kit.CREAM, Color("#8E1E25"), 6)
 
 func _header() -> void:
-	var back := Kit.art_button(self, "button_back", Rect2(14, 25, 141, 141), "返")
+	var top := Kit.band(self, 0.0)
+	var back := Kit.art_button(top, "button_back", Rect2(14, 25, 141, 141), "返")
 	back.pressed.connect(func(): app.goto("home"))
-	Kit.art(self, "popup_ribbon", Rect2(201, 0, 629, 218))
-	chapter_label = Kit.text_at(self, "", Rect2(396, 17, 264, 71), 66, Kit.CREAM, Kit.OUTLINE, 10)
-	chapter_name = Kit.text_at(self, "", Rect2(346, 90, 364, 79), 56, Kit.CREAM, Kit.OUTLINE, 10)
-	Kit.art(self, "coin_pill", Rect2(838, 54, 239, 84))
-	var coins := Kit.text_at(self, str(app.profile.data.coins), Rect2(905, 72, 112, 48), 40, Kit.BROWN)
-	var hit := Kit.hit_area(self, Rect2(838, 54, 239, 84))
+	Kit.art(top, "popup_ribbon", Rect2(201, 0, 629, 218))
+	chapter_label = Kit.text_at(top, "", Rect2(396, 17, 264, 71), 66, Kit.CREAM, Kit.OUTLINE, 10)
+	chapter_name = Kit.text_at(top, "", Rect2(346, 90, 364, 79), 56, Kit.CREAM, Kit.OUTLINE, 10)
+	Kit.art(top, "coin_pill", Rect2(838, 54, 239, 84))
+	var coins := Kit.text_at(top, str(app.profile.data.coins), Rect2(905, 72, 112, 48), 40, Kit.BROWN)
+	var hit := Kit.hit_area(top, Rect2(838, 54, 239, 84))
 	hit.pressed.connect(func(): app.goto("shop"))
 	app.wallet_changed.connect(func():
 		if is_instance_valid(coins):
 			coins.text = str(app.profile.data.coins))
 
 func _bottom_bar() -> void:
+	var bottom := Kit.band(self, 1.0)
 	var r := Rect2(53, 1711, 994, 172)
-	Kit.art(self, "map_bottom_bar", r, "", Color("#FFF4DE"))
-	Kit.art(self, "star", Rect2(215, 1740, 123, 116), "★", Color("#FFC233"))
+	Kit.art(bottom, "map_bottom_bar", r, "", Color("#FFF4DE"))
+	Kit.art(bottom, "star", Rect2(215, 1740, 123, 116), "★", Color("#FFC233"))
 	var pr: Vector2i = app.profile.chest_progress()
 	var ready := pr.x >= pr.y
-	Kit.text_at(self, "%d/%d" % [mini(pr.x, pr.y), pr.y], Rect2(345, 1752, 330, 92), 72, Kit.BROWN).horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
-	var chest := Kit.art_button(self, "chest_closed", Rect2(736, 1717, 178, 164), "箱")
+	Kit.text_at(bottom, "%d/%d" % [mini(pr.x, pr.y), pr.y], Rect2(345, 1752, 330, 92), 72, Kit.BROWN).horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
+	var chest := Kit.art_button(bottom, "chest_closed", Rect2(736, 1717, 178, 164), "箱")
 	chest.pressed.connect(func(): app.popups.star_chest())
 	if ready:
 		chest.create_tween().set_loops().tween_property(chest, "rotation", 0.08, 0.15).from(-0.08).set_trans(Tween.TRANS_SINE)
-	var hit := Kit.hit_area(self, r)
+	var hit := Kit.hit_area(bottom, r)
 	hit.pressed.connect(func(): app.popups.star_chest())
-	move_child(chest, get_child_count() - 1)
+	bottom.move_child(chest, bottom.get_child_count() - 1)
 
 func _update_chapter() -> void:
-	var mid: float = scroll.scroll_vertical + 960.0
+	var mid: float = scroll.scroll_vertical + 960.0 + Kit.extra
 	var c := clampi(int((height - BOTTOM_PAD - mid) / BLOCK), 0, chapters - 1)
 	chapter_label.text = "第 %d 章" % (c + 1)
 	chapter_name.text = CHAPTERS[mini(c, CHAPTERS.size() - 1)]
