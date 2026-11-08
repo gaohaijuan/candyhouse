@@ -148,9 +148,7 @@ func _test_shuffle(level: Dictionary) -> void:
 		for t in s.board_tiles():
 			before[t.type] = int(before.get(t.type, 0)) + 1
 		var r := s.shuffle()
-		if not r.ok and s.boosters.shuffle > 0:
-			continue  # ice can make an immediate safe re-deal impossible; the deal is kept
-		check(r.ok, "shuffle allowed")
+		check(r.ok, "shuffle always works (trial %d)" % trial)
 		var after := {}
 		for t in s.board_tiles():
 			after[t.type] = int(after.get(t.type, 0)) + 1
@@ -166,7 +164,9 @@ func _test_shuffle(level: Dictionary) -> void:
 		while not s.is_finished() and steps < 200:
 			s.pick(s.solution[0])
 			steps += 1
-		check(s.is_won(), "after shuffle the solution still wins (trial %d)" % trial)
+		# A proven re-deal keeps a winning order; the random fallback need not.
+		if r.proven:
+			check(s.is_won(), "after a proven shuffle the solution still wins (trial %d)" % trial)
 
 func _test_ice(level: Dictionary) -> void:
 	var s := GameState.new(level)
@@ -347,21 +347,46 @@ func _test_authored(levels: Array) -> void:
 		var s := GameState.new(level)
 		check(s.wins_with(s.solution.duplicate()), "L%d authored board wins along its order" % level.id)
 		var r: float = level.get("rating", -1.0)
-		check(absf(r - float(level.target_rating)) <= 1.5, "L%d rating %.1f near target %.1f" % [level.id, r, level.target_rating])
+		# Measured without boosters. Easier than planned is acceptable, harder
+		# only a little; skilled players must win often enough on skill alone.
+		var target: float = float(level.target_rating)
+		check(r <= target + 1.2 and r >= target - 3.0, "L%d rating %.1f fits target %.1f" % [level.id, r, target])
+		var sk: float = float(level.get("measured", {}).get("skilled", 0.0))
+		check(sk >= (0.3 if target <= 7.0 else 0.15), "L%d skilled win %.0f%% without boosters" % [level.id, sk * 100])
 		for t in s.tiles.values():
 			if t.get("mystery", false):
 				check(not s.type_known(t.id), "L%d mystery dessert hidden on the board" % level.id)
 
-## Magnet keeps every authored board winnable; the extra slot gives an 8th place.
+## Magnet: the tapped dessert leaves with two of its kind (tray ones first,
+## else from anywhere on the board, buried too); the extra slot gives an 8th place.
 func _test_start_boosters(levels: Array) -> void:
 	for level in levels:
 		if not level.has("board"):
 			continue
 		var s := GameState.new(level)
 		var before := s.remaining()
-		var r := s.magnet()
-		check(r.ok and s.remaining() == before - 3, "L%d magnet clears a triple" % level.id)
-		check(s.wins_with(s.solution.duplicate()), "L%d still winnable after magnet" % level.id)
+		check(not s.magnet(s.solution[0]).ok, "L%d magnet needs the booster" % level.id)
+		s.boosters["magnet"] = 1
+		# Tap the deepest tile: its partners may be buried anywhere.
+		var deep: Dictionary = s.board_tiles().reduce(func(a, t): return t if int(t.layer) < int(a.layer) else a)
+		var r := s.magnet(deep.id)
+		check(r.ok and s.remaining() == before - 3 and r.ids.has(deep.id), "L%d magnet clears the tapped dessert's triple" % level.id)
+		check(r.ids.all(func(x): return int(s.tiles[x].type) == int(deep.type)), "L%d magnet takes one kind" % level.id)
+		check(not s.magnet(s.board_tiles()[0].id).ok, "L%d magnet works once" % level.id)
+	# Partial triple in the tray goes first.
+	var m := GameState.new(levels[0])
+	m.boosters["magnet"] = 1
+	var first: int = m.solution[0]
+	m.pick(first)
+	var other: Array = m.board_tiles().filter(func(t): return int(t.type) == int(m.tiles[first].type))
+	var r2 := m.magnet(other[0].id)
+	check(r2.ok and m.tray.is_empty() and r2.ids.has(first), "magnet takes the tray tile of the tapped kind")
+	# Shuffle always re-deals, even when no proven deal exists.
+	for level in levels:
+		if level.get("ice", []).is_empty():
+			continue
+		var sh := GameState.new(level)
+		check(sh.shuffle().ok, "L%d shuffle works with ice on the board" % level.id)
 	var e := GameState.new(levels[2])
 	e.tray_size = 8
 	var counts := {}

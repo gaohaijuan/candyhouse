@@ -36,13 +36,13 @@
    "tutorial": true,
    "target_rating": 1.0,
    "types_range": [
-    4,
+    3,
     5
    ]
   },
   {
    "id": 2,
-   "types": 6,
+   "types": 5,
    "max_open": 1,
    "seed": 202,
    "shape": "brick",
@@ -77,13 +77,13 @@
    ],
    "target_rating": 2.0,
    "types_range": [
-    5,
-    7
+    4,
+    6
    ]
   },
   {
    "id": 3,
-   "types": 8,
+   "types": 6,
    "max_open": 1,
    "seed": 303,
    "shape": "brick3",
@@ -132,13 +132,13 @@
    ],
    "target_rating": 3.5,
    "types_range": [
-    7,
-    9
+    4,
+    8
    ]
   },
   {
    "id": 4,
-   "types": 9,
+   "types": 6,
    "max_open": 1,
    "seed": 404,
    "shape": "heart",
@@ -188,20 +188,20 @@
      ]
     }
    ],
-   "mystery": 4,
+   "mystery": 3,
    "intro": {
     "title": "新玩法:神秘方块",
     "text": "问号方块里的甜点看不见\n拿进托盘时才会揭晓"
    },
-   "target_rating": 4.5,
+   "target_rating": 3.5,
    "types_range": [
-    8,
-    11
+    4,
+    8
    ]
   },
   {
    "id": 5,
-   "types": 11,
+   "types": 7,
    "max_open": 1,
    "seed": 505,
    "shape": "brick",
@@ -248,16 +248,16 @@
      ]
     }
    ],
-   "mystery": 6,
-   "target_rating": 5.5,
+   "mystery": 5,
+   "target_rating": 4.5,
    "types_range": [
-    10,
-    15
+    5,
+    9
    ]
   },
   {
    "id": 6,
-   "types": 11,
+   "types": 8,
    "max_open": 1,
    "seed": 606,
    "shape": "heart3",
@@ -307,16 +307,16 @@
      ]
     }
    ],
-   "mystery": 8,
-   "target_rating": 6.0,
+   "mystery": 6,
+   "target_rating": 5.0,
    "types_range": [
-    10,
-    15
+    5,
+    11
    ]
   },
   {
    "id": 7,
-   "types": 11,
+   "types": 8,
    "max_open": 1,
    "seed": 707,
    "shape": "diamond",
@@ -366,16 +366,16 @@
      ]
     }
    ],
-   "mystery": 10,
-   "target_rating": 6.5,
+   "mystery": 8,
+   "target_rating": 5.5,
    "types_range": [
-    10,
-    15
+    5,
+    11
    ]
   },
   {
    "id": 8,
-   "types": 13,
+   "types": 9,
    "max_open": 1,
    "seed": 808,
    "shape": "flower",
@@ -439,16 +439,16 @@
      ]
     }
    ],
-   "mystery": 12,
-   "target_rating": 8.0,
+   "mystery": 10,
+   "target_rating": 7.0,
    "types_range": [
-    9,
-    14
+    6,
+    12
    ]
   },
   {
    "id": 9,
-   "types": 9,
+   "types": 7,
    "max_open": 1,
    "seed": 909,
    "shape": "small",
@@ -496,7 +496,9 @@
     }
    ],
    "ice": [
-    1
+    2,
+    2,
+    2
    ],
    "intro": {
     "title": "新玩法:冰封方块",
@@ -504,13 +506,13 @@
    },
    "target_rating": 4.5,
    "types_range": [
-    11,
-    14
+    5,
+    9
    ]
   },
   {
    "id": 10,
-   "types": 11,
+   "types": 8,
    "max_open": 1,
    "seed": 1010,
    "shape": "brick",
@@ -558,18 +560,20 @@
     }
    ],
    "ice": [
-    1,
-    2
+    2,
+    2,
+    3,
+    3
    ],
    "target_rating": 5.5,
    "types_range": [
-    9,
+    5,
     11
    ]
   },
   {
    "id": 11,
-   "types": 11,
+   "types": 8,
    "max_open": 1,
    "seed": 1111,
    "shape": "heart3",
@@ -620,18 +624,20 @@
     }
    ],
    "ice": [
-    1,
-    2
+    2,
+    3,
+    3,
+    3
    ],
    "target_rating": 6.0,
    "types_range": [
-    13,
-    16
+    5,
+    11
    ]
   },
   {
    "id": 12,
-   "types": 11,
+   "types": 8,
    "max_open": 1,
    "seed": 1212,
    "shape": "butterfly",
@@ -682,19 +688,20 @@
     }
    ],
    "ice": [
-    2,
-    2,
-    3
+    3,
+    3,
+    3,
+    4
    ],
    "target_rating": 6.5,
    "types_range": [
-    9,
+    5,
     11
    ]
   },
   {
    "id": 13,
-   "types": 13,
+   "types": 10,
    "max_open": 1,
    "seed": 1313,
    "shape": "cake",
@@ -759,19 +766,21 @@
     }
    ],
    "ice": [
-    2,
     3,
-    3
+    3,
+    4,
+    4,
+    5
    ],
    "target_rating": 8.0,
    "types_range": [
-    11,
-    15
+    6,
+    14
    ]
   },
   {
    "id": 14,
-   "types": 11,
+   "types": 8,
    "max_open": 1,
    "seed": 1414,
    "shape": "heart",
@@ -823,18 +832,18 @@
    ],
    "mystery": 4,
    "ice": [
-    1,
-    1
+    2,
+    2
    ],
    "target_rating": 5.5,
    "types_range": [
-    9,
-    13
+    5,
+    11
    ]
   },
   {
    "id": 15,
-   "types": 11,
+   "types": 8,
    "max_open": 1,
    "seed": 1515,
    "shape": "brick3",
@@ -883,18 +892,19 @@
    ],
    "mystery": 6,
    "ice": [
-    1,
-    2
+    2,
+    2,
+    3
    ],
    "target_rating": 6.0,
    "types_range": [
-    10,
-    15
+    5,
+    11
    ]
   },
   {
    "id": 16,
-   "types": 11,
+   "types": 8,
    "max_open": 1,
    "seed": 1616,
    "shape": "diamond",
@@ -947,17 +957,18 @@
    "mystery": 8,
    "ice": [
     2,
-    2
+    3,
+    3
    ],
    "target_rating": 6.5,
    "types_range": [
-    9,
-    13
+    5,
+    11
    ]
   },
   {
    "id": 17,
-   "types": 12,
+   "types": 9,
    "max_open": 1,
    "seed": 1717,
    "shape": "flower",
@@ -1023,18 +1034,19 @@
    ],
    "mystery": 10,
    "ice": [
-    2,
-    3
+    3,
+    3,
+    4
    ],
    "target_rating": 7.0,
    "types_range": [
-    10,
-    14
+    6,
+    12
    ]
   },
   {
    "id": 18,
-   "types": 13,
+   "types": 10,
    "max_open": 1,
    "seed": 1818,
    "shape": "tower",
@@ -1100,19 +1112,20 @@
    ],
    "mystery": 12,
    "ice": [
-    2,
     3,
-    3
+    3,
+    4,
+    4
    ],
    "target_rating": 8.0,
    "types_range": [
-    9,
+    6,
     14
    ]
   },
   {
    "id": 19,
-   "types": 9,
+   "types": 7,
    "max_open": 1,
    "seed": 1919,
    "shape": "small",
@@ -1173,13 +1186,13 @@
    },
    "target_rating": 4.5,
    "types_range": [
-    8,
-    11
+    5,
+    9
    ]
   },
   {
    "id": 20,
-   "types": 11,
+   "types": 8,
    "max_open": 1,
    "seed": 2020,
    "shape": "brick",
@@ -1236,13 +1249,13 @@
    ],
    "target_rating": 5.5,
    "types_range": [
-    9,
-    13
+    5,
+    11
    ]
   },
   {
    "id": 21,
-   "types": 11,
+   "types": 8,
    "max_open": 1,
    "seed": 2121,
    "shape": "heart3",
@@ -1302,13 +1315,13 @@
    ],
    "target_rating": 6.0,
    "types_range": [
-    9,
-    13
+    5,
+    11
    ]
   },
   {
    "id": 22,
-   "types": 11,
+   "types": 8,
    "max_open": 1,
    "seed": 2222,
    "shape": "butterfly",
@@ -1368,13 +1381,13 @@
    ],
    "target_rating": 6.5,
    "types_range": [
-    9,
-    13
+    5,
+    11
    ]
   },
   {
    "id": 23,
-   "types": 13,
+   "types": 10,
    "max_open": 1,
    "seed": 2323,
    "shape": "cake",
@@ -1448,13 +1461,13 @@
    ],
    "target_rating": 8.0,
    "types_range": [
-    11,
-    15
+    6,
+    14
    ]
   },
   {
    "id": 24,
-   "types": 9,
+   "types": 7,
    "max_open": 1,
    "seed": 2424,
    "shape": "brick",
@@ -1508,13 +1521,13 @@
    },
    "target_rating": 4.5,
    "types_range": [
-    8,
-    11
+    5,
+    9
    ]
   },
   {
    "id": 25,
-   "types": 11,
+   "types": 8,
    "max_open": 1,
    "seed": 2525,
    "shape": "brick3",
@@ -1564,13 +1577,13 @@
    "locks": 1,
    "target_rating": 5.5,
    "types_range": [
-    10,
-    15
+    5,
+    11
    ]
   },
   {
    "id": 26,
-   "types": 11,
+   "types": 8,
    "max_open": 1,
    "seed": 2626,
    "shape": "heart3",
@@ -1623,13 +1636,13 @@
    "locks": 2,
    "target_rating": 6.0,
    "types_range": [
-    10,
-    15
+    5,
+    11
    ]
   },
   {
    "id": 27,
-   "types": 11,
+   "types": 8,
    "max_open": 1,
    "seed": 2727,
    "shape": "diamond",
@@ -1682,13 +1695,13 @@
    "locks": 2,
    "target_rating": 6.5,
    "types_range": [
-    10,
-    15
+    5,
+    11
    ]
   },
   {
    "id": 28,
-   "types": 13,
+   "types": 10,
    "max_open": 1,
    "seed": 2828,
    "shape": "flower",
@@ -1755,13 +1768,13 @@
    "locks": 3,
    "target_rating": 8.0,
    "types_range": [
-    12,
-    17
+    6,
+    14
    ]
   },
   {
    "id": 29,
-   "types": 11,
+   "types": 8,
    "max_open": 1,
    "seed": 2929,
    "shape": "brick",
@@ -1819,13 +1832,13 @@
    "locks": 1,
    "target_rating": 5.5,
    "types_range": [
-    9,
-    13
+    5,
+    11
    ]
   },
   {
    "id": 30,
-   "types": 11,
+   "types": 8,
    "max_open": 1,
    "seed": 3030,
    "shape": "heart3",
@@ -1886,13 +1899,13 @@
    "locks": 1,
    "target_rating": 6.0,
    "types_range": [
-    13,
-    16
+    5,
+    11
    ]
   },
   {
    "id": 31,
-   "types": 11,
+   "types": 8,
    "max_open": 1,
    "seed": 3131,
    "shape": "butterfly",
@@ -1953,13 +1966,13 @@
    "locks": 2,
    "target_rating": 6.5,
    "types_range": [
-    12,
-    15
+    5,
+    11
    ]
   },
   {
    "id": 32,
-   "types": 12,
+   "types": 9,
    "max_open": 1,
    "seed": 3232,
    "shape": "cake",
@@ -2034,13 +2047,13 @@
    "locks": 2,
    "target_rating": 7.0,
    "types_range": [
-    10,
-    14
+    6,
+    12
    ]
   },
   {
    "id": 33,
-   "types": 13,
+   "types": 10,
    "max_open": 1,
    "seed": 3333,
    "shape": "tower",
@@ -2115,13 +2128,13 @@
    "locks": 3,
    "target_rating": 8.0,
    "types_range": [
-    11,
-    15
+    6,
+    14
    ]
   },
   {
    "id": 34,
-   "types": 9,
+   "types": 7,
    "max_open": 1,
    "seed": 3434,
    "shape": "brick3",
@@ -2177,13 +2190,13 @@
    },
    "target_rating": 4.5,
    "types_range": [
-    8,
-    12
+    5,
+    9
    ]
   },
   {
    "id": 35,
-   "types": 11,
+   "types": 8,
    "max_open": 1,
    "seed": 3535,
    "shape": "heart3",
@@ -2236,15 +2249,15 @@
    "candles": [
     10
    ],
-   "target_rating": 4.5,
+   "target_rating": 5.5,
    "types_range": [
-    9,
-    13
+    5,
+    11
    ]
   },
   {
    "id": 36,
-   "types": 11,
+   "types": 8,
    "max_open": 1,
    "seed": 3636,
    "shape": "diamond",
@@ -2299,13 +2312,13 @@
    ],
    "target_rating": 6.0,
    "types_range": [
-    10,
-    15
+    5,
+    11
    ]
   },
   {
    "id": 37,
-   "types": 11,
+   "types": 8,
    "max_open": 1,
    "seed": 3737,
    "shape": "butterfly",
@@ -2361,13 +2374,13 @@
    ],
    "target_rating": 6.5,
    "types_range": [
-    15,
-    18
+    5,
+    11
    ]
   },
   {
    "id": 38,
-   "types": 13,
+   "types": 10,
    "max_open": 1,
    "seed": 3838,
    "shape": "flower",
@@ -2432,18 +2445,18 @@
     }
    ],
    "candles": [
-    6,
-    8
+    8,
+    10
    ],
    "target_rating": 8.0,
    "types_range": [
-    11,
-    15
+    6,
+    14
    ]
   },
   {
    "id": 39,
-   "types": 11,
+   "types": 8,
    "max_open": 1,
    "seed": 3939,
    "shape": "brick3",
@@ -2491,21 +2504,21 @@
     }
    ],
    "ice": [
-    1,
-    1
+    2,
+    2
    ],
    "candles": [
     10
    ],
    "target_rating": 5.5,
    "types_range": [
-    8,
-    12
+    5,
+    11
    ]
   },
   {
    "id": 40,
-   "types": 11,
+   "types": 8,
    "max_open": 1,
    "seed": 4040,
    "shape": "heart3",
@@ -2556,21 +2569,22 @@
     }
    ],
    "ice": [
-    1,
-    2
+    2,
+    2,
+    3
    ],
    "candles": [
     9
    ],
-   "target_rating": 8.0,
+   "target_rating": 6.0,
    "types_range": [
-    10,
-    13
+    5,
+    11
    ]
   },
   {
    "id": 41,
-   "types": 11,
+   "types": 8,
    "max_open": 1,
    "seed": 4141,
    "shape": "diamond",
@@ -2622,7 +2636,8 @@
    ],
    "ice": [
     2,
-    2
+    3,
+    3
    ],
    "candles": [
     8,
@@ -2630,13 +2645,13 @@
    ],
    "target_rating": 6.5,
    "types_range": [
-    12,
-    14
+    5,
+    11
    ]
   },
   {
    "id": 42,
-   "types": 12,
+   "types": 9,
    "max_open": 1,
    "seed": 4242,
    "shape": "cake",
@@ -2701,8 +2716,9 @@
     }
    ],
    "ice": [
-    2,
-    3
+    3,
+    3,
+    4
    ],
    "candles": [
     7,
@@ -2710,13 +2726,13 @@
    ],
    "target_rating": 7.0,
    "types_range": [
-    12,
-    15
+    6,
+    12
    ]
   },
   {
    "id": 43,
-   "types": 13,
+   "types": 10,
    "max_open": 1,
    "seed": 4343,
    "shape": "tower",
@@ -2781,9 +2797,10 @@
     }
    ],
    "ice": [
-    2,
     3,
-    3
+    3,
+    4,
+    4
    ],
    "candles": [
     6,
@@ -2791,13 +2808,13 @@
    ],
    "target_rating": 8.0,
    "types_range": [
-    14,
-    17
+    6,
+    14
    ]
   },
   {
    "id": 44,
-   "types": 11,
+   "types": 8,
    "max_open": 1,
    "seed": 4444,
    "shape": "heart3",
@@ -2857,18 +2874,19 @@
    ],
    "mystery": 6,
    "ice": [
-    1,
-    2
+    2,
+    2,
+    3
    ],
    "target_rating": 6.0,
    "types_range": [
-    9,
-    13
+    5,
+    11
    ]
   },
   {
    "id": 45,
-   "types": 11,
+   "types": 8,
    "max_open": 1,
    "seed": 4545,
    "shape": "flower",
@@ -2929,17 +2947,18 @@
    "mystery": 8,
    "ice": [
     2,
-    2
+    3,
+    3
    ],
    "target_rating": 6.5,
    "types_range": [
-    10,
-    15
+    5,
+    11
    ]
   },
   {
    "id": 46,
-   "types": 12,
+   "types": 9,
    "max_open": 1,
    "seed": 4646,
    "shape": "diamond",
@@ -3017,13 +3036,13 @@
    ],
    "target_rating": 7.0,
    "types_range": [
-    10,
-    14
+    6,
+    12
    ]
   },
   {
    "id": 47,
-   "types": 12,
+   "types": 9,
    "max_open": 1,
    "seed": 4747,
    "shape": "cake",
@@ -3102,13 +3121,13 @@
    ],
    "target_rating": 7.5,
    "types_range": [
-    11,
-    16
+    6,
+    12
    ]
   },
   {
    "id": 48,
-   "types": 13,
+   "types": 10,
    "max_open": 1,
    "seed": 4848,
    "shape": "tower",
@@ -3179,13 +3198,13 @@
    ],
    "target_rating": 8.0,
    "types_range": [
-    11,
-    15
+    6,
+    14
    ]
   },
   {
    "id": 49,
-   "types": 13,
+   "types": 10,
    "max_open": 1,
    "seed": 4949,
    "shape": "grand",
@@ -3259,8 +3278,9 @@
    ],
    "mystery": 8,
    "ice": [
-    2,
-    3
+    3,
+    3,
+    4
    ],
    "locks": 2,
    "candles": [
@@ -3268,13 +3288,13 @@
    ],
    "target_rating": 8.0,
    "types_range": [
-    11,
-    15
+    6,
+    14
    ]
   },
   {
    "id": 50,
-   "types": 13,
+   "types": 10,
    "max_open": 1,
    "seed": 5050,
    "shape": "grand",
@@ -3333,35 +3353,35 @@
      "mask": [
       "111111",
       "111111",
-      "111111",
+      "111011",
       "111111"
      ]
     }
    ],
    "stacks": [
     {
-     "count": 9
+     "count": 8
     },
     {
-     "count": 9
+     "count": 8
     }
    ],
-   "mystery": 12,
+   "mystery": 8,
    "ice": [
-    2,
     3,
-    3
+    3,
+    4
    ],
-   "locks": 3,
+   "locks": 2,
    "candles": [
-    8,
-    10
+    10,
+    12
    ],
    "boss": true,
    "target_rating": 8.5,
    "types_range": [
-    10,
-    13
+    6,
+    14
    ]
   }
  ]

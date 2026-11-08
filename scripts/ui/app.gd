@@ -173,7 +173,7 @@ func _process(delta: float) -> void:
 		wallet_changed.emit()
 	if capture_dir != "":
 		capture_clock += delta
-		if capture_clock >= 0.1:
+		if capture_clock >= float(debug_args.get("capture_every", "0.1")):
 			capture_clock = 0.0
 			get_viewport().get_texture().get_image().save_png("%s/frame_%04d.png" % [capture_dir, capture_index])
 			capture_index += 1

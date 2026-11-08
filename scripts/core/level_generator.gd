@@ -51,7 +51,7 @@ static func author_candidate(level: Dictionary, rng: RandomNumberGenerator) -> D
 			break
 	if order.size() != tiles.size():
 		return {}
-	if not _place_ice_along(tiles, order, level.get("ice", []), rng):
+	if not _place_ice_along(tiles, order, level.get("ice", []), rng, cover):
 		return {}
 	if not _place_locks(tiles, order, int(level.get("locks", 0)), rng):
 		return {}
@@ -60,8 +60,9 @@ static func author_candidate(level: Dictionary, rng: RandomNumberGenerator) -> D
 	return {"tiles": tiles, "order": order}
 
 ## Ice of strength v goes on a visible tile that the winning order takes only
-## after at least v triples have been cleared, so it has thawed by then.
-static func _place_ice_along(tiles: Array, order: Array, ice: Array, rng: RandomNumberGenerator) -> bool:
+## after at least v triples have been cleared, so it has thawed by then. Ice
+## prefers tiles lying over others, so while frozen it really holds play up.
+static func _place_ice_along(tiles: Array, order: Array, ice: Array, rng: RandomNumberGenerator, cover: Dictionary = {}) -> bool:
 	if ice.is_empty():
 		return true
 	var by_id := {}
@@ -77,6 +78,10 @@ static func _place_ice_along(tiles: Array, order: Array, ice: Array, rng: Random
 		if int(counts[ty]) % 3 == 0:
 			done += 1
 	var top := _top_layer(tiles)
+	var holds := {}
+	for id in cover:
+		for c in cover[id]:
+			holds[c] = int(holds.get(c, 0)) + 1
 	for v in ice:
 		var picks: Array = []
 		for p in order.size():
@@ -85,7 +90,9 @@ static func _place_ice_along(tiles: Array, order: Array, ice: Array, rng: Random
 				picks.append(p)
 		if picks.is_empty():
 			return false
-		by_id[order[picks[rng.randi_range(0, picks.size() - 1)]]]["ice"] = int(v)
+		picks.sort_custom(func(a, b): return int(holds.get(order[a], 0)) > int(holds.get(order[b], 0)))
+		var best := picks.slice(0, maxi(1, mini(4, picks.size())))
+		by_id[order[best[rng.randi_range(0, best.size() - 1)]]]["ice"] = int(v)
 	return true
 
 static func generate(level: Dictionary) -> Array:

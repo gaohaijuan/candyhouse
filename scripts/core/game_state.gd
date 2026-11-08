@@ -191,7 +191,8 @@ func can_shuffle() -> bool:
 	return boosters.shuffle > 0 and board_tiles().size() > 1 and not is_finished()
 
 ## Re-deals board types so the remaining tiles still have a winning order that
-## first completes the partial triples waiting in tray and hold.
+## first completes the partial triples waiting in tray and hold (when ice,
+## locks or candles leave no such deal, a plain random re-deal).
 func shuffle() -> Dictionary:
 	if not can_shuffle():
 		return {"ok": false}
@@ -234,61 +235,64 @@ func shuffle() -> Dictionary:
 			found = true
 			break
 	if not found:
-		# Ice, locks or candles leave no safe re-deal right now; keep the deal.
-		for bid in board_ids:
-			tiles[bid].type = old_types[bid]
-		return {"ok": false}
+		# Ice, locks or candles leave no proven re-deal right now: deal the
+		# same desserts at random anyway (a shuffle always shuffles).
+		var pool: Array = board_ids.map(func(bid): return old_types[bid])
+		for i in range(pool.size() - 1, 0, -1):
+			var j := rng.randi_range(0, i)
+			var tmp = pool[i]; pool[i] = pool[j]; pool[j] = tmp
+		for i in board_ids.size():
+			tiles[board_ids[i]].type = pool[i]
+		solution = Generator.removal_order(tiles.values(), rng, board_ids)
 	last_pick = {}
 	_spend("shuffle")
-	return {"ok": true, "ids": board_ids}
+	return {"ok": true, "ids": board_ids, "proven": found}
 
-## "Magnet" start booster: clears one whole triple from the board before play.
-## Picks the dessert of the earliest winning move whose three tiles are all on
-## the board and not locked or frozen, so the stored winning order stays valid.
-## Counts as a match (thaws ice, opens locks). Returns {ok, ids, unlocked, thawed}.
-func magnet() -> Dictionary:
-	var tried := {}
-	for sid in solution:
-		var type: int = tiles[sid].type
-		if tried.has(type):
+## "Magnet" (chosen before the level, used during it): the player taps any
+## dessert and it leaves with two more of its kind: those in the tray first,
+## then parked ones, then the highest on the board even when buried. Counts as a match (thaws ice, opens locks).
+## Returns {ok, ids, unlocked, thawed}.
+func can_magnet(id: int) -> bool:
+	return int(boosters.get("magnet", 0)) > 0 and not is_finished() and tiles.has(id) and tiles[id].place != "gone"
+
+func magnet(id: int) -> Dictionary:
+	if not can_magnet(id):
+		return {"ok": false}
+	var type := int(tiles[id].type)
+	var ids: Array = [id]
+	for x in tray + hold:
+		if int(tiles[x].type) == type and x != id:
+			ids.append(x)
+	var rest: Array = board_tiles().filter(func(t): return int(t.type) == type and not ids.has(t.id))
+	rest.sort_custom(func(p, q): return (is_free(p.id) and not is_free(q.id)) or (is_free(p.id) == is_free(q.id) and int(p.layer) > int(q.layer)))
+	for t in rest:
+		if ids.size() >= MATCH:
+			break
+		ids.append(t.id)
+	ids = ids.slice(0, MATCH)
+	var keys: Array = []
+	for x in ids:
+		tray.erase(x)
+		hold.erase(x)
+		solution.erase(x)
+		tiles[x].place = "gone"
+		tiles[x]["revealed"] = true
+		if tiles[x].has("key"):
+			keys.append(int(tiles[x].key))
+	var unlocked: Array = []
+	var thawed: Array = []
+	for other in tiles.values():
+		if other.place != "board":
 			continue
-		tried[type] = true
-		# The first three of this dessert along the winning order form one
-		# complete triple there, so removing exactly them keeps the order valid.
-		var ids: Array = []
-		for oid in solution:
-			if int(tiles[oid].type) == type:
-				ids.append(oid)
-			if ids.size() == MATCH:
-				break
-		if ids.size() < MATCH:
-			continue
-		var blocked := false
-		for id in ids:
-			if tiles[id].place != "board" or tiles[id].has("lock") or int(tiles[id].get("ice", 0)) > 0:
-				blocked = true
-		if blocked:
-			continue
-		var keys: Array = []
-		for id in ids:
-			tiles[id].place = "gone"
-			tiles[id]["revealed"] = true
-			solution.erase(id)
-			if tiles[id].has("key"):
-				keys.append(int(tiles[id].key))
-		var unlocked: Array = []
-		var thawed: Array = []
-		for other in tiles.values():
-			if other.place != "board":
-				continue
-			if int(other.get("ice", 0)) > 0:
-				other.ice = int(other.ice) - 1
-				thawed.append(other.id)
-			if other.has("lock") and keys.has(int(other.lock)):
-				other.erase("lock")
-				unlocked.append(other.id)
-		return {"ok": true, "ids": ids, "unlocked": unlocked, "thawed": thawed}
-	return {"ok": false}
+		if int(other.get("ice", 0)) > 0:
+			other.ice = int(other.ice) - 1
+			thawed.append(other.id)
+		if other.has("lock") and keys.has(int(other.lock)):
+			other.erase("lock")
+			unlocked.append(other.id)
+	last_pick = {}
+	boosters.magnet = int(boosters.magnet) - 1
+	return {"ok": true, "ids": ids, "unlocked": unlocked, "thawed": thawed}
 
 ## Copy of the rules state for look-ahead checks.
 func clone():

@@ -40,6 +40,8 @@ var combo := 0
 var last_match_time := -100.0
 var tutorial_picks := 0
 var busy_until := 0.0
+var magnet_armed := false     # magnet chosen: the next dessert tapped is pulled
+var debug_demo := ""
 
 # Debug capture: --autoplay plays the known solution, --capture=<dir> saves frames.
 var autoplay := false
@@ -72,6 +74,8 @@ func _ready() -> void:
 			DirAccess.make_dir_recursive_absolute(capture_dir)
 		elif arg == "--press-first":
 			debug_press_first = true
+		elif arg.begins_with("--demo="):
+			debug_demo = arg.substr(7)
 		elif arg.begins_with("--open="):
 			debug_open = arg.substr(7)
 		elif arg.begins_with("--level="):
@@ -209,7 +213,7 @@ func _build_static() -> void:
 		hud.stars.append(star)
 
 	var hold_rect := _rect("hold_row")
-	hud.hold = _panel(hold_rect, Color(1, 1, 1, 0.55), Color("#E9B98F"), 30)
+	hud.hold = _build_hold_row(hold_rect)
 	hud.hold.modulate.a = 0.0
 	var tray_rect := _rect("tray")
 	if Art.ui("tray"):
@@ -220,14 +224,14 @@ func _build_static() -> void:
 		var slot := _panel(Rect2(_tray_slot(i) - Vector2.ONE * layout.tray_slot / 2, Vector2.ONE * layout.tray_slot), Color("#EBCDAE"), Color.TRANSPARENT, 24)
 		slot.modulate.a = 0.7
 
-	for i in 3:
-		var key: String = ["undo", "move_out", "shuffle"][i]
-		var label: String = ["撤回", "移出", "洗牌"][i]
-		var glyph: String = ["↶", "⇪", "⟲"][i]
-		var c := Vector2(layout.booster_x[i], layout.boosters_y + _band("boosters"))
+	for i in 4:
+		var key: String = ["undo", "move_out", "shuffle", "magnet"][i]
+		var label: String = ["撤回", "移出", "洗牌", "磁铁"][i]
+		var glyph: String = ["↶", "⇪", "⟲", "U"][i]
+		var c := Vector2(layout.booster_x[mini(i, 2)], layout.boosters_y + _band("boosters"))
 		var side: float = layout.booster_size
 		var b: BaseButton
-		var disc := Art.ui("button_round_green" if key == "move_out" else "button_round_pink")
+		var disc := Art.ui("button_round_green" if key == "move_out" or key == "magnet" else "button_round_pink")
 		var b_rect := Rect2(c - Vector2(side, side) / 2, Vector2(side, side))
 		if disc:
 			b = _texture_button(b_rect, disc, Art.ui("icon_" + key))
@@ -248,7 +252,7 @@ func _build_static() -> void:
 		name_label.position = c + Vector2(-100, side / 2 + 4)
 		name_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		add_child(name_label)
-		booster_buttons[key] = {"button": b, "badge": badge}
+		booster_buttons[key] = {"button": b, "badge": badge, "label": name_label, "badge_at": badge_at - c, "label_at": name_label.position - c}
 
 	board_layer = Control.new()
 	board_layer.size = size
@@ -410,10 +414,12 @@ func start_level(index: int) -> void:
 	revived = false
 	if app:
 		# In the full game boosters come from the player's inventory.
-		state.boosters = {"undo": 9999, "move_out": 9999, "shuffle": 9999}
+		state.boosters = {"undo": 9999, "move_out": 9999, "shuffle": 9999, "magnet": 1 if start_boosters.get("magnet", false) else 0}
 		if start_boosters.get("extra_slot", false):
 			state.tray_size = GameState.TRAY_SIZE + 1
 	_apply_tray_art()
+	_place_boosters()
+	_arm_magnet(false)
 	for v in views.values():
 		v.queue_free()
 	views.clear()
@@ -450,8 +456,8 @@ func start_level(index: int) -> void:
 	_refresh_cover(false)
 	_refresh_hud()
 	busy_until = Time.get_ticks_msec() / 1000.0 + 1.2
-	if app and start_boosters.get("magnet", false):
-		get_tree().create_timer(1.3).timeout.connect(_use_magnet)
+	if debug_demo != "":
+		get_tree().create_timer(1.6).timeout.connect(_run_demo)
 	if levels[index].get("tutorial", false):
 		_show_hand()
 	if levels[index].has("intro") and not autoplay:
@@ -618,11 +624,47 @@ func _tray_slot7(i: int) -> Vector2:
 func _tile_anchor(side: float) -> Vector2:
 	return Vector2(side, side) / 2
 
+## The "move out" row: three cells cut from the tray art, spaced like the
+## tray's, on a soft panel. Parked tiles keep the seven-slot tray size, so
+## tiles and cells match whatever the tray holds.
+func _hold_cell() -> Dictionary:
+	var tex := Art.ui("tray")
+	if not tex or not layout.has("tray_texture_slots"):
+		var slot: float = layout.tray_slot
+		return {"tex": null, "size": Vector2(slot, slot), "pitch": slot + 16.0}
+	var k: float = _tray_texture_rect().size.x / tex.get_width()
+	var s: Dictionary = layout.tray_texture_slots
+	var cell := AtlasTexture.new()
+	cell.atlas = tex
+	cell.region = Rect2(float(s.cx[0]) - float(s.w) / 2, float(s.cy) - float(s.h) / 2, float(s.w), float(s.h))
+	return {"tex": cell, "size": Vector2(float(s.w), float(s.h)) * k, "pitch": (float(s.cx[1]) - float(s.cx[0])) * k}
+
+func _build_hold_row(area: Rect2) -> Control:
+	var c := _hold_cell()
+	var pad := 16.0
+	var w: float = c.pitch * (GameState.HOLD_SIZE - 1) + c.size.x + pad * 2
+	var h: float = c.size.y + pad * 2
+	var panel := _panel(Rect2(area.get_center() - Vector2(w, h) / 2, Vector2(w, h)), Color(1, 0.97, 0.92, 0.7), Color("#E9B98F"), 30)
+	for i in GameState.HOLD_SIZE:
+		var at: Vector2 = _hold_slot(i) - panel.position - c.size / 2
+		if c.tex:
+			var cell := TextureRect.new()
+			cell.texture = c.tex
+			cell.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+			cell.stretch_mode = TextureRect.STRETCH_SCALE
+			cell.position = at
+			cell.size = c.size
+			cell.mouse_filter = Control.MOUSE_FILTER_IGNORE
+			panel.add_child(cell)
+	return panel
+
+func _hold_tile() -> float:
+	return layout.tray_slot
+
 func _hold_slot(i: int) -> Vector2:
 	var r := _rect("hold_row")
-	var slot: float = layout.tray_slot
-	var gap := (r.size.x - slot * GameState.HOLD_SIZE) / (GameState.HOLD_SIZE + 1)
-	return Vector2(r.position.x + gap + i * (slot + gap) + slot / 2, r.position.y + r.size.y / 2)
+	var pitch: float = _hold_cell().pitch
+	return r.get_center() + Vector2((i - (GameState.HOLD_SIZE - 1) / 2.0) * pitch, 0)
 
 # ---------------------------------------------------------------- input
 
@@ -632,13 +674,36 @@ func _gui_input(event: InputEvent) -> void:
 	var press: bool = event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT
 	if not press or _blocked() or Time.get_ticks_msec() / 1000.0 < busy_until:
 		return
+	if magnet_armed:
+		var target := _any_tile_at(event.position)
+		if target >= 0:
+			_use_magnet(target)
+		return
 	var id := _tile_at(event.position)
 	if id >= 0:
 		_pick(id)
 
+## Any dessert under the point, covered or not (for the magnet).
+func _any_tile_at(point: Vector2) -> int:
+	var side := _tray_tile()
+	for i in display_tray.size():
+		if state.tiles[display_tray[i]].place == "tray" and Rect2(_tray_slot(i) - Vector2.ONE * side / 2, Vector2.ONE * side).has_point(point):
+			return display_tray[i]
+	for id in state.hold:
+		if Rect2(_hold_slot(state.hold.find(id)) - Vector2.ONE * _hold_tile() / 2, Vector2.ONE * _hold_tile()).has_point(point):
+			return id
+	var best := -1
+	var best_layer := -1
+	for t in state.board_tiles():
+		var ts := _tile_side(t)
+		if Rect2(_board_pos(t), Vector2(ts, ts)).has_point(point) and int(t.layer) > best_layer:
+			best = t.id
+			best_layer = int(t.layer)
+	return best
+
 func _tile_at(point: Vector2) -> int:
 	for id in state.hold:
-		if Rect2(_hold_slot(state.hold.find(id)) - Vector2.ONE * layout.tray_slot / 2, Vector2.ONE * layout.tray_slot).has_point(point):
+		if Rect2(_hold_slot(state.hold.find(id)) - Vector2.ONE * _hold_tile() / 2, Vector2.ONE * _hold_tile()).has_point(point):
 			return id
 	var best := -1
 	var best_layer := -1
@@ -815,6 +880,10 @@ func _float_text(at: Vector2, text: String, color: Color, font_size: int) -> voi
 func _on_booster(kind: String) -> void:
 	if _blocked():
 		return
+	if kind == "magnet":
+		_arm_magnet(not magnet_armed and int(state.boosters.get("magnet", 0)) > 0)
+		return
+	_arm_magnet(false)
 	if app and app.profile.booster_count(kind) <= 0:
 		app.popups.booster_shortage(kind, func():
 			app.save()
@@ -834,8 +903,6 @@ func _on_booster(kind: String) -> void:
 				_reflow(display_tray, [])
 		"shuffle":
 			var r := state.shuffle()
-			if not r.ok and state.can_shuffle():
-				_float_text(Vector2(540, 1180 + _band("hold_row")), "冰块太多,现在无法洗牌", Color("#2A7CC7"), 40)
 			if r.ok:
 				for id in r.ids:
 					var v: Control = views[id]
@@ -882,7 +949,7 @@ func _layout_hold() -> void:
 		var start := v.global_position
 		v.reparent(fly_layer)
 		v.global_position = start
-		_fly(v, start, _hold_slot(i) - _tile_anchor(_tray_tile()), 0.22, _tray_tile())
+		_fly(v, start, _hold_slot(i) - _tile_anchor(_hold_tile()), 0.22, _hold_tile())
 
 func _refresh_cover(animate: bool) -> void:
 	for t in state.board_tiles():
@@ -911,33 +978,118 @@ func _reveal(v: Control, animate: bool) -> void:
 		v.blank = false)
 	tw.tween_property(v, "scale:x", 1.0, 0.16).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 
-## Start booster: a magnet pulls one whole triple off the board.
-func _use_magnet() -> void:
-	var r := state.magnet()
+## Three booster buttons, or four when the magnet was chosen for this level.
+func _place_boosters() -> void:
+	var with_magnet := state != null and int(state.boosters.get("magnet", 0)) > 0
+	var keys := ["undo", "move_out", "shuffle", "magnet"] if with_magnet else ["undo", "move_out", "shuffle"]
+	var side: float = layout.booster_size * (0.86 if with_magnet else 1.0)
+	var y: float = layout.boosters_y + _band("boosters")
+	booster_buttons.magnet.button.visible = with_magnet
+	booster_buttons.magnet.badge.visible = with_magnet
+	booster_buttons.magnet.label.visible = with_magnet
+	for i in keys.size():
+		var e: Dictionary = booster_buttons[keys[i]]
+		var x: float = layout.booster_x[i] if not with_magnet else 1080.0 * (2 * i + 1) / 8.0
+		var c := Vector2(x, y)
+		var k: float = side / float(layout.booster_size)
+		var b: Control = e.button
+		b.scale = Vector2.ONE
+		b.size = Vector2(side, side)
+		b.position = c - b.size / 2
+		b.pivot_offset = b.size / 2
+		for ic in b.get_children():
+			if ic is TextureRect:
+				ic.position = b.size * 0.2
+				ic.size = b.size * 0.6
+		e.badge.position = c + e.badge_at * k
+		e.label.position = c + Vector2(e.label_at.x, e.label_at.y * k)
+
+## Magnet chosen: the button glows and the next dessert tapped is pulled.
+func _arm_magnet(on: bool) -> void:
+	magnet_armed = on
+	if not booster_buttons.has("magnet"):
+		return
+	var b: Control = booster_buttons.magnet.button
+	if b.has_meta("pulse"):
+		(b.get_meta("pulse") as Tween).kill()
+		b.remove_meta("pulse")
+		b.modulate = Color.WHITE
+	if on:
+		var tw := b.create_tween().set_loops()
+		tw.tween_property(b, "modulate", Color(1.25, 1.2, 0.8), 0.35)
+		tw.tween_property(b, "modulate", Color.WHITE, 0.35)
+		b.set_meta("pulse", tw)
+		_float_text(Vector2(540, 1180 + _band("hold_row")), "点选一块甜点,吸走同款3块", Color("#2E8B57"), 44)
+
+## Magnet: the tapped dessert flies out with two of its kind, wherever they are.
+func _use_magnet(id: int) -> void:
+	var r := state.magnet(id)
+	_arm_magnet(false)
 	if not r.ok:
 		return
+	_hide_hand()
 	sound.play("booster")
 	var center := Vector2(540, 1250 + _band("hold_row"))
-	for id in r.ids:
-		var v: Control = views[id]
+	for tid in r.ids:
+		var v: Control = views[tid]
+		if v.face_down or v.blank:
+			_reveal(v, true)
+		v.fuse = -1
 		var start := v.global_position
 		v.reparent(fly_layer)
 		v.global_position = start
 		_fly(v, start, center - Vector2(tile_px, tile_px) / 2, 0.45, tile_px)
+	display_tray = state.tray.duplicate()
+	_reflow(display_tray, [])
+	_layout_hold()
 	get_tree().create_timer(0.5).timeout.connect(func():
-		for id in r.ids:
-			var v: Control = views[id]
+		for tid in r.ids:
+			var v: Control = views[tid]
 			var tw := v.create_tween()
 			tw.tween_property(v, "scale", Vector2(0.2, 0.2), 0.2)
 			tw.parallel().tween_property(v, "modulate:a", 0.0, 0.2)
 			tw.tween_callback(v.queue_free)
-			views.erase(id)
+			views.erase(tid)
 		_burst(center, Color("#F48FB1"))
 		sound.play("match")
 		_unlock(r.unlocked)
 		_thaw(r.thawed)
 		_refresh_cover(true)
-		_refresh_hud())
+		_refresh_hud()
+		if state.is_won():
+			get_tree().create_timer(0.5).timeout.connect(_show_win))
+	_refresh_hud()
+
+## Debug captures: --demo=moveout parks three tray tiles, --demo=magnet pulls a
+## buried dessert's triple, --demo=extra shows the eight-slot tray, --demo=fill
+## puts six desserts in the tray, --demo=shuffle shuffles at once.
+func _run_demo() -> void:
+	if debug_demo == "shuffle":
+		var before := {}
+		for t in state.board_tiles():
+			before[t.id] = t.type
+		_on_booster("shuffle")
+		var changed := state.board_tiles().filter(func(t): return before[t.id] != t.type).size()
+		print("RESULT level=%d shuffle changed=%d of %d" % [levels[level_index].id, changed, before.size()])
+		return
+	if debug_demo == "extra":
+		state.tray_size = GameState.TRAY_SIZE + 1
+		_apply_tray_art()
+	if debug_demo in ["moveout", "magnet", "extra", "fill"]:
+		for i in (7 if debug_demo == "extra" else (6 if debug_demo == "fill" else 3)):
+			for t in state.solution:
+				if state.can_pick(t) and not state.tray.any(func(x): return int(state.tiles[x].type) == int(state.tiles[t].type)):
+					_pick(t)
+					break
+		if debug_demo == "moveout":
+			get_tree().create_timer(0.8).timeout.connect(_on_booster.bind("move_out"))
+		elif debug_demo == "magnet":
+			state.boosters.magnet = 1
+			_place_boosters()
+			get_tree().create_timer(0.8).timeout.connect(func():
+				_on_booster("magnet")
+				var deep: Dictionary = state.board_tiles().reduce(func(a, t): return t if int(t.layer) < int(a.layer) else a)
+				get_tree().create_timer(0.8).timeout.connect(_use_magnet.bind(int(deep.id))))
 
 func _unlock(ids: Array) -> void:
 	if not ids.is_empty():
@@ -1013,6 +1165,13 @@ func _refresh_hud() -> void:
 	var enabled := {"undo": state.can_undo(), "move_out": state.can_move_out(), "shuffle": state.can_shuffle()}
 	for key in booster_buttons:
 		var entry: Dictionary = booster_buttons[key]
+		if key == "magnet":
+			var left := int(state.boosters.get("magnet", 0))
+			entry.badge.get_child(0).text = str(left)
+			entry.badge.visible = left > 0
+			entry.button.disabled = left <= 0 or state.is_finished()
+			entry.button.modulate.a = 1.0 if left > 0 else 0.55
+			continue
 		entry.button.disabled = not enabled[key]
 		entry.button.modulate.a = 1.0 if enabled[key] else 0.55
 		if app:
@@ -1234,6 +1393,8 @@ func _write_progress(progress: Dictionary) -> void:
 		f.store_string(JSON.stringify(progress))
 
 func _show_win() -> void:
+	if autoplay or debug_demo != "":
+		print("RESULT level=%d won" % levels[level_index].id)
 	sound.play("win")
 	sound.duck(2.2)
 	if app:
@@ -1265,6 +1426,8 @@ func _show_win() -> void:
 	_confetti()
 
 func _show_lose() -> void:
+	if autoplay or debug_demo != "":
+		print("RESULT level=%d lost reason=%s" % [levels[level_index].id, state.lose_reason()])
 	sound.play("lose")
 	if app:
 		var reason: String = state.lose_reason()

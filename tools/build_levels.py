@@ -96,23 +96,25 @@ PLAN = [
     ("brick", 6, {}, 75),
     ("brick3", 7, {}, 58),
     # Mystery x5
-    ("heart", 6, {"mystery": 4, "intro": "mystery"}, 86),
-    ("brick", 6, {"mystery": 6}, 74),
-    ("heart3", 7, {"mystery": 8}, 60),
-    ("diamond", 7, {"mystery": 10}, 50),
-    ("flower", 7, {"mystery": 12}, 40),
-    # Ice x5
-    ("small", 6, {"ice": [1], "intro": "ice"}, 86),
-    ("brick", 6, {"ice": [1, 2]}, 74),
-    ("heart3", 7, {"ice": [1, 2]}, 60),
-    ("butterfly", 7, {"ice": [2, 2, 3]}, 50),
-    ("cake", 7, {"ice": [2, 3, 3]}, 40),
+    # 2026-11-08 producer: the first mystery levels were far too hard.
+    ("heart", 6, {"mystery": 3, "intro": "mystery"}, 86),
+    ("brick", 6, {"mystery": 5}, 74),
+    ("heart3", 7, {"mystery": 6}, 60),
+    ("diamond", 7, {"mystery": 8}, 50),
+    ("flower", 7, {"mystery": 10}, 40),
+    # Ice x5. 2026-11-08 producer: ice was too weak (one or two blocks that
+    # thawed after one triple); now more blocks, stronger, over other tiles.
+    ("small", 6, {"ice": [2, 2, 2], "intro": "ice"}, 86),
+    ("brick", 6, {"ice": [2, 2, 3, 3]}, 74),
+    ("heart3", 7, {"ice": [2, 3, 3, 3]}, 60),
+    ("butterfly", 7, {"ice": [3, 3, 3, 4]}, 50),
+    ("cake", 7, {"ice": [3, 3, 4, 4, 5]}, 40),
     # Mystery + Ice x5
-    ("heart", 6, {"mystery": 4, "ice": [1, 1]}, 72),
-    ("brick3", 7, {"mystery": 6, "ice": [1, 2]}, 60),
-    ("diamond", 7, {"mystery": 8, "ice": [2, 2]}, 50),
-    ("flower", 8, {"mystery": 10, "ice": [2, 3]}, 40),
-    ("tower", 8, {"mystery": 12, "ice": [2, 3, 3]}, 32),
+    ("heart", 6, {"mystery": 4, "ice": [2, 2]}, 72),
+    ("brick3", 7, {"mystery": 6, "ice": [2, 2, 3]}, 60),
+    ("diamond", 7, {"mystery": 8, "ice": [2, 3, 3]}, 50),
+    ("flower", 8, {"mystery": 10, "ice": [3, 3, 4]}, 40),
+    ("tower", 8, {"mystery": 12, "ice": [3, 3, 4, 4]}, 32),
     # Box x5
     ("small", 6, {"stacks": [6, 6], "intro": "box"}, 84),
     ("brick", 6, {"stacks": [6, 6]}, 72),
@@ -136,22 +138,23 @@ PLAN = [
     ("heart3", 6, {"candles": [10]}, 72),
     ("diamond", 7, {"candles": [8]}, 60),
     ("butterfly", 7, {"candles": [7, 9]}, 50),
-    ("flower", 7, {"candles": [6, 8]}, 40),
+    ("flower", 7, {"candles": [8, 10]}, 40),  # [6, 8] left no winnable board without boosters
     # Candle + Ice x5
-    ("brick3", 6, {"candles": [10], "ice": [1, 1]}, 70),
-    ("heart3", 7, {"candles": [9], "ice": [1, 2]}, 60),
-    ("diamond", 7, {"candles": [8, 10], "ice": [2, 2]}, 50),
-    ("cake", 7, {"candles": [7, 9], "ice": [2, 3]}, 40),
-    ("tower", 8, {"candles": [6, 8], "ice": [2, 3, 3]}, 32),
+    ("brick3", 6, {"candles": [10], "ice": [2, 2]}, 70),
+    ("heart3", 7, {"candles": [9], "ice": [2, 2, 3]}, 60),
+    ("diamond", 7, {"candles": [8, 10], "ice": [2, 3, 3]}, 50),
+    ("cake", 7, {"candles": [7, 9], "ice": [3, 3, 4]}, 40),
+    ("tower", 8, {"candles": [6, 8], "ice": [3, 3, 4, 4]}, 32),
     # Three mechanics
-    ("heart3", 7, {"mystery": 6, "ice": [1, 2], "stacks": [6, 6]}, 55),
-    ("flower", 7, {"mystery": 8, "ice": [2, 2], "stacks": [7, 7]}, 45),
+    ("heart3", 7, {"mystery": 6, "ice": [2, 2, 3], "stacks": [6, 6]}, 55),
+    ("flower", 7, {"mystery": 8, "ice": [2, 3, 3], "stacks": [7, 7]}, 45),
     ("diamond", 7, {"locks": 2, "candles": [9], "stacks": [6, 6]}, 50),
     ("cake", 8, {"locks": 2, "candles": [8, 10], "stacks": [7, 7]}, 40),
     ("tower", 8, {"locks": 2, "candles": [8], "mystery": 10}, 35),
     # Finale
-    ("grand", 8, {"mystery": 8, "ice": [2, 3], "stacks": [8, 8], "locks": 2, "candles": [9]}, 25),
-    ("grand", 8, {"mystery": 12, "ice": [2, 3, 3], "stacks": [9, 9], "locks": 3, "candles": [8, 10], "boss": True}, 18),
+    ("grand", 8, {"mystery": 8, "ice": [3, 3, 4], "stacks": [8, 8], "locks": 2, "candles": [9]}, 25),
+    # Eased 2026-11-09: with every mechanic at full strength no board was winnable without boosters.
+    ("grand", 8, {"mystery": 8, "ice": [3, 3, 4], "stacks": [8, 8], "locks": 2, "candles": [10, 12], "boss": True}, 18),
 ]
 
 INTROS = {
@@ -198,11 +201,13 @@ BLOCK_TARGETS = {
     # first levels are an on-ramp a newcomer clears without boosters.
     "basics": [1.0, 2.0, 3.5],
     "single": [4.5, 5.5, 6.0, 6.5, 8.0],
+    # Hidden desserts are harder for people than the bots measure; gentler.
+    "mystery": [3.5, 4.5, 5.0, 5.5, 7.0],
     "pair": [5.5, 6.0, 6.5, 7.0, 8.0],
     "triple": [6.0, 6.5, 7.0, 7.5, 8.0],
     "finale": [8.0, 8.5],
 }
-BLOCKS = [("basics", 3), ("single", 5), ("single", 5), ("pair", 5), ("single", 5), ("single", 5),
+BLOCKS = [("basics", 3), ("mystery", 5), ("single", 5), ("pair", 5), ("single", 5), ("single", 5),
           ("pair", 5), ("single", 5), ("pair", 5), ("triple", 5), ("finale", 2)]
 
 def targets():
@@ -211,14 +216,16 @@ def targets():
         out.extend(BLOCK_TARGETS[kind][:n])
     return out
 
+# Ratings are measured without boosters (2026-11-08), which needs fewer
+# desserts than before; the author steps through the range towards the target.
 def types_range(t):
-    if t < 1.5: return [4, 5]
-    if t < 2.5: return [5, 7]
-    if t < 4.0: return [7, 9]
-    if t < 5.0: return [8, 11]
-    if t < 6.6: return [9, 13]
-    if t < 7.6: return [10, 14]
-    return [11, 15]
+    if t < 1.5: return [3, 5]
+    if t < 2.5: return [4, 6]
+    if t < 4.0: return [4, 8]
+    if t < 5.0: return [5, 9]
+    if t < 6.6: return [5, 11]
+    if t < 7.6: return [6, 12]
+    return [6, 14]
 
 def plan():
     levels = build({})
