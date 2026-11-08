@@ -1053,8 +1053,8 @@ func _show_hand() -> void:
 	if _blocked() or state.is_finished() or state.solution.is_empty():
 		return
 	_hide_hand()
-	var target: int = state.solution[0]
-	if not state.is_free(target):
+	var target: int = _tutorial_target() if levels[level_index].get("tutorial", false) else state.solution[0]
+	if target < 0 or not state.is_free(target):
 		return
 	var tile_center := _board_pos(state.tiles[target]) + Vector2(tile_px, tile_px) / 2
 	var tex := Art.ui("tutorial_hand")
@@ -1109,6 +1109,30 @@ func _tap_ripple(at: Vector2) -> void:
 	tw.tween_property(ring, "scale", Vector2(2.2, 2.2), 0.4).set_ease(Tween.EASE_OUT)
 	tw.tween_property(ring, "modulate:a", 0.0, 0.4)
 	tw.chain().tween_callback(ring.queue_free)
+
+## Tutorial hint: always guide a real triple. Continue the dessert already in
+## the tray; otherwise start the one with the most free tiles (ties follow the
+## winning order, so the hint stays on a winning path).
+func _tutorial_target() -> int:
+	var free_by_type := {}
+	for id in state.solution:
+		if state.is_free(id):
+			var ty: int = int(state.tiles[id].type)
+			if not free_by_type.has(ty):
+				free_by_type[ty] = []
+			free_by_type[ty].append(id)
+	for tid in state.tray:
+		var ty: int = int(state.tiles[tid].type)
+		if free_by_type.has(ty):
+			return free_by_type[ty][0]
+	var best := -1
+	var best_n := 0
+	for ty in free_by_type:
+		var n: int = free_by_type[ty].size()
+		if n > best_n:
+			best_n = n
+			best = free_by_type[ty][0]
+	return best
 
 func _hide_hand() -> void:
 	if hand:
