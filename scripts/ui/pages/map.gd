@@ -191,6 +191,24 @@ func _node(content: Control, i: int, p: Vector2, state: String) -> void:
 			var star := Kit.picture("map_star_small", Vector2(s, s), "★", Color("#FFC233"))
 			star.position = Vector2(p.x - stars * s * 0.5 + k * s, p.y + 40)
 			content.add_child(star)
+		# Producer 2026-11-09: a three-star win leaves a chest on the stars;
+		# tapping the stars (or the chest) opens it once.
+		if app.profile.perfect_chest_ready(i + 1):
+			var idx := i
+			var cb := Kit.art_button(content, "chest_small", Rect2(p.x + 84, p.y + 18, 86, 86), "箱")
+			cb.pivot_offset = cb.size / 2
+			cb.create_tween().set_loops().tween_property(cb, "rotation", 0.1, 0.18).from(-0.1).set_trans(Tween.TRANS_SINE)
+			var hit := Button.new()
+			hit.flat = true
+			hit.position = Vector2(p.x - stars * s * 0.5, p.y + 30)
+			hit.size = Vector2(stars * s, s + 20)
+			content.add_child(hit)
+			var claim := func():
+				app.popups.perfect_chest(idx, func():
+					cb.queue_free()
+					hit.queue_free())
+			cb.pressed.connect(claim)
+			hit.pressed.connect(claim)
 	var tag: String = app.difficulty(i)
 	if tag != "normal" and state != "locked" and state != "done":
 		var tr := Rect2(p.x + sz.x * 0.25, p.y - sz.y * 0.75, 150, 75)

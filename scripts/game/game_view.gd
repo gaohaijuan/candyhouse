@@ -32,6 +32,8 @@ var popup: Control
 var hand: Control
 var app = null                  # set by the app shell; null when run on its own
 var start_boosters := {}
+var gifts := {}               # booster kind -> gifted uses left this attempt (comeback gifts)
+var gift_tags := {}           # booster kind -> "送" tag shown on the button
 var revived := false
 var sound: Node
 var box_nodes: Array = []
@@ -417,6 +419,12 @@ func start_level(index: int) -> void:
 		state.boosters = {"undo": 9999, "move_out": 9999, "shuffle": 9999, "magnet": 1 if start_boosters.get("magnet", false) else 0}
 		if start_boosters.get("extra_slot", false):
 			state.tray_size = GameState.TRAY_SIZE + 1
+	gifts = {}
+	if app and debug_demo == "":
+		var grng := RandomNumberGenerator.new()
+		grng.randomize()
+		for k in app.profile.pick_gifts(app.profile.gift_count(int(levels[index].id)), grng):
+			gifts[k] = 1
 	_apply_tray_art()
 	_place_boosters()
 	_arm_magnet(false)
@@ -460,9 +468,15 @@ func start_level(index: int) -> void:
 		get_tree().create_timer(1.6).timeout.connect(_run_demo)
 	if levels[index].get("tutorial", false):
 		_show_hand()
+	_refresh_gift_tags()
+	var intro_at := 1.25
+	if not gifts.is_empty():
+		get_tree().create_timer(1.25).timeout.connect(_present_gifts)
+		busy_until += 2.4
+		intro_at += 2.5
 	if levels[index].has("intro") and not autoplay and debug_demo == "":
 		var intro: Dictionary = levels[index].intro
-		get_tree().create_timer(1.25).timeout.connect(func():
+		get_tree().create_timer(intro_at).timeout.connect(func():
 			if state.tiles.size() > 0 and not _blocked():
 				_open_popup(intro.title, intro.text, [["知道了", _close_popup]]))
 
@@ -887,7 +901,7 @@ func _on_booster(kind: String) -> void:
 		_arm_magnet(not magnet_armed and int(state.boosters.get("magnet", 0)) > 0)
 		return
 	_arm_magnet(false)
-	if app and app.profile.booster_count(kind) <= 0:
+	if app and app.profile.booster_count(kind) + int(gifts.get(kind, 0)) <= 0:
 		app.popups.booster_shortage(kind, func():
 			app.save()
 			_refresh_hud())
@@ -916,9 +930,123 @@ func _on_booster(kind: String) -> void:
 	if state.boosters_used > used_before:
 		sound.play("booster")
 		if app:
-			app.profile.use_booster(kind)
+			# Gifted uses go first; they never touch the inventory.
+			if int(gifts.get(kind, 0)) > 0:
+				gifts[kind] = int(gifts[kind]) - 1
+				_refresh_gift_tags()
+			else:
+				app.profile.use_booster(kind)
 			app.save()
 	_refresh_hud()
+
+## Comeback gifts (producer 2026-11-09): a gift box opens in the middle of
+## the board, the gifted booster icons fly to their buttons and the buttons
+## keep a "送" tag while the gift lasts.
+func _present_gifts() -> void:
+	if state == null or state.is_finished():
+		return
+	sound.play("booster")
+	var center := Vector2(540, _rect("board").get_center().y)
+	var layer := Control.new()
+	layer.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	layer.size = size
+	fly_layer.add_child(layer)
+	var dim := ColorRect.new()
+	dim.color = Color(0.25, 0.12, 0.1, 0.45)
+	dim.size = Vector2(1080, 1920 + 2 * Kit.extra)
+	dim.position = Vector2(0, -Kit.extra)
+	dim.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	dim.modulate.a = 0.0
+	layer.add_child(dim)
+	var box := TextureRect.new()
+	box.texture = Art.ui("starter_gift")
+	box.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	box.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	box.size = Vector2(440, 440)
+	box.pivot_offset = box.size / 2
+	box.position = center - box.size / 2 - Vector2(0, 80)
+	box.scale = Vector2.ZERO
+	layer.add_child(box)
+	# The gift art has an empty name plate across its lower part.
+	var plate := Label.new()
+	plate.text = "赠送"
+	plate.size = Vector2(440, 100)
+	plate.position = Vector2(0, 440 * 0.76 - 50)
+	plate.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	plate.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	plate.add_theme_font_size_override("font_size", 60)
+	plate.add_theme_color_override("font_color", Color("#C2185B"))
+	box.add_child(plate)
+	var note := Panel.new()
+	var sb := StyleBoxFlat.new()
+	sb.bg_color = Color("#FFF6E8")
+	sb.border_color = Color("#FF8FB5")
+	sb.set_border_width_all(6)
+	sb.set_corner_radius_all(48)
+	note.add_theme_stylebox_override("panel", sb)
+	note.size = Vector2(760, 110)
+	note.position = Vector2(540 - 380, box.position.y + 450)
+	note.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var nl := Label.new()
+	nl.text = "送你 %d 个道具,本关可用" % gifts.size()
+	nl.size = note.size
+	nl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	nl.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	nl.add_theme_font_size_override("font_size", 50)
+	nl.add_theme_color_override("font_color", Color("#7A3E2E"))
+	note.add_child(nl)
+	note.modulate.a = 0.0
+	layer.add_child(note)
+	var tw := create_tween()
+	tw.tween_property(dim, "modulate:a", 1.0, 0.2)
+	tw.tween_property(box, "scale", Vector2.ONE, 0.35).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	tw.parallel().tween_property(note, "modulate:a", 1.0, 0.25)
+	tw.tween_property(box, "rotation", 0.12, 0.08)
+	tw.tween_property(box, "rotation", -0.12, 0.08)
+	tw.tween_property(box, "rotation", 0.0, 0.08)
+	tw.tween_callback(func():
+		var i := 0
+		for kind in gifts:
+			var icon := TextureRect.new()
+			icon.texture = Art.ui("icon_" + kind)
+			icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+			icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+			icon.size = Vector2(170, 170)
+			icon.pivot_offset = icon.size / 2
+			icon.position = center - icon.size / 2 - Vector2(0, 60)
+			layer.add_child(icon)
+			var b: Control = booster_buttons[kind].button
+			var to: Vector2 = b.position + b.size / 2 - icon.size / 2
+			var fw := create_tween()
+			fw.tween_property(icon, "position", icon.position + Vector2((i * 2 - gifts.size() + 1) * 120, -120), 0.25).set_delay(i * 0.12).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+			fw.tween_property(icon, "position", to, 0.45).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
+			fw.parallel().tween_property(icon, "scale", Vector2(0.6, 0.6), 0.45)
+			fw.tween_callback(func():
+				icon.queue_free()
+				var bt := create_tween()
+				bt.tween_property(b, "scale", Vector2(1.18, 1.18), 0.1)
+				bt.tween_property(b, "scale", Vector2.ONE, 0.16).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+				_refresh_gift_tags()
+				_refresh_hud())
+			i += 1)
+	tw.tween_interval(1.1)
+	tw.tween_property(layer, "modulate:a", 0.0, 0.3)
+	tw.tween_callback(layer.queue_free)
+
+## A small pink "送" tag on each button whose gift is still unused.
+func _refresh_gift_tags() -> void:
+	for kind in ["undo", "move_out", "shuffle"]:
+		var left := int(gifts.get(kind, 0)) > 0
+		if left and not gift_tags.has(kind):
+			var tag := _plaque(Rect2(Vector2.ZERO, Vector2(84, 58)), Color("#FF5C93"), Color.WHITE, 38)
+			tag.get_child(0).text = "送"
+			tag.mouse_filter = Control.MOUSE_FILTER_IGNORE
+			tag.get_parent().move_child(tag, booster_buttons[kind].button.get_index() + 1)
+			gift_tags[kind] = tag
+		if gift_tags.has(kind):
+			gift_tags[kind].visible = left
+			var b: Control = booster_buttons[kind].button
+			gift_tags[kind].position = b.position + Vector2(-22, -10)
 
 func _animate_back(id: int, to: String) -> void:
 	var v: Control = views[id]
@@ -1179,7 +1307,7 @@ func _refresh_hud() -> void:
 		entry.button.disabled = not enabled[key]
 		entry.button.modulate.a = 1.0 if enabled[key] else 0.55
 		if app:
-			var have: int = app.profile.booster_count(key)
+			var have: int = app.profile.booster_count(key) + int(gifts.get(key, 0))
 			entry.badge.get_child(0).text = str(have) if have > 0 else "+"
 			entry.badge.visible = true
 			entry.button.disabled = not enabled[key] and have > 0
@@ -1494,6 +1622,7 @@ func _give_up(where: String) -> void:
 	_close_popup()
 	if not state.is_won() and state.started() or state.is_lost():
 		app.profile.lose_life(app.now(), level_index + 1)
+		app.profile.note_failure(int(levels[level_index].id))
 		app.save()
 	if where == "restart":
 		app.popups.level_start(level_index)

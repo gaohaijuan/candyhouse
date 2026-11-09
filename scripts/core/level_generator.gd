@@ -62,6 +62,8 @@ static func author_candidate(level: Dictionary, rng: RandomNumberGenerator) -> D
 ## Ice of strength v goes on a visible tile that the winning order takes only
 ## after at least v triples have been cleared, so it has thawed by then. Ice
 ## prefers tiles lying over others, so while frozen it really holds play up.
+## Every second block goes on a lower layer where one exists (producer,
+## 2026-11-09: ice on the second layer too, reached a few moves in).
 static func _place_ice_along(tiles: Array, order: Array, ice: Array, rng: RandomNumberGenerator, cover: Dictionary = {}) -> bool:
 	if ice.is_empty():
 		return true
@@ -82,7 +84,8 @@ static func _place_ice_along(tiles: Array, order: Array, ice: Array, rng: Random
 	for id in cover:
 		for c in cover[id]:
 			holds[c] = int(holds.get(c, 0)) + 1
-	for v in ice:
+	for n in ice.size():
+		var v = ice[n]
 		var picks: Array = []
 		for p in order.size():
 			var t: Dictionary = by_id[order[p]]
@@ -90,6 +93,9 @@ static func _place_ice_along(tiles: Array, order: Array, ice: Array, rng: Random
 				picks.append(p)
 		if picks.is_empty():
 			return false
+		var deep: Array = picks.filter(func(p): return int(by_id[order[p]].layer) < top)
+		if n % 2 == 1 and not deep.is_empty():
+			picks = deep
 		picks.sort_custom(func(a, b): return int(holds.get(order[a], 0)) > int(holds.get(order[b], 0)))
 		var best := picks.slice(0, maxi(1, mini(4, picks.size())))
 		by_id[order[best[rng.randi_range(0, best.size() - 1)]]]["ice"] = int(v)

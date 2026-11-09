@@ -27,6 +27,7 @@ func _fresh(now: int) -> Dictionary:
 		"ads_today": {"date": "", "counts": {}},
 		"first_day": "",
 		"last_interstitial": 0, "levels_since_ad": 0,
+		"failures": {"level": 0, "count": 0}, "perfect_chests": [],
 	}
 
 # ---------------------------------------------------------------- persistence
@@ -52,6 +53,10 @@ func _normalize() -> void:
 	data.lives = int(data.lives)
 	data.lives_at = int(data.lives_at)
 	data.unlocked = int(data.unlocked)
+	var pc: Array = []
+	for v in data.get("perfect_chests", []):
+		pc.append(int(v))
+	data.perfect_chests = pc
 	for k in economy.start_boosters:
 		data.boosters[k] = int(data.boosters.get(k, 0))
 
@@ -163,7 +168,34 @@ func record_win(level_id: int, stars: int, difficulty := "normal") -> int:
 	elif difficulty == "super":
 		coins *= float(w.super_mult)
 	add_coins(int(coins))
+	data.failures = {"level": 0, "count": 0}
 	return int(coins)
+
+# ---------------------------------------------------------------- comeback gifts
+
+const GIFT_KINDS := ["undo", "move_out", "shuffle"]
+
+## Producer 2026-11-09: a failed level is retried with one random booster as a
+## gift, after two or more failures with two (the cap). Gifts last one attempt
+## only; once they are used up the player buys their own.
+func note_failure(level_id: int) -> void:
+	var f: Dictionary = data.get("failures", {})
+	var count := int(f.get("count", 0)) if int(f.get("level", 0)) == level_id else 0
+	data.failures = {"level": level_id, "count": count + 1}
+
+func gift_count(level_id: int) -> int:
+	var f: Dictionary = data.get("failures", {})
+	if int(f.get("level", 0)) != level_id:
+		return 0
+	return mini(int(f.get("count", 0)), int(economy.get("comeback_gifts_max", 2)))
+
+## Distinct booster kinds for this attempt's gifts.
+static func pick_gifts(n: int, rng: RandomNumberGenerator) -> Array:
+	var kinds: Array = GIFT_KINDS.duplicate()
+	var out: Array = []
+	for i in mini(n, kinds.size()):
+		out.append(kinds.pop_at(rng.randi_range(0, kinds.size() - 1)))
+	return out
 
 ## The chest at the end of each chapter: granted once, on the first win of
 ## levels 10, 20, ... Returns the reward, or {} when there is none.
@@ -180,6 +212,27 @@ func claim_chapter_chest(level_id: int) -> Dictionary:
 	for k in c.boosters:
 		add_booster(k, int(c.boosters[k]))
 	return {"coins": int(c.coins), "boosters": c.boosters.duplicate()}
+
+## The perfect chest on the map: every level won with three stars has one,
+## opened once from its stars on the map. Bigger for harder levels.
+func perfect_chest_ready(level_id: int) -> bool:
+	return int(data.stars.get(str(level_id), 0)) >= 3 and not data.get("perfect_chests", []).has(level_id)
+
+## `picks` choose the random boosters (each 0..2); `difficulty` as in record_win.
+func claim_perfect_chest(level_id: int, difficulty: String, picks: Array) -> Dictionary:
+	if not perfect_chest_ready(level_id):
+		return {}
+	var c: Dictionary = economy.perfect_chest.get(difficulty, economy.perfect_chest.normal)
+	var got: Array = data.get("perfect_chests", [])
+	got.append(level_id)
+	data.perfect_chests = got
+	add_coins(int(c.coins))
+	var boosters := {}
+	for i in int(c.boosters):
+		var kind: String = GIFT_KINDS[clampi(int(picks[i]) if i < picks.size() else 0, 0, 2)]
+		boosters[kind] = int(boosters.get(kind, 0)) + 1
+		add_booster(kind)
+	return {"coins": int(c.coins), "boosters": boosters}
 
 func total_stars() -> int:
 	var n := 0

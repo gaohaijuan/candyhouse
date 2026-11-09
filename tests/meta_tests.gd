@@ -29,6 +29,8 @@ func _init() -> void:
 	_ads()
 	_purchases()
 	_persistence()
+	_comeback_gifts()
+	_perfect_chests()
 	print("checks=%d failures=%d" % [checks, failures])
 	quit(1 if failures > 0 else 0)
 
@@ -134,3 +136,41 @@ func _persistence() -> void:
 	var q := Profile.new(economy, "user://test_profile.json")
 	q.load_or_create(t + 10)
 	check(q.data.coins == p.data.coins and q.booster_count("magnet") == 3 and int(q.data.unlocked) == 6, "profile survives save and load")
+
+func _comeback_gifts() -> void:
+	var p := fresh()
+	check(p.gift_count(7) == 0, "no gift before any failure")
+	p.note_failure(7)
+	check(p.gift_count(7) == 1, "one gift after the first failure")
+	p.note_failure(7)
+	p.note_failure(7)
+	check(p.gift_count(7) == 2, "gifts cap at two")
+	check(p.gift_count(8) == 0, "gifts belong to the failed level")
+	p.note_failure(8)
+	check(p.gift_count(8) == 1 and p.gift_count(7) == 0, "failing another level starts over")
+	p.record_win(8, 2)
+	check(p.gift_count(8) == 0, "a win clears the gifts")
+	var rng := RandomNumberGenerator.new()
+	for n in 3:
+		var kinds: Array = Profile.pick_gifts(n, rng)
+		var unique := {}
+		for k in kinds:
+			unique[k] = true
+		check(kinds.size() == n and unique.size() == n, "%d distinct gift kinds" % n)
+	var before := p.booster_count("undo")
+	p.note_failure(9)
+	check(p.booster_count("undo") == before, "gifts never enter the inventory")
+
+func _perfect_chests() -> void:
+	var p := fresh()
+	p.record_win(4, 2)
+	check(not p.perfect_chest_ready(4), "no chest below three stars")
+	p.record_win(4, 3)
+	check(p.perfect_chest_ready(4), "three stars leave a chest")
+	var coins: int = p.data.coins
+	var r := p.claim_perfect_chest(4, "normal", [1])
+	check(r.coins == 60 and p.data.coins == coins + 60 and r.boosters.get("move_out", 0) == 1, "normal chest: 60 coins and the picked booster")
+	check(p.claim_perfect_chest(4, "normal", [1]).is_empty() and not p.perfect_chest_ready(4), "a chest opens once")
+	p.record_win(12, 3)
+	var r2 := p.claim_perfect_chest(12, "super", [0, 0])
+	check(r2.coins == 150 and r2.boosters.get("undo", 0) == 2, "super chest: 150 coins and two boosters")

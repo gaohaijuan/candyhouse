@@ -97,18 +97,18 @@ PLAN = [
     ("brick3", 7, {}, 58),
     # Mystery x5
     # 2026-11-08 producer: the first mystery levels were far too hard.
-    ("heart", 6, {"mystery": 3, "intro": "mystery"}, 86),
+    ("heart", 6, {"mystery": 5, "intro": "mystery"}, 86),
     ("brick", 6, {"mystery": 5}, 74),
     ("heart3", 7, {"mystery": 6}, 60),
     ("diamond", 7, {"mystery": 8}, 50),
     ("flower", 7, {"mystery": 10}, 40),
     # Ice x5. 2026-11-08 producer: ice was too weak (one or two blocks that
     # thawed after one triple); now more blocks, stronger, over other tiles.
-    ("small", 6, {"ice": [2, 2, 2], "intro": "ice"}, 86),
-    ("brick", 6, {"ice": [2, 2, 3, 3]}, 74),
-    ("heart3", 7, {"ice": [2, 3, 3, 3]}, 60),
-    ("butterfly", 7, {"ice": [3, 3, 3, 4]}, 50),
-    ("cake", 7, {"ice": [3, 3, 4, 4, 5]}, 40),
+    ("small", 6, {"ice": [3, 3, 4, 4], "intro": "ice"}, 86),
+    ("brick", 6, {"ice": [3, 3, 4, 4]}, 74),
+    ("heart3", 7, {"ice": [3, 4, 4, 5]}, 60),
+    ("butterfly", 7, {"ice": [3, 4, 4, 5, 5]}, 50),
+    ("cake", 7, {"ice": [4, 4, 5, 5, 6]}, 40),
     # Mystery + Ice x5
     ("heart", 6, {"mystery": 4, "ice": [2, 2]}, 72),
     ("brick3", 7, {"mystery": 6, "ice": [2, 2, 3]}, 60),
@@ -116,13 +116,13 @@ PLAN = [
     ("flower", 8, {"mystery": 10, "ice": [3, 3, 4]}, 40),
     ("tower", 8, {"mystery": 10, "ice": [3, 3, 4]}, 32),  # eased 2026-11-09: rarely winnable without boosters
     # Box x5
-    ("small", 6, {"stacks": [6, 6], "intro": "box"}, 84),
+    ("small", 6, {"stacks": [8, 8], "intro": "box"}, 84),
     ("brick", 6, {"stacks": [6, 6]}, 72),
     ("heart3", 7, {"stacks": [7, 7]}, 60),
     ("butterfly", 7, {"stacks": [8, 8]}, 50),
     ("cake", 7, {"stacks": [9, 9]}, 40),
     # Lock x5
-    ("brick", 6, {"locks": 1, "intro": "lock"}, 84),
+    ("brick", 6, {"locks": 2, "intro": "lock"}, 84),
     ("brick3", 6, {"locks": 1}, 72),
     ("heart3", 7, {"locks": 2}, 60),
     ("diamond", 7, {"locks": 2}, 50),
@@ -199,13 +199,17 @@ def build(overrides=None):
 BLOCK_TARGETS = {
     # 2026-11-08 producer: level 1 was unwinnable without boosters. The
     # first levels are an on-ramp a newcomer clears without boosters.
-    "basics": [1.0, 2.0, 3.5],
-    "single": [4.5, 5.5, 6.0, 6.5, 8.0],
+    "basics": [1.0, 2.5, 4.0],
+    # 2026-11-09 producer: after the no-booster re-author everything was too
+    # easy. Middle ground: a mechanic's first level is ordinary (anyone wins
+    # and learns what it is for), ordinary levels need patience and skill, a
+    # block's last level needs a clever, patient and slightly lucky player.
+    "single": [5.0, 6.0, 6.5, 7.0, 8.8],
     # Hidden desserts are harder for people than the bots measure; gentler.
-    "mystery": [3.5, 4.5, 5.0, 5.5, 7.0],
-    "pair": [5.5, 6.0, 6.5, 7.0, 8.0],
-    "triple": [6.0, 6.5, 7.0, 7.5, 8.0],
-    "finale": [8.0, 8.5],
+    "mystery": [4.5, 5.5, 6.0, 6.5, 8.3],
+    "pair": [6.0, 6.5, 7.0, 7.5, 8.8],
+    "triple": [6.5, 7.0, 7.5, 8.0, 9.0],
+    "finale": [9.0, 9.3],
 }
 BLOCKS = [("basics", 3), ("mystery", 5), ("single", 5), ("pair", 5), ("single", 5), ("single", 5),
           ("pair", 5), ("single", 5), ("pair", 5), ("triple", 5), ("finale", 2)]
@@ -219,13 +223,16 @@ def targets():
 # Ratings are measured without boosters (2026-11-08), which needs fewer
 # desserts than before; the author steps through the range towards the target.
 def types_range(t):
+    # Widened 2026-11-09: the first harder run hit the old ceilings (11-12
+    # desserts) and still came out easy; there are 20 desserts in the art.
     if t < 1.5: return [3, 5]
     if t < 2.5: return [4, 6]
-    if t < 4.0: return [4, 8]
-    if t < 5.0: return [5, 9]
-    if t < 6.6: return [5, 11]
-    if t < 7.6: return [6, 12]
-    return [6, 14]
+    if t < 4.0: return [4, 9]
+    if t < 5.0: return [5, 11]
+    if t < 6.6: return [7, 15]
+    if t < 7.6: return [8, 16]
+    if t < 8.6: return [9, 17]
+    return [10, 18]
 
 def plan():
     levels = build({})
@@ -237,6 +244,11 @@ def plan():
         L["types_range"] = types_range(t)
         L["types"] = sum(types_range(t)) // 2
         L.pop("target_win_pct", None)
+        # A mechanic's first level must make it matter (producer 2026-11-09:
+        # ice that is gone after two triples teaches nothing): the careful
+        # player's win rate must drop this much when the mechanic is on.
+        if L.get("intro") and not L.get("stacks"):
+            L["impact"] = 0.2
     return levels
 
 if __name__ == "__main__" and "--plan" in __import__("sys").argv:

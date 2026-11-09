@@ -64,7 +64,10 @@
  "chapter_chest": {
   "every": 10,
   "coins": 150,
-  "boosters": {"move_out": 1, "shuffle": 1}
+  "boosters": {
+   "move_out": 1,
+   "shuffle": 1
+  }
  },
  "star_chest": {
   "stars": 30,
@@ -140,5 +143,20 @@
    "no_ads": true,
    "once": true
   }
- ]
+ ],
+ "comeback_gifts_max": 2,
+ "perfect_chest": {
+  "normal": {
+   "coins": 60,
+   "boosters": 1
+  },
+  "hard": {
+   "coins": 100,
+   "boosters": 1
+  },
+  "super": {
+   "coins": 150,
+   "boosters": 2
+  }
+ }
 }

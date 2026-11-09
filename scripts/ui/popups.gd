@@ -559,6 +559,16 @@ func star_chest() -> void:
 	app.save()
 	reward(r)
 
+## The three-star chest of one level (opened from its stars on the map).
+func perfect_chest(index: int, claimed := Callable()) -> void:
+	var r: Dictionary = app.profile.claim_perfect_chest(index + 1, app.difficulty(index), [randi() % 3, randi() % 3])
+	if r.is_empty():
+		return
+	app.save()
+	if claimed.is_valid():
+		claimed.call()
+	reward(r, Callable(), "三星宝箱")
+
 ## "Congratulations" (mockup M7_A): open chest in a glow, one card per
 ## reward, ad doubling and claim. Full screen, no panel.
 func reward(r: Dictionary, then := Callable(), title := "恭喜获得") -> void:
@@ -647,6 +657,7 @@ func debug_open(name: String) -> void:
 		"lives": lives()
 		"checkin": checkin()
 		"chest": reward({"coins": 100, "boosters": {"shuffle": 1, "move_out": 1}})
+		"perfect": perfect_chest(0)
 		"start": level_start(app.current_level_index())
 		"shortage": booster_shortage("shuffle", func(): pass)
 		"purchase": purchase("coins_3300")

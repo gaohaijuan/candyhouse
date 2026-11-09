@@ -146,7 +146,8 @@ func current_level_index() -> int:
 ## "normal", "hard" or "super" from the authored difficulty.
 func difficulty(index: int) -> String:
 	var r: float = float(level_def(index).get("target_rating", 5.0))
-	return "super" if r >= 7.75 else ("hard" if r >= 6.75 else "normal")
+	# Re-tiered 2026-11-09 with the harder curve: ordinary levels sit at 6-7.
+	return "super" if r >= 8.25 else ("hard" if r >= 7.25 else "normal")
 
 ## Short message that floats up and fades.
 func toast(text: String) -> void:
