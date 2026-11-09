@@ -352,7 +352,9 @@ func _test_authored(levels: Array) -> void:
 		var target: float = float(level.target_rating)
 		check(r <= target + 1.2 and r >= target - 3.0, "L%d rating %.1f fits target %.1f" % [level.id, r, target])
 		var sk: float = float(level.get("measured", {}).get("skilled", 0.0))
-		check(sk >= (0.3 if target <= 7.0 else 0.15), "L%d skilled win %.0f%% without boosters" % [level.id, sk * 100])
+		# Same floors as tools/author.gd: the block finales (target 8.8+) are
+		# meant to need cleverness and some luck (producer, 2026-11-09).
+		check(sk >= (0.3 if target <= 7.0 else (0.2 if target <= 8.5 else 0.12)), "L%d skilled win %.0f%% without boosters" % [level.id, sk * 100])
 		for t in s.tiles.values():
 			if t.get("mystery", false):
 				check(not s.type_known(t.id), "L%d mystery dessert hidden on the board" % level.id)

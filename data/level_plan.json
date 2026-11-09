@@ -42,7 +42,7 @@
   },
   {
    "id": 2,
-   "types": 5,
+   "types": 6,
    "max_open": 1,
    "seed": 202,
    "shape": "brick",
@@ -73,17 +73,31 @@
       "11111",
       "11111"
      ]
+    },
+    {
+     "cols": 6,
+     "rows": 4,
+     "offset": [
+      0,
+      0
+     ],
+     "mask": [
+      "111111",
+      "111111",
+      "111111",
+      "111111"
+     ]
     }
    ],
-   "target_rating": 2.0,
+   "target_rating": 2.5,
    "types_range": [
     4,
-    6
+    9
    ]
   },
   {
    "id": 3,
-   "types": 6,
+   "types": 8,
    "max_open": 1,
    "seed": 303,
    "shape": "brick3",
@@ -130,15 +144,15 @@
      ]
     }
    ],
-   "target_rating": 3.5,
+   "target_rating": 4.0,
    "types_range": [
-    4,
-    8
+    5,
+    11
    ]
   },
   {
    "id": 4,
-   "types": 6,
+   "types": 8,
    "max_open": 1,
    "seed": 404,
    "shape": "heart",
@@ -188,20 +202,21 @@
      ]
     }
    ],
-   "mystery": 3,
+   "mystery": 5,
    "intro": {
     "title": "新玩法:神秘方块",
     "text": "问号方块里的甜点看不见\n拿进托盘时才会揭晓"
    },
-   "target_rating": 3.5,
+   "target_rating": 4.5,
    "types_range": [
-    4,
-    8
-   ]
+    5,
+    11
+   ],
+   "impact": 0.2
   },
   {
    "id": 5,
-   "types": 7,
+   "types": 11,
    "max_open": 1,
    "seed": 505,
    "shape": "brick",
@@ -249,15 +264,15 @@
     }
    ],
    "mystery": 5,
-   "target_rating": 4.5,
+   "target_rating": 5.5,
    "types_range": [
-    5,
-    9
+    7,
+    15
    ]
   },
   {
    "id": 6,
-   "types": 8,
+   "types": 11,
    "max_open": 1,
    "seed": 606,
    "shape": "heart3",
@@ -308,15 +323,15 @@
     }
    ],
    "mystery": 6,
-   "target_rating": 5.0,
+   "target_rating": 6.0,
    "types_range": [
-    5,
-    11
+    7,
+    15
    ]
   },
   {
    "id": 7,
-   "types": 8,
+   "types": 11,
    "max_open": 1,
    "seed": 707,
    "shape": "diamond",
@@ -367,15 +382,15 @@
     }
    ],
    "mystery": 8,
-   "target_rating": 5.5,
+   "target_rating": 6.5,
    "types_range": [
-    5,
-    11
+    7,
+    15
    ]
   },
   {
    "id": 8,
-   "types": 9,
+   "types": 13,
    "max_open": 1,
    "seed": 808,
    "shape": "flower",
@@ -440,15 +455,15 @@
     }
    ],
    "mystery": 10,
-   "target_rating": 7.0,
+   "target_rating": 8.3,
    "types_range": [
-    6,
-    12
+    9,
+    17
    ]
   },
   {
    "id": 9,
-   "types": 7,
+   "types": 11,
    "max_open": 1,
    "seed": 909,
    "shape": "small",
@@ -496,23 +511,25 @@
     }
    ],
    "ice": [
-    2,
-    2,
-    2
+    3,
+    3,
+    4,
+    4
    ],
    "intro": {
     "title": "新玩法:冰封方块",
     "text": "冰上的数字是还要消除的次数\n每消除一组,冰就融化一点"
    },
-   "target_rating": 4.5,
+   "target_rating": 5.0,
    "types_range": [
-    5,
-    9
-   ]
+    7,
+    15
+   ],
+   "impact": 0.2
   },
   {
    "id": 10,
-   "types": 8,
+   "types": 11,
    "max_open": 1,
    "seed": 1010,
    "shape": "brick",
@@ -560,20 +577,20 @@
     }
    ],
    "ice": [
-    2,
-    2,
     3,
-    3
+    3,
+    4,
+    4
    ],
-   "target_rating": 5.5,
+   "target_rating": 6.0,
    "types_range": [
-    5,
-    11
+    7,
+    15
    ]
   },
   {
    "id": 11,
-   "types": 8,
+   "types": 11,
    "max_open": 1,
    "seed": 1111,
    "shape": "heart3",
@@ -624,20 +641,20 @@
     }
    ],
    "ice": [
-    2,
     3,
-    3,
-    3
+    4,
+    4,
+    5
    ],
-   "target_rating": 6.0,
+   "target_rating": 6.5,
    "types_range": [
-    5,
-    11
+    7,
+    15
    ]
   },
   {
    "id": 12,
-   "types": 8,
+   "types": 12,
    "max_open": 1,
    "seed": 1212,
    "shape": "butterfly",
@@ -681,27 +698,42 @@
      "mask": [
       "1100011",
       "1110111",
-      "0110110",
+      "0111110",
       "1110111",
       "1100011"
+     ]
+    },
+    {
+     "cols": 6,
+     "rows": 4,
+     "offset": [
+      1,
+      1
+     ],
+     "mask": [
+      "110011",
+      "111111",
+      "111111",
+      "110011"
      ]
     }
    ],
    "ice": [
     3,
-    3,
-    3,
-    4
-   ],
-   "target_rating": 6.5,
-   "types_range": [
+    4,
+    4,
     5,
-    11
+    5
+   ],
+   "target_rating": 7.0,
+   "types_range": [
+    8,
+    16
    ]
   },
   {
    "id": 13,
-   "types": 10,
+   "types": 14,
    "max_open": 1,
    "seed": 1313,
    "shape": "cake",
@@ -766,21 +798,21 @@
     }
    ],
    "ice": [
-    3,
-    3,
     4,
     4,
-    5
+    5,
+    5,
+    6
    ],
-   "target_rating": 8.0,
+   "target_rating": 8.8,
    "types_range": [
-    6,
-    14
+    10,
+    18
    ]
   },
   {
    "id": 14,
-   "types": 8,
+   "types": 11,
    "max_open": 1,
    "seed": 1414,
    "shape": "heart",
@@ -835,15 +867,15 @@
     2,
     2
    ],
-   "target_rating": 5.5,
+   "target_rating": 6.0,
    "types_range": [
-    5,
-    11
+    7,
+    15
    ]
   },
   {
    "id": 15,
-   "types": 8,
+   "types": 11,
    "max_open": 1,
    "seed": 1515,
    "shape": "brick3",
@@ -896,15 +928,15 @@
     2,
     3
    ],
-   "target_rating": 6.0,
+   "target_rating": 6.5,
    "types_range": [
-    5,
-    11
+    7,
+    15
    ]
   },
   {
    "id": 16,
-   "types": 8,
+   "types": 12,
    "max_open": 1,
    "seed": 1616,
    "shape": "diamond",
@@ -948,9 +980,23 @@
      "mask": [
       "0011100",
       "0111110",
-      "1110111",
+      "1111111",
       "0111110",
       "0011100"
+     ]
+    },
+    {
+     "cols": 6,
+     "rows": 4,
+     "offset": [
+      1,
+      1
+     ],
+     "mask": [
+      "001100",
+      "011110",
+      "011010",
+      "001100"
      ]
     }
    ],
@@ -960,15 +1006,15 @@
     3,
     3
    ],
-   "target_rating": 6.5,
+   "target_rating": 7.0,
    "types_range": [
-    5,
-    11
+    8,
+    16
    ]
   },
   {
    "id": 17,
-   "types": 9,
+   "types": 12,
    "max_open": 1,
    "seed": 1717,
    "shape": "flower",
@@ -1038,15 +1084,15 @@
     3,
     4
    ],
-   "target_rating": 7.0,
+   "target_rating": 7.5,
    "types_range": [
-    6,
-    12
+    8,
+    16
    ]
   },
   {
    "id": 18,
-   "types": 10,
+   "types": 14,
    "max_open": 1,
    "seed": 1818,
    "shape": "tower",
@@ -1116,15 +1162,15 @@
     3,
     4
    ],
-   "target_rating": 8.0,
+   "target_rating": 8.8,
    "types_range": [
-    6,
-    14
+    10,
+    18
    ]
   },
   {
    "id": 19,
-   "types": 7,
+   "types": 11,
    "max_open": 1,
    "seed": 1919,
    "shape": "small",
@@ -1166,32 +1212,32 @@
      "mask": [
       "11111",
       "11111",
-      "11011",
+      "11001",
       "11111"
      ]
     }
    ],
    "stacks": [
     {
-     "count": 6
+     "count": 8
     },
     {
-     "count": 6
+     "count": 8
     }
    ],
    "intro": {
     "title": "新玩法:甜点盒",
     "text": "两侧的甜点盒一次只能拿最上面一块"
    },
-   "target_rating": 4.5,
+   "target_rating": 5.0,
    "types_range": [
-    5,
-    9
+    7,
+    15
    ]
   },
   {
    "id": 20,
-   "types": 8,
+   "types": 11,
    "max_open": 1,
    "seed": 2020,
    "shape": "brick",
@@ -1246,15 +1292,15 @@
      "count": 6
     }
    ],
-   "target_rating": 5.5,
+   "target_rating": 6.0,
    "types_range": [
-    5,
-    11
+    7,
+    15
    ]
   },
   {
    "id": 21,
-   "types": 8,
+   "types": 11,
    "max_open": 1,
    "seed": 2121,
    "shape": "heart3",
@@ -1312,15 +1358,15 @@
      "count": 7
     }
    ],
-   "target_rating": 6.0,
+   "target_rating": 6.5,
    "types_range": [
-    5,
-    11
+    7,
+    15
    ]
   },
   {
    "id": 22,
-   "types": 8,
+   "types": 12,
    "max_open": 1,
    "seed": 2222,
    "shape": "butterfly",
@@ -1364,9 +1410,23 @@
      "mask": [
       "1100011",
       "1110111",
-      "0110010",
+      "0111110",
       "1110111",
       "1100011"
+     ]
+    },
+    {
+     "cols": 6,
+     "rows": 4,
+     "offset": [
+      1,
+      1
+     ],
+     "mask": [
+      "110011",
+      "111111",
+      "111011",
+      "110011"
      ]
     }
    ],
@@ -1378,15 +1438,15 @@
      "count": 8
     }
    ],
-   "target_rating": 6.5,
+   "target_rating": 7.0,
    "types_range": [
-    5,
-    11
+    8,
+    16
    ]
   },
   {
    "id": 23,
-   "types": 10,
+   "types": 14,
    "max_open": 1,
    "seed": 2323,
    "shape": "cake",
@@ -1458,15 +1518,15 @@
      "count": 9
     }
    ],
-   "target_rating": 8.0,
+   "target_rating": 8.8,
    "types_range": [
-    6,
-    14
+    10,
+    18
    ]
   },
   {
    "id": 24,
-   "types": 7,
+   "types": 11,
    "max_open": 1,
    "seed": 2424,
    "shape": "brick",
@@ -1513,20 +1573,21 @@
      ]
     }
    ],
-   "locks": 1,
+   "locks": 2,
    "intro": {
     "title": "新玩法:糖果锁",
     "text": "带锁的方块暂时不能拿\n消除带钥匙的那组甜点,锁就会打开"
    },
-   "target_rating": 4.5,
+   "target_rating": 5.0,
    "types_range": [
-    5,
-    9
-   ]
+    7,
+    15
+   ],
+   "impact": 0.2
   },
   {
    "id": 25,
-   "types": 8,
+   "types": 11,
    "max_open": 1,
    "seed": 2525,
    "shape": "brick3",
@@ -1574,15 +1635,15 @@
     }
    ],
    "locks": 1,
-   "target_rating": 5.5,
+   "target_rating": 6.0,
    "types_range": [
-    5,
-    11
+    7,
+    15
    ]
   },
   {
    "id": 26,
-   "types": 8,
+   "types": 11,
    "max_open": 1,
    "seed": 2626,
    "shape": "heart3",
@@ -1633,15 +1694,15 @@
     }
    ],
    "locks": 2,
-   "target_rating": 6.0,
+   "target_rating": 6.5,
    "types_range": [
-    5,
-    11
+    7,
+    15
    ]
   },
   {
    "id": 27,
-   "types": 8,
+   "types": 12,
    "max_open": 1,
    "seed": 2727,
    "shape": "diamond",
@@ -1685,22 +1746,36 @@
      "mask": [
       "0011100",
       "0111110",
-      "1110111",
+      "1111111",
       "0111110",
       "0011100"
+     ]
+    },
+    {
+     "cols": 6,
+     "rows": 4,
+     "offset": [
+      1,
+      1
+     ],
+     "mask": [
+      "001100",
+      "011110",
+      "011010",
+      "001100"
      ]
     }
    ],
    "locks": 2,
-   "target_rating": 6.5,
+   "target_rating": 7.0,
    "types_range": [
-    5,
-    11
+    8,
+    16
    ]
   },
   {
    "id": 28,
-   "types": 10,
+   "types": 14,
    "max_open": 1,
    "seed": 2828,
    "shape": "flower",
@@ -1765,15 +1840,15 @@
     }
    ],
    "locks": 3,
-   "target_rating": 8.0,
+   "target_rating": 8.8,
    "types_range": [
-    6,
-    14
+    10,
+    18
    ]
   },
   {
    "id": 29,
-   "types": 8,
+   "types": 11,
    "max_open": 1,
    "seed": 2929,
    "shape": "brick",
@@ -1829,15 +1904,15 @@
     }
    ],
    "locks": 1,
-   "target_rating": 5.5,
+   "target_rating": 6.0,
    "types_range": [
-    5,
-    11
+    7,
+    15
    ]
   },
   {
    "id": 30,
-   "types": 8,
+   "types": 11,
    "max_open": 1,
    "seed": 3030,
    "shape": "heart3",
@@ -1896,15 +1971,15 @@
     }
    ],
    "locks": 1,
-   "target_rating": 6.0,
+   "target_rating": 6.5,
    "types_range": [
-    5,
-    11
+    7,
+    15
    ]
   },
   {
    "id": 31,
-   "types": 8,
+   "types": 12,
    "max_open": 1,
    "seed": 3131,
    "shape": "butterfly",
@@ -1952,6 +2027,20 @@
       "1110111",
       "1100011"
      ]
+    },
+    {
+     "cols": 6,
+     "rows": 4,
+     "offset": [
+      1,
+      1
+     ],
+     "mask": [
+      "110011",
+      "111111",
+      "111001",
+      "110011"
+     ]
     }
    ],
    "stacks": [
@@ -1963,15 +2052,15 @@
     }
    ],
    "locks": 2,
-   "target_rating": 6.5,
+   "target_rating": 7.0,
    "types_range": [
-    5,
-    11
+    8,
+    16
    ]
   },
   {
    "id": 32,
-   "types": 9,
+   "types": 12,
    "max_open": 1,
    "seed": 3232,
    "shape": "cake",
@@ -2044,15 +2133,15 @@
     }
    ],
    "locks": 2,
-   "target_rating": 7.0,
+   "target_rating": 7.5,
    "types_range": [
-    6,
-    12
+    8,
+    16
    ]
   },
   {
    "id": 33,
-   "types": 10,
+   "types": 14,
    "max_open": 1,
    "seed": 3333,
    "shape": "tower",
@@ -2125,15 +2214,15 @@
     }
    ],
    "locks": 3,
-   "target_rating": 8.0,
+   "target_rating": 8.8,
    "types_range": [
-    6,
-    14
+    10,
+    18
    ]
   },
   {
    "id": 34,
-   "types": 7,
+   "types": 11,
    "max_open": 1,
    "seed": 3434,
    "shape": "brick3",
@@ -2187,15 +2276,16 @@
     "title": "新玩法:生日蜡烛",
     "text": "蜡烛上的数字是剩余步数\n烧完之前一定要把它拿走"
    },
-   "target_rating": 4.5,
+   "target_rating": 5.0,
    "types_range": [
-    5,
-    9
-   ]
+    7,
+    15
+   ],
+   "impact": 0.2
   },
   {
    "id": 35,
-   "types": 8,
+   "types": 11,
    "max_open": 1,
    "seed": 3535,
    "shape": "heart3",
@@ -2248,15 +2338,15 @@
    "candles": [
     10
    ],
-   "target_rating": 5.5,
+   "target_rating": 6.0,
    "types_range": [
-    5,
-    11
+    7,
+    15
    ]
   },
   {
    "id": 36,
-   "types": 8,
+   "types": 11,
    "max_open": 1,
    "seed": 3636,
    "shape": "diamond",
@@ -2309,15 +2399,15 @@
    "candles": [
     8
    ],
-   "target_rating": 6.0,
+   "target_rating": 6.5,
    "types_range": [
-    5,
-    11
+    7,
+    15
    ]
   },
   {
    "id": 37,
-   "types": 8,
+   "types": 12,
    "max_open": 1,
    "seed": 3737,
    "shape": "butterfly",
@@ -2361,9 +2451,23 @@
      "mask": [
       "1000001",
       "0100010",
-      "0010000",
+      "0010100",
       "0100010",
       "1000001"
+     ]
+    },
+    {
+     "cols": 6,
+     "rows": 4,
+     "offset": [
+      1,
+      1
+     ],
+     "mask": [
+      "110011",
+      "111111",
+      "111111",
+      "110011"
      ]
     }
    ],
@@ -2371,15 +2475,15 @@
     7,
     9
    ],
-   "target_rating": 6.5,
+   "target_rating": 7.0,
    "types_range": [
-    5,
-    11
+    8,
+    16
    ]
   },
   {
    "id": 38,
-   "types": 10,
+   "types": 14,
    "max_open": 1,
    "seed": 3838,
    "shape": "flower",
@@ -2447,15 +2551,15 @@
     8,
     10
    ],
-   "target_rating": 8.0,
+   "target_rating": 8.8,
    "types_range": [
-    6,
-    14
+    10,
+    18
    ]
   },
   {
    "id": 39,
-   "types": 8,
+   "types": 11,
    "max_open": 1,
    "seed": 3939,
    "shape": "brick3",
@@ -2509,15 +2613,15 @@
    "candles": [
     10
    ],
-   "target_rating": 5.5,
+   "target_rating": 6.0,
    "types_range": [
-    5,
-    11
+    7,
+    15
    ]
   },
   {
    "id": 40,
-   "types": 8,
+   "types": 11,
    "max_open": 1,
    "seed": 4040,
    "shape": "heart3",
@@ -2575,15 +2679,15 @@
    "candles": [
     9
    ],
-   "target_rating": 6.0,
+   "target_rating": 6.5,
    "types_range": [
-    5,
-    11
+    7,
+    15
    ]
   },
   {
    "id": 41,
-   "types": 8,
+   "types": 12,
    "max_open": 1,
    "seed": 4141,
    "shape": "diamond",
@@ -2627,9 +2731,23 @@
      "mask": [
       "0010100",
       "0101010",
-      "1010001",
+      "1010101",
       "0101010",
       "0010100"
+     ]
+    },
+    {
+     "cols": 6,
+     "rows": 4,
+     "offset": [
+      1,
+      1
+     ],
+     "mask": [
+      "001100",
+      "011110",
+      "011010",
+      "001100"
      ]
     }
    ],
@@ -2642,15 +2760,15 @@
     8,
     10
    ],
-   "target_rating": 6.5,
+   "target_rating": 7.0,
    "types_range": [
-    5,
-    11
+    8,
+    16
    ]
   },
   {
    "id": 42,
-   "types": 9,
+   "types": 12,
    "max_open": 1,
    "seed": 4242,
    "shape": "cake",
@@ -2723,15 +2841,15 @@
     7,
     9
    ],
-   "target_rating": 7.0,
+   "target_rating": 7.5,
    "types_range": [
-    6,
-    12
+    8,
+    16
    ]
   },
   {
    "id": 43,
-   "types": 10,
+   "types": 14,
    "max_open": 1,
    "seed": 4343,
    "shape": "tower",
@@ -2805,15 +2923,15 @@
     6,
     8
    ],
-   "target_rating": 8.0,
+   "target_rating": 8.8,
    "types_range": [
-    6,
-    14
+    10,
+    18
    ]
   },
   {
    "id": 44,
-   "types": 8,
+   "types": 11,
    "max_open": 1,
    "seed": 4444,
    "shape": "heart3",
@@ -2877,15 +2995,15 @@
     2,
     3
    ],
-   "target_rating": 6.0,
+   "target_rating": 6.5,
    "types_range": [
-    5,
-    11
+    7,
+    15
    ]
   },
   {
    "id": 45,
-   "types": 8,
+   "types": 12,
    "max_open": 1,
    "seed": 4545,
    "shape": "flower",
@@ -2933,6 +3051,20 @@
       "1111111",
       "0111110"
      ]
+    },
+    {
+     "cols": 6,
+     "rows": 4,
+     "offset": [
+      1,
+      1
+     ],
+     "mask": [
+      "011110",
+      "111111",
+      "111001",
+      "011110"
+     ]
     }
    ],
    "stacks": [
@@ -2949,15 +3081,15 @@
     3,
     3
    ],
-   "target_rating": 6.5,
+   "target_rating": 7.0,
    "types_range": [
-    5,
-    11
+    8,
+    16
    ]
   },
   {
    "id": 46,
-   "types": 9,
+   "types": 12,
    "max_open": 1,
    "seed": 4646,
    "shape": "diamond",
@@ -3033,15 +3165,15 @@
    "candles": [
     9
    ],
-   "target_rating": 7.0,
+   "target_rating": 7.5,
    "types_range": [
-    6,
-    12
+    8,
+    16
    ]
   },
   {
    "id": 47,
-   "types": 9,
+   "types": 13,
    "max_open": 1,
    "seed": 4747,
    "shape": "cake",
@@ -3118,15 +3250,15 @@
     8,
     10
    ],
-   "target_rating": 7.5,
+   "target_rating": 8.0,
    "types_range": [
-    6,
-    12
+    9,
+    17
    ]
   },
   {
    "id": 48,
-   "types": 10,
+   "types": 14,
    "max_open": 1,
    "seed": 4848,
    "shape": "tower",
@@ -3195,15 +3327,15 @@
    "candles": [
     8
    ],
-   "target_rating": 8.0,
+   "target_rating": 9.0,
    "types_range": [
-    6,
-    14
+    10,
+    18
    ]
   },
   {
    "id": 49,
-   "types": 10,
+   "types": 14,
    "max_open": 1,
    "seed": 4949,
    "shape": "grand",
@@ -3285,15 +3417,15 @@
    "candles": [
     9
    ],
-   "target_rating": 8.0,
+   "target_rating": 9.0,
    "types_range": [
-    6,
-    14
+    10,
+    18
    ]
   },
   {
    "id": 50,
-   "types": 10,
+   "types": 14,
    "max_open": 1,
    "seed": 5050,
    "shape": "grand",
@@ -3377,10 +3509,10 @@
     12
    ],
    "boss": true,
-   "target_rating": 8.5,
+   "target_rating": 9.3,
    "types_range": [
-    6,
-    14
+    10,
+    18
    ]
   }
  ]

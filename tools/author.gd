@@ -42,7 +42,7 @@ func _init() -> void:
 	# towards the target after every measured candidate.
 	var spread_types: Array = spec.get("types_range", [spec.types, spec.types])
 	var types := int(round((float(spread_types[0]) + float(spread_types[1])) / 2.0))
-	while tried < candidates and seed < candidates * 12:
+	while tried < candidates and seed < candidates * 6:
 		seed += 1
 		var rng := RandomNumberGenerator.new()
 		rng.seed = id * 100003 + seed
@@ -68,8 +68,8 @@ func _init() -> void:
 		m.level = level
 		shortlist.append(m)
 		shortlist.sort_custom(func(a, b): return _miss(a.rating, a.skilled, target) < _miss(b.rating, b.skilled, target))
-		shortlist = shortlist.slice(0, 3)
-	# The screen above picks lucky measurements; re-measure the best few on
+		shortlist = shortlist.slice(0, 4)
+	# The screen above picks lucky measurements; re-measure the best four on
 	# fresh seeds (as tests/sweep_levels.gd does) and choose on that.
 	var best := {}
 	var best_miss := INF
