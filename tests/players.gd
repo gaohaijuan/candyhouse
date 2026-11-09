@@ -4,6 +4,7 @@ extends RefCounted
 ## Both use the three boosters the way a person would.
 
 const GameState = preload("res://scripts/core/game_state.gd")
+const Solver = preload("res://scripts/core/solver.gd")
 
 ## Plays a round. `skill` is "casual" or "skilled". Returns true on a win.
 ## `rng` adds human-like slips: a casual player sometimes takes one of its top
@@ -60,6 +61,11 @@ static func _choose(s, skill: String, banned: int, rng: RandomNumberGenerator = 
 		return {}
 	var counts := _tray_counts(s)
 	var visible := _visible_counts(s)
+	# The expert's plan already keeps every candle alive.
+	if skill == "expert":
+		var planned := _plan_pick(s, options, rng)
+		if planned >= 0:
+			return {"id": planned, "score": 0}
 	# Candle urgency: dig out a candle whose countdown is close.
 	for c in s.board_tiles().filter(func(t): return t.has("fuse")):
 		var blockers: Array = s.cover[c.id].filter(func(x): return s.tiles[x].place == "board")
@@ -70,12 +76,12 @@ static func _choose(s, skill: String, banned: int, rng: RandomNumberGenerator = 
 	var ranked: Array = []
 	for t in options:
 		var sc := _score(s, t, counts, s.tray.size(), visible)
-		if skill == "skilled" and sc > -900:
+		if skill != "casual" and sc > -900:
 			sc += 0.6 * _best_follow_up(s, t, counts, visible)
 		ranked.append({"id": t.id, "score": sc})
 	ranked.sort_custom(func(a, b): return a.score > b.score)
 	if rng != null:
-		var slip := 0.25 if skill == "casual" else 0.08
+		var slip := 0.25 if skill == "casual" else (0.08 if skill == "skilled" else 0.0)
 		var width := 3 if skill == "casual" else 2
 		if rng.randf() < slip:
 			var pool: Array = ranked.slice(0, mini(width, ranked.size())).filter(func(c): return c.score > -900)
@@ -146,3 +152,36 @@ static func _best_follow_up(s, t: Dictionary, counts: Dictionary, visible: Dicti
 	for o in options:
 		best = maxf(best, _score(s, o, c2, size, visible))
 	return best
+
+## Expert: plans a whole clearing order the way a strong player thinks ahead.
+## Desserts it cannot see are guessed by shuffling the hidden tiles' desserts
+## among them (a counting player knows which desserts are still unseen, not
+## where), then the beam solver looks for a winning order from here; the
+## first step of it that can be taken now is played. -1 when no order is found.
+static func _plan_pick(s, options: Array, rng: RandomNumberGenerator) -> int:
+	var board: Array = s.board_tiles()
+	var hidden: Array = board.filter(func(t): return not s.type_known(t.id))
+	var types: Array = hidden.map(func(t): return int(t.type))
+	if rng != null:
+		for i in range(types.size() - 1, 0, -1):
+			var j := rng.randi_range(0, i)
+			var x = types[i]; types[i] = types[j]; types[j] = x
+	var guess := {}
+	for i in hidden.size():
+		guess[hidden[i].id] = types[i]
+	var plain: Array = []
+	for t in board:
+		var p := {"id": t.id, "type": int(guess.get(t.id, t.type))}
+		for k in ["ice", "lock", "key", "fuse"]:
+			if t.has(k):
+				p[k] = t[k]
+		plain.append(p)
+	var tray_types: Array = s.tray.map(func(id): return int(s.tiles[id].type))
+	var order: Array = Solver.solve_rules(plain, s.cover, int(s.get_meta("plan_width", 12)), tray_types)
+	var allowed := {}
+	for t in options:
+		allowed[t.id] = true
+	for id in order:
+		if allowed.has(id):
+			return id
+	return -1

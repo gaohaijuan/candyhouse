@@ -19,7 +19,11 @@ func _init() -> void:
 	var trials := 16
 	var verify := 40
 	for a in OS.get_cmdline_user_args():
-		if a.begins_with("candidates="):
+		if a == "ref=planner":
+			planner = true
+		elif a.begins_with("max_types="):
+			max_types = int(a.substr(10))
+		elif a.begins_with("candidates="):
 			candidates = int(a.substr(11))
 		elif a.begins_with("trials="):
 			trials = int(a.substr(7))
@@ -34,13 +38,21 @@ func _init() -> void:
 		if int(L.id) == id:
 			spec = L
 	var target: float = spec.target_rating
+	# Learning levels keep the simulated-player measure (Codex players found it
+	# right there); from target 5 the planners decide.
+	planner = planner and target >= 5.0
+	if planner:
+		trials = mini(trials, 4)
+		verify = mini(verify, 8)
 	var impact_min: float = float(spec.get("impact", 0.0))
 	var shortlist: Array = []
 	var tried := 0
 	var seed := 0
 	# Dessert variety is the main difficulty lever: start mid-range and step
 	# towards the target after every measured candidate.
-	var spread_types: Array = spec.get("types_range", [spec.types, spec.types])
+	var spread_types: Array = spec.get("types_range", [spec.types, spec.types]).duplicate()
+	if planner and max_types > 0:
+		spread_types[1] = maxi(int(spread_types[1]), max_types)
 	var types := int(round((float(spread_types[0]) + float(spread_types[1])) / 2.0))
 	while tried < candidates and seed < candidates * 6:
 		seed += 1
@@ -92,9 +104,40 @@ func _init() -> void:
 	print("L%d target=%.1f chosen rating=%.1f types=%d skilled=%d%% casual=%d%% impact=%d%%" % [id, target, best.get("rating", -1), best.get("types", 0), best.get("skilled", 0) * 100, best.get("casual", 0) * 100, best.get("impact", -1.0) * 100])
 	quit()
 
+## ref=planner: Codex players (2026-11-09) won levels the simulated skilled
+## player lost four times in five, and even the narrowest planner (finish a
+## triple when you can, keep the tray light) beat nearly every board. So
+## difficulty is how far ahead one must plan: planners of width 1, 4 and 12
+## (tests/players.gd "expert") play the board; each width that loses adds to
+## the rating. "skilled" then means the width-12 planner's win rate.
+static var planner := false
+static var max_types := 0
+
+static func _measure(level: Dictionary, trials: int, pass_no: int) -> Dictionary:
+	if planner:
+		return _measure_planner(level, trials, pass_no)
+	return _measure_players(level, trials, pass_no)
+
+static func _measure_planner(level: Dictionary, trials: int, pass_no: int) -> Dictionary:
+	var rate := {}
+	for width in [1, 4, 12]:
+		var wins := 0
+		for trial in trials:
+			var def: Dictionary = level.duplicate(true)
+			def.seed = int(level.seed) + trial * 31 + pass_no * 100000
+			var s := GameState.new(def)
+			s.set_meta("plan_width", width)
+			var prng := RandomNumberGenerator.new()
+			prng.seed = trial * 7919 + width + pass_no * 104729
+			if Players.play(s, "expert", false, prng):
+				wins += 1
+		rate[width] = wins / float(trials)
+	var r: float = 3.0 + 3.0 * (1.0 - rate[1]) + 2.5 * (1.0 - rate[4]) + 1.5 * (1.0 - rate[12])
+	return {"skilled": rate[12], "casual": rate[1], "w4": rate[4], "rating": r}
+
 ## Plays `trials` rounds per player without boosters. `pass_no` picks a seed
 ## family so the verify pass never reuses the screening rounds.
-static func _measure(level: Dictionary, trials: int, pass_no: int) -> Dictionary:
+static func _measure_players(level: Dictionary, trials: int, pass_no: int) -> Dictionary:
 	var wins := {"casual": 0, "skilled": 0}
 	for trial in trials:
 		for skill in ["casual", "skilled"]:
@@ -128,4 +171,6 @@ static func _miss(r: float, skilled: float, target: float) -> float:
 	var gap := (r - target) * 2.0 if r > target else target - r
 	# Hard levels may be rare wins, but a board the careful player never wins is out.
 	var min_win := 0.3 if target <= 7.0 else (0.2 if target <= 8.5 else 0.12)
+	if planner:
+		min_win = 0.6 if target <= 7.0 else (0.4 if target <= 8.5 else 0.25)
 	return gap + (20.0 if skilled < min_win else 0.0)
