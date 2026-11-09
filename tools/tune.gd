@@ -1,6 +1,6 @@
 extends SceneTree
 ## Nudges an authored board towards its target rating:
-## godot --headless --path . --script res://tools/tune.gd -- <id> src=<board.json> [iters=N] [trials=N] [verify=N]
+## godot --headless --path . --script res://tools/tune.gd -- <id> src=<board.json> [iters=N] [trials=N] [verify=N] [aim=+R]
 ## Candidate boards are mostly all-or-nothing for the careful player (it wins
 ## every round or none), so fresh candidates rarely land in the middle. This
 ## walks from the closest board in small steps instead: swap the desserts of
@@ -16,6 +16,7 @@ func _init() -> void:
 	var iters := 40
 	var trials := 24
 	var verify := 40
+	var aim := 0.0         # aim above target: tuned boards drop back on fresh rounds
 	for a in OS.get_cmdline_user_args():
 		if a.begins_with("src="):
 			src = a.substr(4)
@@ -25,13 +26,15 @@ func _init() -> void:
 			trials = int(a.substr(7))
 		elif a.begins_with("verify="):
 			verify = int(a.substr(7))
+		elif a.begins_with("aim="):
+			aim = float(a.substr(4))
 		else:
 			id = int(a)
 	var spec: Dictionary = {}
 	for L in JSON.parse_string(FileAccess.get_file_as_string("res://data/level_plan.json")).levels:
 		if int(L.id) == id:
 			spec = L
-	var target: float = spec.target_rating
+	var target: float = float(spec.target_rating) + aim
 	var start: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(src))
 	var level := spec.duplicate(true)
 	level.types = int(start.types)
