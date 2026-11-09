@@ -122,3 +122,7 @@
 | 多一格的 8 格托盘美术 | 已派 Codex 出图(sweet-tray-8);代码已就绪:有 tray_8.png 与 layout.tray_texture_slots_8 时自动使用 |
 | 更新桌面试玩包 | 完成 build-11(cfca716);8 格托盘到位后再更新 |
 | 用户集中验收全部美术与玩法 | 待用户 |
+| 失败送道具(1→2 封顶,当局有效,开局赠送动画) | 完成(2026-11-09,profile.note_failure/gift_count,game_view._present_gifts) |
+| 三星宝箱(地图点三颗星领取) | 完成(2026-11-09,economy.perfect_chest) |
+| 难度中间值重做(学习关普通且机制决定性;难关需聪明+运气) | 进行中(2026-11-09,见 tools/build_levels.py BLOCK_TARGETS) |
+| 装修糖果屋 + 成就系统 | 效果图用户满意(2026-11-09);设计稿 docs/candy_house_design.md;排在后期开发 |
