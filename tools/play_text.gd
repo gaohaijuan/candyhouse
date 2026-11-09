@@ -63,7 +63,8 @@ func _init() -> void:
 
 ## Desserts are letters A, B, C ...; "?" while a mystery or a box hides it.
 static func _name(s, id: int) -> String:
-	if not s.type_known(id):
+	# In the tray every dessert shows (a box tile is only blank on the board).
+	if s.tiles[id].place == "board" and not s.type_known(id):
 		return "?"
 	return char(65 + int(s.tiles[id].type))
 
