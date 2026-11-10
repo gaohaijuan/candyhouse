@@ -344,7 +344,8 @@ func _bounds(id: String) -> Rect2:
 # ---------------------------------------------------------------- bottom panel
 
 func _new_panel(title: String) -> Control:
-	_close_panel(false)
+	# A preview left from the previous drawer goes back first.
+	_close_panel()
 	panel = Control.new()
 	panel.position = Vector2(0, PANEL_Y + Kit.band_shift(1.0))
 	panel.size = Vector2(1080, 1920 - PANEL_Y)
@@ -373,7 +374,10 @@ func _close_panel(restore := true) -> void:
 			_select(id)
 
 func _show_preview(slot_id: String, item_id: String, color: int) -> void:
+	var old: String = preview.get("slot", "")
 	preview = {"slot": slot_id, "item": item_id, "color": color}
+	if old != "" and old != slot_id:
+		_draw_slot(old)
 	_draw_slot(slot_id)
 	_refresh_markers()
 
