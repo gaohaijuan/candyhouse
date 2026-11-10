@@ -1,6 +1,6 @@
 """Lists every Chinese string the game can show: string literals in scripts
 (comments skipped) and string values in data/*.json. With --missing, prints
-only those absent from data/i18n/en.json (exit 1 if any)."""
+only those absent from any table in data/i18n (exit 1 if any)."""
 import json, os, re, sys
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -9,7 +9,7 @@ LIT = re.compile(r'"((?:[^"\\\n]|\\.)*)"')
 SKIP_DATA = set()
 # Shown only in Chinese (the mainland health notice) or the same in every
 # language (language names, the placeholder glyph of the language icon).
-EXEMPT = ("健康游戏忠告", "简体中文", "A文")
+EXEMPT = ("健康游戏忠告", "简体中文", "日本語", "A文")
 
 
 def from_scripts():
@@ -54,10 +54,15 @@ def from_data():
 def main():
     found = from_scripts() + from_data()
     if "--missing" in sys.argv:
-        table = json.load(open(os.path.join(ROOT, "data/i18n/en.json"), encoding="utf-8"))
-        miss = [(s, w) for s, w in found if s not in table]
-        for s, w in miss:
-            print("%s\t%s" % (w, s))
+        # Every language table must cover every shown string.
+        miss = []
+        folder = os.path.join(ROOT, "data/i18n")
+        for f in sorted(os.listdir(folder)):
+            if f.endswith(".json"):
+                table = json.load(open(os.path.join(folder, f), encoding="utf-8"))
+                miss += [(f, s, w) for s, w in found if s not in table]
+        for f, s, w in miss:
+            print("%s\t%s\t%s" % (f, w, s))
         sys.exit(1 if miss else 0)
     seen = set()
     for s, w in found:

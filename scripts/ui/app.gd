@@ -138,6 +138,7 @@ func save() -> void:
 func set_language(lang: String) -> void:
 	profile.data.settings.lang = lang
 	Lang.use(lang)
+	theme.default_font = Art.font
 	save()
 	if page_name != "game":
 		goto(page_name)
@@ -193,7 +194,7 @@ func _report_untranslated(n: Node) -> void:
 		return
 	if n is Label or n is Button:
 		var shown: String = tr(n.text)
-		if shown not in reported and RegEx.create_from_string("[\\x{4e00}-\\x{9fff}]").search(shown) and not shown.begins_with("简体中文") and shown != "A文":
+		if shown not in reported and Lang.looks_untranslated(shown):
 			reported[shown] = true
 			print("UNTRANSLATED %s | %s" % [n.get_path(), shown.replace("\n", " / ")])
 	for c in n.get_children():
