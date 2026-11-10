@@ -60,29 +60,33 @@ func setup(owner_app, _args: Dictionary) -> void:
 	var now: int = app.now()
 	if not app.profile.start_offers(now).is_empty():
 		app.save()
-	if app.profile.iap_available("starter", now):
-		var gift := Kit.art_button(mid, "starter_gift", Rect2(27, 760, 256, 236), "礼包", Color("#F5B82E"))
-		gift.pressed.connect(func(): app.popups.offer("starter"))
-		# The gift art carries a blank plate for the caption, on its cream face
-		# (x 55-255, centre y 940), clear of its rim. The starter pack never expires.
-		var sp: Dictionary = app.profile.iap("starter")
-		Kit.text_at(mid, String(sp.get("name", "新手礼包")), Rect2(65, 914, 180, 52), 40, Kit.CREAM, Kit.OUTLINE, 9)
-		if sp.has("tag"):
-			# Exaggerated "1折" sticker on the gift (producer, 2026-11-10).
-			Common.deal_sticker(mid, String(sp.tag), Vector2(215, 770), 1.25)
-	# ¥0.1 limited pack, from level 5 for 3 days: top left under the wallet,
-	# with its time left; it pops up by itself the first time.
-	if app.profile.iap_available("limited", now):
-		var lim := Kit.art_button(top, "chest_small", Rect2(40, 178, 190, 157), "限", Color("#E53935"))
-		lim.pressed.connect(func(): app.popups.offer("limited"))
-		var bob := lim.create_tween().set_loops()
-		bob.tween_property(lim, "rotation", 0.06, 0.4).from(-0.06).set_trans(Tween.TRANS_SINE)
-		bob.tween_property(lim, "rotation", -0.06, 0.4).set_trans(Tween.TRANS_SINE)
-		Kit.art(top, "ribbon_limited", Rect2(150, 165, 120, 70), "", Color("#E53935"))
-		Kit.text_at(top, Kit.price_text(app.profile.iap("limited").price), Rect2(163, 177, 92, 40), 30, Kit.CREAM, Color("#B33319"), 5).rotation = 0.17
-		Kit.nine(top, "tag_plate", Rect2(30, 330, 210, 62), [42, 14, 43, 14])
-		Kit.text_at(top, app.popups.offer_time_left("limited").trim_prefix("仅"), Rect2(44, 338, 182, 46), 32, Kit.BROWN)
-		if app.profile.offer_first_show("limited"):
+	# One pack spot on the left (producer, 2026-11-10): the ¥0.1 limited pack
+	# while it runs, then the 1折 pack once it is bought or over. Icons come
+	# from icon_pack_<id> when sliced, else the older gift art.
+	var shown := "limited" if app.profile.iap_available("limited", now) else ("starter" if app.profile.iap_available("starter", now) else "")
+	if shown != "":
+		var pk: Dictionary = app.profile.iap(shown)
+		var art := "icon_pack_" + shown
+		var own_art := Kit.tex(art) != null
+		if not own_art:
+			art = "starter_gift" if shown == "starter" else "chest_small"
+		var gift := Kit.art_button(mid, art, Rect2(27, 760, 256, 236), "礼包", Color("#F5B82E"))
+		gift.pressed.connect(func(): app.popups.offer(shown))
+		gift.pivot_offset = gift.size / 2
+		var bob := gift.create_tween().set_loops()
+		bob.tween_property(gift, "scale", Vector2(1.05, 1.05), 0.6).set_trans(Tween.TRANS_SINE)
+		bob.tween_property(gift, "scale", Vector2.ONE, 0.6).set_trans(Tween.TRANS_SINE)
+		# The icon carries a blank cream plate (x 55-255, centre y 940) for the name.
+		Kit.text_at(mid, String(pk.get("name", "礼包")), Rect2(65, 914, 180, 52), 40, Kit.CREAM, Kit.OUTLINE, 9)
+		if not own_art:
+			if pk.has("tag"):
+				Common.deal_sticker(mid, String(pk.tag), Vector2(215, 770), 1.25)
+			elif shown == "limited":
+				Common.deal_sticker(mid, Kit.price_text(pk.price), Vector2(215, 770), 1.25)
+		if pk.has("days"):
+			Kit.nine(mid, "tag_plate", Rect2(70, 985, 172, 67), [42, 14, 43, 14])
+			Kit.text_at(mid, app.popups.offer_time_left(shown).trim_prefix("仅"), Rect2(84, 994, 144, 48), 34, Kit.BROWN)
+		if shown == "limited" and app.profile.offer_first_show("limited"):
 			app.save()
 			get_tree().create_timer(0.6).timeout.connect(func():
 				if is_inside_tree() and app.popups.open.is_empty():
