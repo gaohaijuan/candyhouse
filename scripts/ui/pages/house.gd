@@ -9,6 +9,7 @@ extends Control
 const Kit = preload("res://scripts/ui/kit.gd")
 const Common = preload("res://scripts/ui/pages/_common.gd")
 const Art = preload("res://scripts/game/art.gd")
+const Lang = preload("res://scripts/core/lang.gd")
 const TINT = preload("res://scripts/house/tint.gdshader")
 const TINT_MUL = preload("res://scripts/house/tint_mul.gdshader")
 const PANEL_Y := 1270.0
@@ -420,7 +421,7 @@ func _select(id: String) -> void:
 	# Always in the same place, never over the room or the piece itself.
 	var e := _shown(id)
 	var slot := _slot_def(id)
-	var label := "%s · %s" % [slot.name, _item_def(slot, e.get("item", "")).get("name", "")]
+	var label := "%s · %s" % [tr(slot.name), tr(_item_def(slot, e.get("item", "")).get("name", ""))]
 	tag = Control.new()
 	tag.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	tag.position = Vector2(24, 1262)
@@ -529,7 +530,7 @@ func _refresh_bar() -> void:
 			ic.size = Vector2(150, 108)
 			ic.position = Vector2(21, 14)
 			card.add_child(ic)
-		Kit.text_at(card, String(s.name), Rect2(8, 126, cw - 16, 46), 34 if String(s.name).length() <= 3 else 28, Kit.BROWN)
+		Kit.text_at(card, String(s.name), Rect2(8, 126, cw - 16, 46), 34 if String(s.name).length() <= 3 or not Lang.is_zh() else 28, Kit.BROWN)
 		var id: String = s.id
 		var tap := Kit.hit_area(card, Rect2(Vector2.ZERO, card.size))
 		tap.pressed.connect(func():

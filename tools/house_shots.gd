@@ -19,6 +19,10 @@ func _snap(name: String) -> void:
 	var img := root.get_texture().get_image()
 	img.save_png("%s/%02d_%s.png" % [out, shot, name])
 	shot += 1
+	# Any Chinese still on screen in another language prints UNTRANSLATED.
+	app.reported.clear()
+	if not app.Lang.is_zh():
+		app._report_untranslated(root)
 
 func _init() -> void:
 	for a in OS.get_cmdline_user_args():
