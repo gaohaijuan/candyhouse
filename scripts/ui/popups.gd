@@ -138,15 +138,28 @@ func settings() -> void:
 			_style_toggle(toggle, on))
 		row.add_child(toggle)
 		body.add_child(row)
-	# Language: the pill shows the current one in its own name; a tap moves on
-	# to the next and reopens settings in it.
+	# Language: a plain settings row, the current language (in its own name)
+	# and an arrow on the right like the link rows; a tap anywhere on the row
+	# moves on to the next language and reopens settings in it.
 	var lang_row := _fixed_row(120)
-	Kit.art(lang_row, "icon_language", Rect2(30, 12, 150, 96), "A文", Color("#F8BBD0"))
-	Kit.text_at(lang_row, "语言", Rect2(205, 25, 300, 70), 56, Kit.BROWN).horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
-	_pill_at(lang_row, Lang.name_of(Lang.code), "cream", Rect2(480, 18, 300, 88), func():
+	var lang_hit := Button.new()
+	lang_hit.flat = true
+	lang_hit.focus_mode = Control.FOCUS_NONE
+	lang_hit.size = Vector2(777, 120)
+	lang_hit.pressed.connect(func():
+		app.sound.play("tap")
 		close(info)
 		app.set_language(Lang.next())
 		settings())
+	lang_row.add_child(lang_hit)
+	if Kit.tex("icon_language"):
+		Kit.art(lang_row, "icon_language", Rect2(30, 12, 150, 96))
+	Kit.text_at(lang_row, "语言", Rect2(205, 25, 260, 70), 56, Kit.BROWN).horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
+	Kit.text_at(lang_row, Lang.name_of(Lang.code), Rect2(440, 28, 240, 64), 48, Kit.BROWN).horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	if Kit.tex("row_arrow"):
+		Kit.art(lang_row, "row_arrow", Rect2(694, 35, 31, 50))
+	else:
+		Kit.text_at(lang_row, "›", Rect2(680, 28, 50, 60), 60, Kit.BROWN)
 	body.add_child(lang_row)
 	body.add_child(_fixed_row(14))
 	var links := [["用户协议", "用户协议内容将在正式版提供。"], ["隐私政策", "隐私政策内容将在正式版提供。"], ["联系我们", "客服邮箱将在正式版提供。"], ["恢复购买", ""]]

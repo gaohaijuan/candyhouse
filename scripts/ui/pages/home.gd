@@ -76,19 +76,27 @@ func setup(owner_app, _args: Dictionary) -> void:
 		var bob := gift.create_tween().set_loops()
 		bob.tween_property(gift, "scale", Vector2(1.05, 1.05), 0.6).set_trans(Tween.TRANS_SINE)
 		bob.tween_property(gift, "scale", Vector2.ONE, 0.6).set_trans(Tween.TRANS_SINE)
-		# The icon carries a blank cream plate for the name: on the set A icons
-		# (fitted 256 x 218 from y 769) it sits at x 55-251, centre y 962;
-		# the older gift art had it at centre y 940.
-		var plate := Rect2(55, 937, 196, 50) if own_art else Rect2(65, 914, 180, 52)
-		Kit.text_at(mid, String(pk.get("name", "礼包")), plate, 38, Kit.CREAM, Kit.OUTLINE, 9)
+		# Name and time left ride on the icon (children of the button), so they
+		# bob with it. Set A icons draw 236 x 201 from y 17 inside the button,
+		# with a blank cream plate (x 26-207, centre y 196) for the name, in
+		# the same brown as the other home plates; the older gift art had its
+		# plate at x 38-218, centre y 180.
+		var name_rect := Rect2(26, 176, 181, 40) if own_art else Rect2(38, 154, 180, 52)
+		Kit.text_at(gift, String(pk.get("name", "礼包")), name_rect, 32 if own_art else 40, Kit.BROWN)
 		if not own_art:
 			if pk.has("tag"):
 				Common.deal_sticker(mid, String(pk.tag), Vector2(215, 770), 1.25)
 			elif shown == "limited":
 				Common.deal_sticker(mid, Kit.price_text(pk), Vector2(215, 770), 1.25)
 		if pk.has("days"):
-			Kit.nine(mid, "tag_plate", Rect2(70, 985, 172, 67), [42, 14, 43, 14])
-			Kit.text_at(mid, app.popups.offer_time_left(shown, true), Rect2(84, 994, 144, 48), 34, Kit.BROWN)
+			if Kit.tex("badge_timer"):
+				# The red alarm-clock plate from the offer popup, small, under
+				# the icon; the words sit in its blank (measured on the art).
+				Kit.art(gift, "badge_timer", Rect2(-2, 212, 240, 90))
+				Kit.text_at(gift, app.popups.offer_time_left(shown, true), Rect2(80, 249, 131, 31), 28, Kit.CREAM, Color("#8E1E12"), 6)
+			else:
+				Kit.nine(gift, "tag_plate", Rect2(43, 225, 172, 67), [42, 14, 43, 14])
+				Kit.text_at(gift, app.popups.offer_time_left(shown, true), Rect2(57, 234, 144, 48), 34, Kit.BROWN)
 		if shown == "limited" and app.profile.offer_first_show("limited"):
 			app.save()
 			get_tree().create_timer(0.6).timeout.connect(func():
