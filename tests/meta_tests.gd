@@ -31,6 +31,7 @@ func _init() -> void:
 	_persistence()
 	_comeback_gifts()
 	_perfect_chests()
+	_house()
 	print("checks=%d failures=%d" % [checks, failures])
 	quit(1 if failures > 0 else 0)
 
@@ -174,3 +175,34 @@ func _perfect_chests() -> void:
 	p.record_win(12, 3)
 	var r2 := p.claim_perfect_chest(12, "super", [0, 0])
 	check(r2.coins == 150 and r2.boosters.get("undo", 0) == 2, "super chest: 150 coins and two boosters")
+
+func _house() -> void:
+	var house: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://data/house.json"))
+	var room: Dictionary = house.rooms[0]
+	check(room.slots.size() == 10 and house.colors.size() == 8, "living room has 10 slots and 8 colours")
+	for s in room.slots:
+		check(s.items.size() == 3 and int(s.items[0].price) < int(s.items[1].price) and int(s.items[1].price) < int(s.items[2].price), "%s: three items, prices rising" % s.id)
+	var p := fresh()
+	var sofa: Dictionary = room.slots[3]
+	p.data.coins = 1000
+	check(not p.house_set_color("living", "sofa", 2), "cannot colour an empty slot")
+	check(p.house_place("living", "sofa", sofa.items[0]) and p.data.coins == 750, "buy the basic sofa for 250")
+	check(p.house_set_color("living", "sofa", 2) and p.house_slot("living", "sofa").color == 2, "recolour is free")
+	check(p.house_place("living", "sofa", sofa.items[1]) and p.data.coins == 150, "buy the berry sofa for 600")
+	check(p.house_slot("living", "sofa").color == 2, "swapping keeps the colour")
+	check(p.house_place("living", "sofa", sofa.items[0]) and p.data.coins == 150, "switching back to an owned sofa is free")
+	check(not p.house_place("living", "sofa", sofa.items[2]) and p.data.coins == 150 and p.house_slot("living", "sofa").item == "sofa_cream", "cannot buy the castle sofa without coins")
+	check(p.house_progress(room) == Vector2i(1, 10), "one of ten slots filled")
+	check(p.claim_house_reward(room).is_empty(), "no reward before the room is done")
+	p.data.coins = 100000
+	for s in room.slots:
+		p.house_place("living", s.id, s.items[0])
+	var before: int = p.data.coins
+	var undo := p.booster_count("undo")
+	check(p.house_reward_ready(room), "full room is ready for its reward")
+	check(not p.claim_house_reward(room).is_empty() and p.data.coins == before + 500 and p.booster_count("undo") == undo + 1, "reward pays 500 coins and boosters")
+	check(p.claim_house_reward(room).is_empty() and p.data.coins == before + 500, "reward pays once")
+	p.save()
+	var q := Profile.new(economy, "user://test_profile.json")
+	q.load_or_create(1_800_000_000)
+	check(q.house_slot("living", "sofa").item == "sofa_cream" and q.house_owns("sofa_berry") and q.house_progress(room).x == 10, "house survives save and load")

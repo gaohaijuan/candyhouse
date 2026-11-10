@@ -604,11 +604,13 @@ func reward(r: Dictionary, then := Callable(), title := "恭喜获得") -> void:
 		items.append([icons.get(k, "icon_shuffle"), "×%d" % int(r.boosters[k]), Rect2(45, 45, 220, 190)])
 	var cw := 306.0
 	var gap := 14.0
-	var x0 := (1080 - items.size() * cw - (items.size() - 1) * gap) / 2
+	# Four or more cards shrink to fit the screen width.
+	var fit := minf(1.0, 1040.0 / (items.size() * cw + (items.size() - 1) * gap))
+	var x0 := (1080 - (items.size() * cw + (items.size() - 1) * gap) * fit) / 2
 	for i in items.size():
 		var it: Array = items[i]
 		var card := Control.new()
-		card.position = Vector2(x0 + i * (cw + gap), 967)
+		card.position = Vector2(x0 + i * (cw + gap) * fit - cw * (1 - fit) / 2, 967 - 352 * (1 - fit) / 2)
 		card.size = Vector2(cw, 352)
 		root.add_child(card)
 		Kit.art(card, "reward_card", Rect2(Vector2.ZERO, card.size), "", Color("#FFF4DE"))
@@ -616,7 +618,7 @@ func reward(r: Dictionary, then := Callable(), title := "恭喜获得") -> void:
 		Kit.text_at(card, it[1], Rect2(30, 250, cw - 60, 66), 62, Kit.BROWN)
 		card.pivot_offset = card.size / 2
 		card.scale = Vector2.ZERO
-		card.create_tween().tween_property(card, "scale", Vector2.ONE, 0.3).set_delay(0.25 + i * 0.1).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+		card.create_tween().tween_property(card, "scale", Vector2(fit, fit), 0.3).set_delay(0.25 + i * 0.1).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 	var finish := func():
 		close(info)
 		app.save()

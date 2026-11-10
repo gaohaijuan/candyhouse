@@ -28,6 +28,7 @@ func _fresh(now: int) -> Dictionary:
 		"first_day": "",
 		"last_interstitial": 0, "levels_since_ad": 0,
 		"failures": {"level": 0, "count": 0}, "perfect_chests": [],
+		"house": {"placed": {}, "owned": [], "rewarded": []},
 	}
 
 # ---------------------------------------------------------------- persistence
@@ -59,6 +60,13 @@ func _normalize() -> void:
 	data.perfect_chests = pc
 	for k in economy.start_boosters:
 		data.boosters[k] = int(data.boosters.get(k, 0))
+	for k in ["placed", "owned", "rewarded"]:
+		if not data.house.has(k):
+			data.house[k] = {} if k == "placed" else []
+	for room in data.house.placed:
+		for slot in data.house.placed[room]:
+			var e: Dictionary = data.house.placed[room][slot]
+			e.color = int(e.get("color", -1))
 
 ## Calendar day in the player's local time zone (check-in and daily limits
 ## reset at local midnight).
@@ -353,3 +361,56 @@ func grant_purchase(id: String, now: int) -> bool:
 		data.no_ads = true
 	data.purchases[id] = int(data.purchases.get(id, 0)) + 1
 	return true
+
+# ---------------------------------------------------------------- candy house
+# Rooms come from data/house.json. Each slot holds one of its items and a
+# colour (index into the palette, -1 = the item's own colour). Bought items
+# stay owned, so switching back to one is free.
+
+func house_slot(room: String, slot: String) -> Dictionary:
+	return data.house.placed.get(room, {}).get(slot, {})
+
+func house_owns(item: String) -> bool:
+	return data.house.owned.has(item)
+
+## Puts `item` in the slot, paying its price unless already owned.
+func house_place(room: String, slot: String, item: Dictionary) -> bool:
+	if not house_owns(item.id):
+		if not spend(int(item.price)):
+			return false
+		data.house.owned.append(item.id)
+	if not data.house.placed.has(room):
+		data.house.placed[room] = {}
+	var old := house_slot(room, slot)
+	data.house.placed[room][slot] = {"item": item.id, "color": int(old.get("color", -1))}
+	return true
+
+func house_set_color(room: String, slot: String, color: int) -> bool:
+	var e := house_slot(room, slot)
+	if e.is_empty():
+		return false
+	e.color = color
+	return true
+
+## Filled slots and all slots of a room.
+func house_progress(room_def: Dictionary) -> Vector2i:
+	var n := 0
+	for s in room_def.slots:
+		if not house_slot(room_def.id, s.id).is_empty():
+			n += 1
+	return Vector2i(n, room_def.slots.size())
+
+func house_reward_ready(room_def: Dictionary) -> bool:
+	var p := house_progress(room_def)
+	return p.x == p.y and not data.house.rewarded.has(room_def.id)
+
+## Pays the room's completion reward once; returns it, or {} if not ready.
+func claim_house_reward(room_def: Dictionary) -> Dictionary:
+	if not house_reward_ready(room_def):
+		return {}
+	data.house.rewarded.append(room_def.id)
+	var r: Dictionary = room_def.reward
+	add_coins(int(r.get("coins", 0)))
+	for k in r.get("boosters", {}):
+		add_booster(k, int(r.boosters[k]))
+	return r

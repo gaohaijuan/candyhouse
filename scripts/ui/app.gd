@@ -17,6 +17,7 @@ const PAGES := {
 	"map": preload("res://scripts/ui/pages/map.gd"),
 	"shop": preload("res://scripts/ui/pages/shop.gd"),
 	"game": preload("res://scripts/ui/pages/game_page.gd"),
+	"house": preload("res://scripts/ui/pages/house.gd"),
 }
 
 var economy: Dictionary

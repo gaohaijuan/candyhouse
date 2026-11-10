@@ -1,0 +1,504 @@
+{
+ "colors": [
+  {
+   "id": "pink",
+   "name": "草莓粉",
+   "hex": "#F06A9E"
+  },
+  {
+   "id": "mint",
+   "name": "薄荷绿",
+   "hex": "#80D9A2"
+  },
+  {
+   "id": "yellow",
+   "name": "柠檬黄",
+   "hex": "#F7D35E"
+  },
+  {
+   "id": "blue",
+   "name": "汽水蓝",
+   "hex": "#6CBDF0"
+  },
+  {
+   "id": "purple",
+   "name": "葡萄紫",
+   "hex": "#B58AE8"
+  },
+  {
+   "id": "brown",
+   "name": "巧克力",
+   "hex": "#7A4A2E"
+  },
+  {
+   "id": "cream",
+   "name": "奶油白",
+   "hex": "#FFF3E0"
+  },
+  {
+   "id": "red",
+   "name": "樱桃红",
+   "hex": "#EE4F58"
+  }
+ ],
+ "rooms": [
+  {
+   "id": "living",
+   "name": "客厅",
+   "unlock_level": 1,
+   "reward": {
+    "coins": 500,
+    "boosters": {
+     "undo": 1,
+     "move_out": 1,
+     "shuffle": 1
+    }
+   },
+   "slots": [
+    {
+     "id": "wallpaper",
+     "name": "墙纸",
+     "kind": "wall",
+     "items": [
+      {
+       "id": "wall_stripe",
+       "name": "条纹墙纸",
+       "price": 150
+      },
+      {
+       "id": "wall_heart",
+       "name": "爱心墙纸",
+       "price": 400
+      },
+      {
+       "id": "wall_star",
+       "name": "星空糖霜墙纸",
+       "price": 900
+      }
+     ]
+    },
+    {
+     "id": "floor",
+     "name": "地板",
+     "kind": "floor",
+     "items": [
+      {
+       "id": "floor_check",
+       "name": "格子地板",
+       "price": 150
+      },
+      {
+       "id": "floor_biscuit",
+       "name": "饼干地板",
+       "price": 400
+      },
+      {
+       "id": "floor_rainbow",
+       "name": "彩虹糖地板",
+       "price": 900
+      }
+     ]
+    },
+    {
+     "id": "curtain",
+     "name": "窗帘",
+     "kind": "window",
+     "items": [
+      {
+       "id": "curtain_bow",
+       "name": "蝴蝶结窗帘",
+       "price": 120
+      },
+      {
+       "id": "curtain_lace",
+       "name": "蕾丝窗帘",
+       "price": 350
+      },
+      {
+       "id": "curtain_cotton",
+       "name": "棉花糖窗帘",
+       "price": 800
+      }
+     ]
+    },
+    {
+     "id": "sofa",
+     "name": "沙发",
+     "kind": "item",
+     "items": [
+      {
+       "id": "sofa_cream",
+       "name": "奶油蛋糕沙发",
+       "price": 250
+      },
+      {
+       "id": "sofa_berry",
+       "name": "草莓沙发",
+       "price": 600
+      },
+      {
+       "id": "sofa_castle",
+       "name": "城堡蛋糕沙发",
+       "price": 1200
+      }
+     ]
+    },
+    {
+     "id": "table",
+     "name": "茶几",
+     "kind": "item",
+     "items": [
+      {
+       "id": "table_macaron",
+       "name": "马卡龙茶几",
+       "price": 180
+      },
+      {
+       "id": "table_pudding",
+       "name": "布丁茶几",
+       "price": 450
+      },
+      {
+       "id": "table_tier",
+       "name": "多层蛋糕茶几",
+       "price": 1000
+      }
+     ]
+    },
+    {
+     "id": "chair",
+     "name": "单人椅",
+     "kind": "item",
+     "items": [
+      {
+       "id": "chair_donut",
+       "name": "甜甜圈椅",
+       "price": 200
+      },
+      {
+       "id": "chair_jelly",
+       "name": "果冻椅",
+       "price": 500
+      },
+      {
+       "id": "chair_icecream",
+       "name": "冰淇淋椅",
+       "price": 1000
+      }
+     ]
+    },
+    {
+     "id": "lamp",
+     "name": "台灯与边柜",
+     "kind": "item",
+     "items": [
+      {
+       "id": "lamp_icecream",
+       "name": "冰淇淋台灯",
+       "price": 120
+      },
+      {
+       "id": "lamp_cupcake",
+       "name": "杯子蛋糕台灯",
+       "price": 350
+      },
+      {
+       "id": "lamp_lollipop",
+       "name": "棒棒糖落地灯",
+       "price": 800
+      }
+     ]
+    },
+    {
+     "id": "rug",
+     "name": "地毯",
+     "kind": "item",
+     "items": [
+      {
+       "id": "rug_cookie",
+       "name": "饼干地毯",
+       "price": 120
+      },
+      {
+       "id": "rug_berry",
+       "name": "草莓地毯",
+       "price": 350
+      },
+      {
+       "id": "rug_flower",
+       "name": "糖霜花朵地毯",
+       "price": 800
+      }
+     ]
+    },
+    {
+     "id": "cabinet",
+     "name": "柜子",
+     "kind": "item",
+     "items": [
+      {
+       "id": "cabinet_choco",
+       "name": "巧克力书柜",
+       "price": 250
+      },
+      {
+       "id": "cabinet_cupcake",
+       "name": "杯子蛋糕展示柜",
+       "price": 600
+      },
+      {
+       "id": "cabinet_glass",
+       "name": "糖果玻璃柜",
+       "price": 1200
+      }
+     ]
+    },
+    {
+     "id": "wall_deco",
+     "name": "挂饰",
+     "kind": "item",
+     "items": [
+      {
+       "id": "deco_painting",
+       "name": "蛋糕挂画",
+       "price": 100
+      },
+      {
+       "id": "deco_garland",
+       "name": "糖果花环",
+       "price": 300
+      },
+      {
+       "id": "deco_trophy",
+       "name": "金色奖杯架",
+       "price": 700
+      }
+     ]
+    }
+   ],
+   "layout": {
+    "walls": [
+     {
+      "points": [
+       [
+        60,
+        560
+       ],
+       [
+        350,
+        420
+       ],
+       [
+        350,
+        250
+       ],
+       [
+        60,
+        330
+       ]
+      ],
+      "base": [
+       60,
+       560
+      ],
+      "ax": [
+       0.9,
+       -0.43
+      ],
+      "ay": [
+       0,
+       -1
+      ]
+     },
+     {
+      "points": [
+       [
+        350,
+        420
+       ],
+       [
+        690,
+        560
+       ],
+       [
+        690,
+        330
+       ],
+       [
+        350,
+        250
+       ]
+      ],
+      "base": [
+       350,
+       420
+      ],
+      "ax": [
+       0.92,
+       0.38
+      ],
+      "ay": [
+       0,
+       -1
+      ]
+     },
+     {
+      "points": [
+       [
+        690,
+        560
+       ],
+       [
+        1000,
+        410
+       ],
+       [
+        1000,
+        250
+       ],
+       [
+        690,
+        330
+       ]
+      ],
+      "base": [
+       690,
+       560
+      ],
+      "ax": [
+       0.9,
+       -0.43
+      ],
+      "ay": [
+       0,
+       -1
+      ]
+     }
+    ],
+    "floor": {
+     "points": [
+      [
+       60,
+       560
+      ],
+      [
+       350,
+       420
+      ],
+      [
+       690,
+       560
+      ],
+      [
+       1000,
+       410
+      ],
+      [
+       1000,
+       880
+      ],
+      [
+       760,
+       1040
+      ],
+      [
+       120,
+       1000
+      ],
+      [
+       60,
+       900
+      ]
+     ],
+     "base": [
+      350,
+      420
+     ],
+     "ax": [
+      0.9,
+      0.43
+     ],
+     "ay": [
+      -0.9,
+      0.43
+     ]
+    },
+    "windows": {
+     "L": [
+      246,
+      546
+     ],
+     "B": [
+      622,
+      462
+     ]
+    },
+    "markers": {
+     "wallpaper": [
+      840,
+      420
+     ],
+     "floor": [
+      700,
+      880
+     ],
+     "curtain": [
+      246,
+      560
+     ]
+    },
+    "slots": {
+     "sofa": {
+      "pos": [
+       324,
+       800
+      ],
+      "width": 260
+     },
+     "table": {
+      "pos": [
+       534,
+       850
+      ],
+      "width": 210
+     },
+     "chair": {
+      "pos": [
+       846,
+       740
+      ],
+      "width": 150
+     },
+     "lamp": {
+      "pos": [
+       156,
+       808
+      ],
+      "width": 120
+     },
+     "rug": {
+      "pos": [
+       538,
+       960
+      ],
+      "width": 240
+     },
+     "cabinet": {
+      "pos": [
+       860,
+       640
+      ],
+      "width": 170
+     },
+     "wall_deco": {
+      "pos": [
+       860,
+       450
+      ],
+      "width": 110
+     }
+    }
+   }
+  }
+ ]
+}
