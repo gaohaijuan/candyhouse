@@ -167,14 +167,66 @@ func _draw_slot(slot_id: String) -> void:
 				hit[slot_id].append(Rect2(n.position, n.size))
 		_:
 			var cfg: Dictionary = layout.slots[slot_id]
-			var n := _item_sprite(slot_id, layer.items, item.id, item, color, Vector2(cfg.pos[0], cfg.pos[1]), float(item.get("width", cfg.width)), false)
+			# Wall pieces hang behind the furniture; furniture sorts by depth.
+			var on_wall := slot_id == "wall_deco"
+			var n := _item_sprite(slot_id, layer.curtain if on_wall else layer.items, item.id, item, color, Vector2(cfg.pos[0], cfg.pos[1]), float(item.get("width", cfg.width)), on_wall)
 			# Furniture is drawn back to front; the rug always lies under it.
 			n.set_meta("depth", -1.0 if slot_id == "rug" else float(cfg.pos[1]))
-			var kids: Array = layer.items.get_children()
-			kids.sort_custom(func(a, b): return float(a.get_meta("depth", 0.0)) < float(b.get_meta("depth", 0.0)))
-			for i in kids.size():
-				layer.items.move_child(kids[i], i)
 			hit[slot_id].append(Rect2(n.position + n.size * 0.12, n.size * 0.76))
+			_draw_gifts()
+
+## Furniture and floor gifts back to front by their floor point.
+func _sort_items() -> void:
+	var kids: Array = layer.items.get_children().filter(func(k): return not k.is_queued_for_deletion())
+	kids.sort_custom(func(a, b): return float(a.get_meta("depth", 0.0)) < float(b.get_meta("depth", 0.0)))
+	for i in kids.size():
+		layer.items.move_child(kids[i], i)
+
+## Decoration gifts (data/house.json layout.gifts): free, not bought, they
+## appear as the room fills (3, 6 and 10 of 10 slots) to make it feel full.
+## A gift that sits on a piece (flowers on the table, teddy on the sofa)
+## follows that piece, or stands on its own spot when the piece is missing.
+var gift_nodes: Array = []
+
+func _draw_gifts(fresh := false) -> void:
+	for n in gift_nodes:
+		if is_instance_valid(n):
+			n.queue_free()
+	gift_nodes.clear()
+	var have: int = app.profile.house_progress(room).x
+	for g in layout.get("gifts", []):
+		if have < int(g.tier):
+			continue
+		var t := _house_tex(g.id)
+		if t == null:
+			continue
+		var r := TextureRect.new()
+		r.texture = t
+		r.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		var w := float(g.width)
+		r.size = Vector2(w, w * t.get_height() / t.get_width())
+		r.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		var at := Vector2(g.pos[0], g.pos[1])
+		var depth := at.y
+		var sup = g.get("support")
+		if sup is Dictionary and not drawn.get(sup.slot, []).is_empty():
+			var host: Control = drawn[sup.slot][0]
+			at = host.position + host.size * Vector2(sup.normalized_point[0], sup.normalized_point[1])
+			depth = float(host.get_meta("depth", at.y)) + 0.5
+		r.position = at - Vector2(g.anchor[0], g.anchor[1]) * (w / t.get_width())
+		r.set_meta("depth", depth)
+		(layer.curtain if g.layer == "before_furniture" else layer.items).add_child(r)
+		gift_nodes.append(r)
+		if fresh and have == int(g.tier):
+			var to := r.position
+			r.position = to - Vector2(0, 90)
+			r.modulate.a = 0.0
+			var tw := r.create_tween().set_parallel()
+			tw.tween_property(r, "position", to, 0.5).set_trans(Tween.TRANS_BOUNCE).set_ease(Tween.EASE_OUT).set_delay(0.6)
+			tw.tween_property(r, "modulate:a", 1.0, 0.2).set_delay(0.6)
+			var centre := to + r.size / 2
+			get_tree().create_timer(0.9).timeout.connect(func(): _sparkles(centre))
+	_sort_items()
 
 func _item_sprite(slot_id: String, parent: Control, art: String, item: Dictionary, color: int, at: Vector2, width: float, centred: bool) -> Control:
 	var t := _house_tex(art)
@@ -238,12 +290,17 @@ func _refresh_markers() -> void:
 		if not _shown(s.id).is_empty():
 			continue
 		var at := _marker_at(s.id)
-		var size := Vector2(200, 100) if s.kind == "item" or s.kind == "floor" else Vector2(150, 75)
+		var size := Vector2(96, 96)
+		# Floor spots get a soft glow on the floor under the candy button.
+		if layout.get("marker_glow", []).has(s.id) and Kit.tex("add_marker_glow"):
+			var glow := Kit.picture("add_marker_glow", Vector2(145, 72))
+			glow.position = at + Vector2(0, 36) - glow.size / 2
+			markers.add_child(glow)
 		var b := TextureButton.new()
 		b.position = at - size / 2
 		b.size = size
 		b.pivot_offset = size / 2
-		var t := Kit.tex("slot_plus")
+		var t := Kit.tex("add_marker")
 		if t:
 			b.texture_normal = t
 			b.ignore_texture_size = true
@@ -462,11 +519,15 @@ func _buy(slot_id: String) -> void:
 	_refresh_markers()
 	_drop_in(slot_id)
 	if was_empty:
+		var before: int = app.profile.house_progress(room).x - 1
+		for g in layout.get("gifts", []):
+			if int(g.tier) == before + 1:
+				_draw_gifts(true)
+				app.toast("装修度 %d/%d,送你装修小礼物!" % [before + 1, room.slots.size()])
+				break
 		var p: Vector2i = app.profile.house_progress(room)
 		if p.x == p.y:
 			get_tree().create_timer(0.9).timeout.connect(_room_done)
-		elif p.x * 4 / p.y != (p.x - 1) * 4 / p.y:
-			app.toast("装修度 %d%%!" % (p.x * 4 / p.y * 25))
 
 ## Colour panel: eight sweets colours; the item's own colour is the ball
 ## closest to it, so picking that ball keeps the art untouched.
