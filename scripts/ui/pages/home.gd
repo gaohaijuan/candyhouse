@@ -40,7 +40,7 @@ func setup(owner_app, _args: Dictionary) -> void:
 		["home_icon_shop", "商店", "店", Rect2(34, 1516, 248, 243), func(): app.goto("shop")],
 		["home_icon_checkin", "签到", "签", Rect2(296, 1516, 244, 243), func(): app.popups.checkin()],
 		["home_icon_map", "地图", "图", Rect2(557, 1516, 245, 243), func(): app.goto("map")],
-		["home_icon_chest", "宝箱", "箱", Rect2(808, 1516, 244, 243), func(): app.popups.star_chest()],
+		["home_icon_house", "糖果屋", "屋", Rect2(808, 1516, 244, 243), func(): app.goto("house")],
 	]
 	for e in entries:
 		var r: Rect2 = e[3]
@@ -48,16 +48,15 @@ func setup(owner_app, _args: Dictionary) -> void:
 		b.pressed.connect(e[4])
 		Kit.text_at(bottom, e[1], Rect2(r.position.x, 1756, r.size.x, 72), 60, Kit.BROWN, Kit.CREAM, 8)
 	checkin_dot = Kit.art(bottom, "dot_red", Rect2(460, 1521, 51, 55), "", Color("#E5484D"))
-	Kit.nine(bottom, "chest_progress_bg", Rect2(843, 1670, 180, 48), [29, 10, 30, 10])
-	chest_fill = Kit.nine(bottom, "chest_progress_fill", Rect2(843, 1670, 180, 48), [29, 10, 30, 10], Color("#7CC84A"))
-	chest_label = Kit.text_at(bottom, "", Rect2(860, 1672, 146, 44), 34, Kit.BROWN, Kit.CREAM, 5)
-	# The candy house opens once its art is in (it shows placeholders before).
-	if Kit.tex("home_icon_house"):
-		var house := Kit.art_button(mid, "home_icon_house", Rect2(797, 760, 256, 236), "屋", Color("#F06A9E"))
-		house.pressed.connect(func(): app.goto("house"))
-		# Caption on its own plate below the icon, mirroring the gift's day tag.
-		Kit.nine(mid, "tag_plate", Rect2(830, 985, 190, 67), [42, 14, 43, 14])
-		Kit.text_at(mid, "糖果屋", Rect2(846, 994, 158, 48), 38, Kit.BROWN)
+	# Star chest on the right, mirroring the starter gift (swapped with the
+	# candy house, producer 2026-11-10): icon, progress bar, caption plate.
+	var chest := Kit.art_button(mid, "home_icon_chest", Rect2(803, 752, 244, 243), "箱")
+	chest.pressed.connect(func(): app.popups.star_chest())
+	Kit.nine(mid, "chest_progress_bg", Rect2(835, 906, 180, 48), [29, 10, 30, 10])
+	chest_fill = Kit.nine(mid, "chest_progress_fill", Rect2(835, 906, 180, 48), [29, 10, 30, 10], Color("#7CC84A"))
+	chest_label = Kit.text_at(mid, "", Rect2(852, 908, 146, 44), 34, Kit.BROWN, Kit.CREAM, 5)
+	Kit.nine(mid, "tag_plate", Rect2(830, 985, 190, 67), [42, 14, 43, 14])
+	Kit.text_at(mid, "宝箱", Rect2(846, 994, 158, 48), 38, Kit.BROWN)
 	var now: int = app.now()
 	if app.profile.iap_available("starter", now):
 		var gift := Kit.art_button(mid, "starter_gift", Rect2(27, 760, 256, 236), "礼包", Color("#F5B82E"))

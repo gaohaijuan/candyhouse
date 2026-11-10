@@ -5,7 +5,6 @@ extends Control
 
 const Kit = preload("res://scripts/ui/kit.gd")
 const Common = preload("res://scripts/ui/pages/_common.gd")
-const CHAPTERS := ["草莓烘焙屋", "巧克力工坊", "冰淇淋小站", "糖果花园", "节日甜品宴"]
 const PER := 10
 const BLOCK := 2300.0       # height of one chapter's landscape
 const FIRST := 270.0        # first node of a chapter, above the chapter's bottom
@@ -19,8 +18,6 @@ const XS := [497, 275, 518, 351, 639, 544, 752, 551, 300, 520]
 var app
 var scroll: ScrollContainer
 var height := 0.0
-var chapter_label: Label
-var chapter_name: Label
 var chapters := 1
 
 func setup(owner_app, _args: Dictionary) -> void:
@@ -49,8 +46,6 @@ func setup(owner_app, _args: Dictionary) -> void:
 	_road(content, points)
 	var current: int = app.current_level_index()
 	var unlocked: int = app.levels.size() if app.unlock_all else int(app.profile.data.unlocked)
-	for c in range(1, chapters):
-		_chapter_banner(content, c, _block_top(c) + BLOCK)
 	for i in n:
 		var state := "done" if i < current else ("current" if i == current else "open")
 		if i + 1 > unlocked:
@@ -58,10 +53,8 @@ func setup(owner_app, _args: Dictionary) -> void:
 		_node(content, i, points[i], state)
 	_header()
 	_bottom_bar()
-	scroll.get_v_scroll_bar().value_changed.connect(func(_v): _update_chapter())
 	await get_tree().process_frame
 	scroll.scroll_vertical = int(points[current].y - 1000 - Kit.extra)
-	_update_chapter()
 
 ## Chapter c spans [top, top + BLOCK); chapter 0 is at the bottom.
 func _block_top(c: int) -> float:
@@ -138,13 +131,6 @@ func _road(content: Control, points: Array[Vector2]) -> void:
 		line.default_color = Color("#FFF1DC")
 	content.add_child(line)
 
-func _chapter_banner(content: Control, c: int, y: float) -> void:
-	var w := 560.0
-	var r := Kit.picture("popup_ribbon", Vector2(w, w * 258.0 / 762.0))
-	r.position = Vector2((1080 - w) / 2, y - r.size.y / 2)
-	content.add_child(r)
-	Kit.text_at(content, "第 %d 章  %s" % [c + 1, CHAPTERS[mini(c, CHAPTERS.size() - 1)]], Rect2(r.position.x + w * 0.2, r.position.y + w * 0.06, w * 0.6, w * 0.15), 48, Kit.CREAM, Kit.OUTLINE, 10)
-
 func _node(content: Control, i: int, p: Vector2, state: String) -> void:
 	var chest := i % PER == PER - 1
 	var art: String
@@ -219,9 +205,7 @@ func _header() -> void:
 	var top := Kit.band(self, 0.0)
 	var back := Kit.art_button(top, "button_back", Rect2(14, 25, 141, 141), "返")
 	back.pressed.connect(func(): app.goto("home"))
-	Kit.art(top, "popup_ribbon", Rect2(201, 0, 629, 218))
-	chapter_label = Kit.text_at(top, "", Rect2(396, 17, 264, 71), 66, Kit.CREAM, Kit.OUTLINE, 10)
-	chapter_name = Kit.text_at(top, "", Rect2(346, 90, 364, 79), 56, Kit.CREAM, Kit.OUTLINE, 10)
+	# No chapter titles: the map shows only the level path (producer, 2026-11-10).
 	Kit.art(top, "coin_pill", Rect2(838, 54, 239, 84))
 	var coins := Kit.text_at(top, str(app.profile.data.coins), Rect2(905, 72, 112, 48), 40, Kit.BROWN)
 	var hit := Kit.hit_area(top, Rect2(838, 54, 239, 84))
@@ -245,9 +229,3 @@ func _bottom_bar() -> void:
 	var hit := Kit.hit_area(bottom, r)
 	hit.pressed.connect(func(): app.popups.star_chest())
 	bottom.move_child(chest, bottom.get_child_count() - 1)
-
-func _update_chapter() -> void:
-	var mid: float = scroll.scroll_vertical + 960.0 + Kit.extra
-	var c := clampi(int((height - BOTTOM_PAD - mid) / BLOCK), 0, chapters - 1)
-	chapter_label.text = "第 %d 章" % (c + 1)
-	chapter_name.text = CHAPTERS[mini(c, CHAPTERS.size() - 1)]
