@@ -3,6 +3,7 @@ extends RefCounted
 ## saves through the app, so the wallet stays consistent everywhere.
 
 const Kit = preload("res://scripts/ui/kit.gd")
+const Common = preload("res://scripts/ui/pages/_common.gd")
 
 var app
 var open: Array = []    # popup roots, top last
@@ -365,10 +366,8 @@ func _product_art(product_id: String) -> String:
 	return "coin_pile_big"
 
 func _product_name(product_id: String, p: Dictionary) -> String:
-	if product_id == "starter":
-		return "新手礼包"
-	if product_id == "limited":
-		return "限时礼包"
+	if p.has("name"):
+		return String(p.name)
 	if product_id == "no_ads":
 		return "去除插屏广告"
 	return "%d 金币" % int(p.get("coins", 0))
@@ -460,12 +459,16 @@ func offer(id: String) -> void:
 	strike.size = Vector2(240, 7)
 	strike.rotation = -0.06
 	root.add_child(strike)
-	var deal := Kit.art(root, "bonus_tag", Rect2(560, 1168 + drop, 270, 90), "", Color("#7CC84A"))
-	Kit.text_at(root, "超值 %s 倍" % times_text, Rect2(585, 1182 + drop, 225, 60), 44, Color("#FFF7E0"), Color("#3D7415"), 7)
-	deal.pivot_offset = deal.size / 2
-	var pulse := deal.create_tween().set_loops()
-	pulse.tween_property(deal, "scale", Vector2(1.08, 1.08), 0.5).set_trans(Tween.TRANS_SINE)
-	pulse.tween_property(deal, "scale", Vector2.ONE, 0.5).set_trans(Tween.TRANS_SINE)
+	if p.has("tag"):
+		# A pack's own deal tag ("1折") as a big red sticker.
+		Common.deal_sticker(root, String(p.tag), Vector2(700, 1205 + drop), 1.35)
+	else:
+		var deal := Kit.art(root, "bonus_tag", Rect2(560, 1168 + drop, 270, 90), "", Color("#7CC84A"))
+		Kit.text_at(root, "超值 %s 倍" % times_text, Rect2(585, 1182 + drop, 225, 60), 44, Color("#FFF7E0"), Color("#3D7415"), 7)
+		deal.pivot_offset = deal.size / 2
+		var pulse := deal.create_tween().set_loops()
+		pulse.tween_property(deal, "scale", Vector2(1.08, 1.08), 0.5).set_trans(Tween.TRANS_SINE)
+		pulse.tween_property(deal, "scale", Vector2.ONE, 0.5).set_trans(Tween.TRANS_SINE)
 	was.modulate.a = 0.95
 	var buy := Kit.pill("仅需 " + Kit.price_text(p.price), "pink", Vector2(861, 209))
 	buy.position = Vector2(108, 1300 + drop)

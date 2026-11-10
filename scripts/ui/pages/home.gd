@@ -65,7 +65,11 @@ func setup(owner_app, _args: Dictionary) -> void:
 		gift.pressed.connect(func(): app.popups.offer("starter"))
 		# The gift art carries a blank plate for the caption, on its cream face
 		# (x 55-255, centre y 940), clear of its rim. The starter pack never expires.
-		Kit.text_at(mid, "新手礼包", Rect2(65, 914, 180, 52), 40, Kit.CREAM, Kit.OUTLINE, 9)
+		var sp: Dictionary = app.profile.iap("starter")
+		Kit.text_at(mid, String(sp.get("name", "新手礼包")), Rect2(65, 914, 180, 52), 40, Kit.CREAM, Kit.OUTLINE, 9)
+		if sp.has("tag"):
+			# Exaggerated "1折" sticker on the gift (producer, 2026-11-10).
+			Common.deal_sticker(mid, String(sp.tag), Vector2(215, 770), 1.25)
 	# ¥0.1 limited pack, from level 5 for 3 days: top left under the wallet,
 	# with its time left; it pops up by itself the first time.
 	if app.profile.iap_available("limited", now):

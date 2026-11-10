@@ -60,3 +60,22 @@ static func title_ribbon(page: Control, text: String, y := 20.0) -> void:
 	l.size = Vector2(w * 0.6, w * 0.17)
 	Kit.shrink_to_fit(l)
 	page.add_child(l)
+
+## Exaggerated deal sticker ("1折"): a tilted red ribbon with big cream text
+## and a thick outline, pulsing so it catches the eye.
+static func deal_sticker(parent: Control, text: String, centre: Vector2, k := 1.0) -> Control:
+	var box := Control.new()
+	box.size = Vector2(230, 135) * k
+	box.position = centre - box.size / 2
+	box.pivot_offset = box.size / 2
+	box.rotation = -0.2
+	box.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	parent.add_child(box)
+	Kit.art(box, "ribbon_limited", Rect2(Vector2.ZERO, box.size), "", Color("#E53935"))
+	var l := Kit.text_at(box, text, Rect2(box.size.x * 0.12, box.size.y * 0.12, box.size.x * 0.76, box.size.y * 0.62), int(64 * k), Color("#FFF27A"), Color("#8E1E12"), int(12 * k))
+	l.rotation = 0.17
+	l.pivot_offset = l.size / 2
+	var tw := box.create_tween().set_loops()
+	tw.tween_property(box, "scale", Vector2(1.1, 1.1), 0.45).set_trans(Tween.TRANS_SINE)
+	tw.tween_property(box, "scale", Vector2.ONE, 0.45).set_trans(Tween.TRANS_SINE)
+	return box

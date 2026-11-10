@@ -127,7 +127,7 @@
   },
   {
    "id": "starter",
-   "price": 6,
+   "price": 3,
    "coins": 1500,
    "boosters": {
     "undo": 5,
@@ -136,7 +136,9 @@
     "magnet": 2,
     "extra_slot": 2
    },
-   "once": true
+   "once": true,
+   "name": "1折礼包",
+   "tag": "1折"
   },
   {
    "id": "limited",
@@ -149,7 +151,8 @@
    },
    "once": true,
    "days": 3,
-   "from_level": 5
+   "from_level": 5,
+   "name": "限时礼包"
   },
   {
    "id": "no_ads",

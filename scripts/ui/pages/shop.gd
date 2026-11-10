@@ -55,7 +55,9 @@ func _rebuild() -> void:
 			Kit.art(card, "starter_bundle", Rect2(30, 22, 480, 238), "礼包", Color("#FDE0EA"))
 		else:
 			Kit.art(card, "chest_big_open", Rect2(110, 18, 220, 232), "礼包", Color("#FDE0EA"))
-		Kit.text_at(card, "新手礼包" if id == "starter" else "限时礼包", Rect2(370, 24, 330, 72), 60, Kit.BROWN, Kit.CREAM, 6)
+		Kit.text_at(card, String(pk.name), Rect2(370, 24, 330, 72), 60, Kit.BROWN, Kit.CREAM, 6)
+		if pk.has("tag"):
+			_deal_sticker(card, String(pk.tag), Vector2(330, 60), 0.8)
 		var n := 0
 		for k in pk.get("boosters", {}):
 			n += int(pk.boosters[k])
@@ -96,6 +98,10 @@ func _rebuild() -> void:
 		y += 216
 	content.custom_minimum_size = Vector2(1080, y + 40)
 	scroll.set_deferred("scroll_vertical", keep)
+
+## Big tilted red "1折" sticker that pulses, for a pack's deal tag.
+func _deal_sticker(parent: Control, text: String, centre: Vector2, k := 1.0) -> void:
+	Common.deal_sticker(parent, text, centre, k)
 
 ## A card frame (nine-sliced) holding absolutely placed children.
 func _card(art: String, rect: Rect2) -> Control:
