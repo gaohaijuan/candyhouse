@@ -31,6 +31,9 @@ var selected := ""
 var preview := {}            # {"slot", "item", "color"} shown but not bought
 var balance: Label
 var progress: Label
+var bar: Control             # furniture list under the house: one card per slot
+var tag: Control             # name bubble over the selected piece
+var alpha_cache := {}        # texture -> Image, for pixel-exact tapping
 
 func setup(owner_app, _args: Dictionary) -> void:
 	app = owner_app
@@ -52,6 +55,9 @@ func setup(owner_app, _args: Dictionary) -> void:
 	else:
 		Kit.nine(top, "tag_plate", Rect2(740, 150, 320, 80), [42, 14, 43, 14])
 		progress = Kit.text_at(top, "", Rect2(760, 163, 280, 56), 42, Kit.BROWN)
+	bar = Kit.band(self, 0.8)
+	tools = Kit.band(self, 0.8)
+	_refresh_bar()
 	app.wallet_changed.connect(_refresh_header)
 	_refresh_header()
 	if app.profile.house_reward_ready(room):
@@ -213,6 +219,7 @@ func _draw_gifts(fresh := false) -> void:
 			var host: Control = drawn[sup.slot][0]
 			at = host.position + host.size * Vector2(sup.normalized_point[0], sup.normalized_point[1])
 			depth = float(host.get_meta("depth", at.y)) + 0.5
+			r.set_meta("slot", sup.slot)
 		r.position = at - Vector2(g.anchor[0], g.anchor[1]) * (w / t.get_width())
 		r.set_meta("depth", depth)
 		(layer.curtain if g.layer == "before_furniture" else layer.items).add_child(r)
@@ -346,20 +353,55 @@ func _on_scene_input(ev: InputEvent) -> void:
 		app.sound.play("tap")
 		_select(id)
 
-## The placed thing under a point: furniture front to back, then curtains,
-## walls and floor.
+## The placed thing under a point, by its painted pixels (not its box):
+## furniture front to back (a gift on a piece picks that piece), then the
+## wall pieces and curtains, then the rug, and only then wallpaper or floor.
 func _slot_at(at: Vector2) -> String:
 	var kids: Array = layer.items.get_children()
 	kids.reverse()
-	for n in kids:
-		for id in drawn:
-			if drawn[id].has(n) and (hit[id][0] as Rect2).has_point(at):
+	for pass_rug in [false, true]:
+		for n in kids:
+			var id := _node_slot(n)
+			if id == "" or (id == "rug") != pass_rug:
+				continue
+			if _opaque_at(n, at):
 				return id
-	for id in ["curtain", "wallpaper", "floor"]:
+		if not pass_rug:
+			var wall: Array = layer.curtain.get_children()
+			wall.reverse()
+			for n in wall:
+				var id := _node_slot(n)
+				if id != "" and _opaque_at(n, at):
+					return id
+	for id in ["wallpaper", "floor"]:
 		for h in hit.get(id, []):
-			if (h is Rect2 and h.has_point(at)) or (h is PackedVector2Array and Geometry2D.is_point_in_polygon(at, h)):
+			if h is PackedVector2Array and Geometry2D.is_point_in_polygon(at, h):
 				return id
 	return ""
+
+func _node_slot(n: Node) -> String:
+	if n.has_meta("slot"):
+		return String(n.get_meta("slot"))
+	for id in drawn:
+		if drawn[id].has(n):
+			return id
+	return ""
+
+func _opaque_at(n: Node, at: Vector2) -> bool:
+	if not (n is TextureRect) or n.texture == null or n.is_queued_for_deletion():
+		return n is Control and Rect2(n.position, n.size).has_point(at)
+	var r: TextureRect = n
+	var local := (at - r.position) / r.size
+	if local.x < 0 or local.y < 0 or local.x >= 1 or local.y >= 1:
+		return false
+	var img: Image = alpha_cache.get(r.texture)
+	if img == null:
+		img = r.texture.get_image()
+		if img.is_compressed():
+			img.decompress()
+		alpha_cache[r.texture] = img
+	var px := Vector2i(local * Vector2(img.get_size()))
+	return img.get_pixelv(px).a > 0.3
 
 func _select(id: String) -> void:
 	selected = id
@@ -369,19 +411,39 @@ func _select(id: String) -> void:
 		for n in drawn[id2]:
 			if n is CanvasItem:
 				(n as CanvasItem).self_modulate = Color(1.12, 1.12, 1.12) if id2 == id and n is Control else Color.WHITE
+	if is_instance_valid(tag):
+		tag.queue_free()
+	_refresh_bar()
 	if id == "":
 		return
-	var box := _bounds(id)
-	var x := minf(box.end.x + 20, 1080 - 150)
-	var y := clampf(box.get_center().y - 200, 260, PANEL_Y - 420)
+	# A fixed strip above the furniture list: what is picked, and its tools.
+	# Always in the same place, never over the room or the piece itself.
+	var e := _shown(id)
+	var slot := _slot_def(id)
+	var label := "%s · %s" % [slot.name, _item_def(slot, e.get("item", "")).get("name", "")]
+	tag = Control.new()
+	tag.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	tag.position = Vector2(24, 1262)
+	tag.size = Vector2(600, 96)
+	tools.add_child(tag)
+	Kit.nine(tag, "tag_plate", Rect2(Vector2.ZERO, tag.size), [42, 14, 43, 14])
+	Kit.text_at(tag, label, Rect2(24, 12, 552, 72), 40, Kit.BROWN)
 	var buttons := [["tool_color", "色", func(): _open_colors(id)], ["tool_swap", "换", func(): _open_drawer(id)], ["tool_back", "返", func(): _select("")]]
 	for i in buttons.size():
-		var b := Kit.round_button(buttons[i][0], 130, buttons[i][1])
-		b.position = Vector2(x, y + i * 140)
+		var b := Kit.round_button(buttons[i][0], 118, buttons[i][1])
+		b.position = Vector2(648 + i * 136, 1250)
 		b.pressed.connect(buttons[i][2])
 		tools.add_child(b)
 		b.scale = Vector2.ZERO
 		b.create_tween().tween_property(b, "scale", Vector2.ONE, 0.2).set_delay(i * 0.05).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	# The picked piece pulses once so the eye finds it.
+	for n in drawn.get(id, []):
+		if n is Control:
+			var c: Control = n
+			c.pivot_offset = c.size / 2
+			var tw := c.create_tween()
+			tw.tween_property(c, "scale", Vector2(1.06, 1.06), 0.12)
+			tw.tween_property(c, "scale", Vector2.ONE, 0.18).set_trans(Tween.TRANS_BACK)
 
 func _bounds(id: String) -> Rect2:
 	var box := Rect2()
@@ -429,6 +491,55 @@ func _close_panel(restore := true) -> void:
 		_refresh_markers()
 		if selected == id:
 			_select(id)
+
+## Furniture list: ten cards (two rows of five) under the house, one per
+## slot, showing what is there or "+"; a tap picks the slot exactly, so
+## small or hidden pieces are as easy to reach as big ones.
+func _refresh_bar() -> void:
+	if bar == null:
+		return
+	for c in bar.get_children():
+		c.queue_free()
+	var cw := 192.0
+	var gap := 12.0
+	var x0 := (1080 - 5 * cw - 4 * gap) / 2
+	for i in room.slots.size():
+		var s: Dictionary = room.slots[i]
+		var e: Dictionary = app.profile.house_slot(room.id, s.id)
+		var card := Control.new()
+		card.position = Vector2(x0 + (i % 5) * (cw + gap), 1384 + (i / 5) * (cw + 18))
+		card.size = Vector2(cw, cw)
+		bar.add_child(card)
+		Kit.nine(card, "card_square", Rect2(Vector2.ZERO, card.size), [90, 90, 90, 90], Color("#FFF4DE"), 0.4)
+		if s.id == selected:
+			var ring := Panel.new()
+			var sb := StyleBoxFlat.new()
+			sb.bg_color = Color(0, 0, 0, 0)
+			sb.border_color = Color("#F0508A")
+			sb.set_border_width_all(8)
+			sb.set_corner_radius_all(34)
+			ring.add_theme_stylebox_override("panel", sb)
+			ring.size = card.size
+			ring.mouse_filter = Control.MOUSE_FILTER_IGNORE
+			card.add_child(ring)
+		if e.is_empty():
+			Kit.art(card, "add_marker", Rect2(56, 30, 80, 80), "+", Color("#F7C6D6"))
+		else:
+			var ic := _icon(_item_def(s, e.item))
+			ic.size = Vector2(150, 108)
+			ic.position = Vector2(21, 14)
+			card.add_child(ic)
+		Kit.text_at(card, String(s.name), Rect2(8, 126, cw - 16, 46), 34 if String(s.name).length() <= 3 else 28, Kit.BROWN)
+		var id: String = s.id
+		var tap := Kit.hit_area(card, Rect2(Vector2.ZERO, card.size))
+		tap.pressed.connect(func():
+			app.sound.play("tap")
+			if panel:
+				_close_panel()
+			if app.profile.house_slot(room.id, id).is_empty():
+				_open_drawer(id)
+			else:
+				_select(id))
 
 func _show_preview(slot_id: String, item_id: String, color: int) -> void:
 	var old: String = preview.get("slot", "")
@@ -510,7 +621,7 @@ func _buy(slot_id: String) -> void:
 	var was_empty: bool = app.profile.house_slot(room.id, slot_id).is_empty()
 	if not app.profile.house_place(room.id, slot_id, it):
 		app.sound.play("nope")
-		app.toast("金币不足")
+		_say("金币不足")
 		return
 	preview = {}
 	app.save()
@@ -518,12 +629,13 @@ func _buy(slot_id: String) -> void:
 	_draw_slot(slot_id)
 	_refresh_markers()
 	_drop_in(slot_id)
+	_refresh_bar()
 	if was_empty:
 		var before: int = app.profile.house_progress(room).x - 1
 		for g in layout.get("gifts", []):
 			if int(g.tier) == before + 1:
 				_draw_gifts(true)
-				app.toast("装修度 %d/%d,送你装修小礼物!" % [before + 1, room.slots.size()])
+				_say("装修度 %d/%d,送你装修小礼物!" % [before + 1, room.slots.size()])
 				break
 		var p: Vector2i = app.profile.house_progress(room)
 		if p.x == p.y:
@@ -621,6 +733,18 @@ func _drop_in(slot_id: String) -> void:
 			poly.create_tween().tween_property(poly, "modulate:a", 1.0, 0.5)
 	_sparkles(_bounds(slot_id).get_center())
 
+## Short message over the garden, between the house and the furniture list
+## (the app's toast would cover the list).
+func _say(text: String) -> void:
+	var l := Kit.label(text, 44, Kit.CREAM, Kit.OUTLINE, 10)
+	l.size = Vector2(1080, 70)
+	l.position = Vector2(0, 1180 + Kit.band_shift(0.8))
+	add_child(l)
+	var tw := l.create_tween()
+	tw.tween_property(l, "position:y", l.position.y - 30, 1.6)
+	tw.parallel().tween_property(l, "modulate:a", 0.0, 0.5).set_delay(1.4)
+	tw.tween_callback(l.queue_free)
+
 func _sparkles(at: Vector2) -> void:
 	for i in 12:
 		var s := Kit.picture("fx_sparkle", Vector2(60, 60), "", Color("#FFE58A"))
@@ -646,6 +770,8 @@ func _room_done() -> void:
 	clip.size = Vector2(1080, PANEL_Y)
 	clip.mouse_filter = Control.MOUSE_FILTER_STOP
 	add_child(clip)
+	# Over the room only; the header and the list stay on top.
+	move_child(clip, scene.get_index() + 1)
 	if base:
 		_sprite(clip, "room_base", Vector2.ZERO)
 	else:

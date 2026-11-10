@@ -59,6 +59,21 @@ func _init() -> void:
 			page._show_preview(s.id, s.items[0].id, -1)
 			page._buy(s.id)
 	check(app.profile.house_progress(page.room).x == 10, "all slots filled")
+	# Taps pick by painted pixels: the sofa's middle is the sofa, an empty
+	# wall spot the wallpaper, the rug's visible edge the rug.
+	var sofa_at: Vector2 = page.drawn.sofa[0].position + page.drawn.sofa[0].size * Vector2(0.5, 0.6)
+	check(page._slot_at(sofa_at) == "sofa", "tap on the sofa picks the sofa (got %s)" % page._slot_at(sofa_at))
+	var rug_node: Control = page.drawn.rug[0]
+	var rug_hits := 0
+	for k in 40:
+		var pt: Vector2 = rug_node.position + rug_node.size * Vector2(0.05 + 0.9 * (k % 8) / 7.0, 0.2 + 0.6 * (k / 8) / 4.0)
+		if page._slot_at(pt) == "rug":
+			rug_hits += 1
+	check(rug_hits > 0, "the rug can be tapped where it shows")
+	page._select("lamp")
+	check(page.selected == "lamp" and is_instance_valid(page.tag), "picking from the furniture list selects and names it")
+	await _snap("pick_lamp")
+	page._select("")
 	await _snap("full")
 	await create_timer(2.5).timeout
 	await _snap("reward")
