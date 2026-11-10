@@ -12,6 +12,7 @@ const Art = preload("res://scripts/game/art.gd")
 const Lang = preload("res://scripts/core/lang.gd")
 const TINT = preload("res://scripts/house/tint.gdshader")
 const TINT_MUL = preload("res://scripts/house/tint_mul.gdshader")
+const OUTLINE = preload("res://scripts/house/outline.gdshader")
 const PANEL_Y := 1270.0
 const WALL_TILE := 190.0     # on-screen size of one wallpaper repeat
 const FLOOR_TILE := 230.0
@@ -34,6 +35,8 @@ var balance: Label
 var progress: Label
 var bar: Control             # furniture list under the house: one card per slot
 var tag: Control             # name bubble over the selected piece
+var said: Label                    # the message now showing
+var glow: Array = []               # highlight nodes on the picked piece
 var alpha_cache := {}        # texture -> Image, for pixel-exact tapping
 
 func setup(owner_app, _args: Dictionary) -> void:
@@ -408,10 +411,16 @@ func _select(id: String) -> void:
 	selected = id
 	for c in tools.get_children():
 		c.queue_free()
+	for n in glow:
+		if is_instance_valid(n):
+			n.queue_free()
+	glow.clear()
 	for id2 in drawn:
 		for n in drawn[id2]:
 			if n is CanvasItem:
-				(n as CanvasItem).self_modulate = Color(1.12, 1.12, 1.12) if id2 == id and n is Control else Color.WHITE
+				(n as CanvasItem).self_modulate = Color.WHITE
+	if id != "":
+		_highlight(id)
 	if is_instance_valid(tag):
 		tag.queue_free()
 	_refresh_bar()
@@ -437,14 +446,49 @@ func _select(id: String) -> void:
 		tools.add_child(b)
 		b.scale = Vector2.ZERO
 		b.create_tween().tween_property(b, "scale", Vector2.ONE, 0.2).set_delay(i * 0.05).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
-	# The picked piece pulses once so the eye finds it.
+
+## The picked piece glows: a warm ring hugs its painted outline and the piece
+## breathes a little brighter, for as long as it stays picked; a wallpaper or
+## floor gets the ring along its edges instead. Popped once on pick.
+func _highlight(id: String) -> void:
 	for n in drawn.get(id, []):
-		if n is Control:
-			var c: Control = n
-			c.pivot_offset = c.size / 2
-			var tw := c.create_tween()
-			tw.tween_property(c, "scale", Vector2(1.06, 1.06), 0.12)
-			tw.tween_property(c, "scale", Vector2.ONE, 0.18).set_trans(Tween.TRANS_BACK)
+		if n is TextureRect:
+			var r: TextureRect = n
+			var ring := TextureRect.new()
+			ring.texture = r.texture
+			ring.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+			ring.size = r.size
+			ring.mouse_filter = Control.MOUSE_FILTER_IGNORE
+			var m := ShaderMaterial.new()
+			m.shader = OUTLINE
+			m.set_shader_parameter("width", 11.0 * r.texture.get_width() / r.size.x)
+			ring.material = m
+			r.add_child(ring)
+			glow.append(ring)
+			_breathe(ring, r)
+			r.pivot_offset = r.size / 2
+			var pop := r.create_tween()
+			pop.tween_property(r, "scale", Vector2(1.06, 1.06), 0.12)
+			pop.tween_property(r, "scale", Vector2.ONE, 0.18).set_trans(Tween.TRANS_BACK)
+		elif n is Polygon2D:
+			var poly: Polygon2D = n
+			var edge := Line2D.new()
+			var pts := poly.polygon.duplicate()
+			pts.append(pts[0])
+			edge.points = pts
+			edge.width = 9.0
+			edge.default_color = Color(1.0, 0.86, 0.3)
+			edge.joint_mode = Line2D.LINE_JOINT_ROUND
+			poly.get_parent().add_child(edge)
+			glow.append(edge)
+			_breathe(edge, poly)
+
+func _breathe(ring: CanvasItem, piece: CanvasItem) -> void:
+	var tw := ring.create_tween().set_loops()
+	tw.tween_property(ring, "modulate:a", 0.6, 0.6).set_trans(Tween.TRANS_SINE)
+	tw.parallel().tween_property(piece, "self_modulate", Color(1.15, 1.15, 1.15), 0.6).set_trans(Tween.TRANS_SINE)
+	tw.tween_property(ring, "modulate:a", 1.0, 0.6).set_trans(Tween.TRANS_SINE)
+	tw.parallel().tween_property(piece, "self_modulate", Color.WHITE, 0.6).set_trans(Tween.TRANS_SINE)
 
 func _bounds(id: String) -> Rect2:
 	var box := Rect2()
@@ -513,16 +557,35 @@ func _refresh_bar() -> void:
 		bar.add_child(card)
 		Kit.nine(card, "card_square", Rect2(Vector2.ZERO, card.size), [90, 90, 90, 90], Color("#FFF4DE"), 0.4)
 		if s.id == selected:
+			# The picked piece's card: lifted, warm-tinted, with a thick pink
+			# frame and a soft gold glow that breathes with the piece.
+			card.pivot_offset = card.size / 2
+			card.scale = Vector2(1.06, 1.06)
+			var halo := Panel.new()
+			var hb := StyleBoxFlat.new()
+			hb.bg_color = Color(1.0, 0.8, 0.25, 0.9)
+			hb.set_corner_radius_all(40)
+			hb.shadow_color = Color(1.0, 0.78, 0.2, 0.9)
+			hb.shadow_size = 22
+			halo.add_theme_stylebox_override("panel", hb)
+			halo.position = Vector2(-6, -6)
+			halo.size = card.size + Vector2(12, 12)
+			halo.mouse_filter = Control.MOUSE_FILTER_IGNORE
+			card.add_child(halo)
+			card.move_child(halo, 0)
 			var ring := Panel.new()
 			var sb := StyleBoxFlat.new()
-			sb.bg_color = Color(0, 0, 0, 0)
+			sb.bg_color = Color(1.0, 0.85, 0.35, 0.18)
 			sb.border_color = Color("#F0508A")
-			sb.set_border_width_all(8)
+			sb.set_border_width_all(10)
 			sb.set_corner_radius_all(34)
 			ring.add_theme_stylebox_override("panel", sb)
 			ring.size = card.size
 			ring.mouse_filter = Control.MOUSE_FILTER_IGNORE
 			card.add_child(ring)
+			var tw := halo.create_tween().set_loops()
+			tw.tween_property(halo, "modulate:a", 0.5, 0.6).set_trans(Tween.TRANS_SINE)
+			tw.tween_property(halo, "modulate:a", 1.0, 0.6).set_trans(Tween.TRANS_SINE)
 		if e.is_empty():
 			Kit.art(card, "add_marker", Rect2(56, 30, 80, 80), "+", Color("#F7C6D6"))
 		else:
@@ -737,7 +800,11 @@ func _drop_in(slot_id: String) -> void:
 ## Short message over the garden, between the house and the furniture list
 ## (the app's toast would cover the list).
 func _say(text: String) -> void:
+	# One message at a time: a newer one replaces the one still showing.
+	if is_instance_valid(said):
+		said.queue_free()
 	var l := Kit.label(text, 44, Kit.CREAM, Kit.OUTLINE, 10)
+	said = l
 	l.size = Vector2(1080, 70)
 	l.position = Vector2(0, 1180 + Kit.band_shift(0.8))
 	add_child(l)
