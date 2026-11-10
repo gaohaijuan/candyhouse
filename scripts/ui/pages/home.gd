@@ -29,7 +29,8 @@ func setup(owner_app, _args: Dictionary) -> void:
 	if not Kit.tex("logo"):
 		Common.logo(mid, Vector2(540, 510), 860)
 	Kit.nine(mid, "level_plaque", Rect2(302, 792, 473, 150), [185, 55, 185, 55], Color("#FFF4DE"), 150.0 / 228.0)
-	Kit.text_at(mid, "第 %d 关" % (app.current_level_index() + 1), Rect2(379, 822, 311, 78), 64, Kit.BROWN)
+	# Centred between the plaque's two wheat sprigs (x 377 and 706), on its face.
+	Kit.text_at(mid, "第 %d 关" % (app.current_level_index() + 1), Rect2(386, 826, 311, 78), 64, Kit.BROWN)
 	var play := Kit.art_button(low, "button_play", Rect2(90, 1209, 900, 233), "开始游戏")
 	play.pressed.connect(func(): app.popups.level_start(app.current_level_index()))
 	var pt := Kit.text_at(play, "开始游戏", Rect2(175, 48, 554, 121), 108, Kit.CREAM, Kit.OUTLINE, 14)
@@ -54,13 +55,16 @@ func setup(owner_app, _args: Dictionary) -> void:
 	if Kit.tex("home_icon_house"):
 		var house := Kit.art_button(mid, "home_icon_house", Rect2(797, 760, 256, 236), "屋", Color("#F06A9E"))
 		house.pressed.connect(func(): app.goto("house"))
-		Kit.text_at(mid, "糖果屋", Rect2(818, 925, 214, 54), 44, Kit.CREAM, Kit.OUTLINE, 9)
+		# Caption on its own plate below the icon, mirroring the gift's day tag.
+		Kit.nine(mid, "tag_plate", Rect2(830, 985, 190, 67), [42, 14, 43, 14])
+		Kit.text_at(mid, "糖果屋", Rect2(846, 994, 158, 48), 38, Kit.BROWN)
 	var now: int = app.now()
 	if app.profile.iap_available("starter", now):
 		var gift := Kit.art_button(mid, "starter_gift", Rect2(27, 760, 256, 236), "礼包", Color("#F5B82E"))
 		gift.pressed.connect(func(): app.goto("shop"))
 		# The gift art carries a blank plate for the caption; the day count sits on a tag below.
-		Kit.text_at(mid, "新手礼包", Rect2(58, 925, 202, 54), 44, Kit.CREAM, Kit.OUTLINE, 9)
+		# On the plate's cream face (x 55-255, centre y 940), clear of its rim.
+		Kit.text_at(mid, "新手礼包", Rect2(65, 914, 180, 52), 40, Kit.CREAM, Kit.OUTLINE, 9)
 		var days: int = app.profile.iap_days_left("starter", now)
 		if days > 0:
 			Kit.nine(mid, "tag_plate", Rect2(70, 985, 172, 67), [42, 14, 43, 14])
