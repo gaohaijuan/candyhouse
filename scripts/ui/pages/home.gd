@@ -50,9 +50,11 @@ func setup(owner_app, _args: Dictionary) -> void:
 	Kit.nine(bottom, "chest_progress_bg", Rect2(843, 1670, 180, 48), [29, 10, 30, 10])
 	chest_fill = Kit.nine(bottom, "chest_progress_fill", Rect2(843, 1670, 180, 48), [29, 10, 30, 10], Color("#7CC84A"))
 	chest_label = Kit.text_at(bottom, "", Rect2(860, 1672, 146, 44), 34, Kit.BROWN, Kit.CREAM, 5)
-	var house := Kit.art_button(mid, "home_icon_house", Rect2(797, 760, 256, 236), "屋", Color("#F06A9E"))
-	house.pressed.connect(func(): app.goto("house"))
-	Kit.text_at(mid, "糖果屋", Rect2(818, 925, 214, 54), 44, Kit.CREAM, Kit.OUTLINE, 9)
+	# The candy house opens once its art is in (it shows placeholders before).
+	if Kit.tex("home_icon_house"):
+		var house := Kit.art_button(mid, "home_icon_house", Rect2(797, 760, 256, 236), "屋", Color("#F06A9E"))
+		house.pressed.connect(func(): app.goto("house"))
+		Kit.text_at(mid, "糖果屋", Rect2(818, 925, 214, 54), 44, Kit.CREAM, Kit.OUTLINE, 9)
 	var now: int = app.now()
 	if app.profile.iap_available("starter", now):
 		var gift := Kit.art_button(mid, "starter_gift", Rect2(27, 760, 256, 236), "礼包", Color("#F5B82E"))

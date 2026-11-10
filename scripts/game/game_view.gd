@@ -7,6 +7,7 @@ const TileView = preload("res://scripts/game/tile_view.gd")
 const Kit = preload("res://scripts/ui/kit.gd")
 const Art = preload("res://scripts/game/art.gd")
 const PulseRing = preload("res://scripts/game/pulse_ring.gd")
+const IntroDemo = preload("res://scripts/game/intro_demo.gd")
 const Sound = preload("res://scripts/game/sound.gd")
 
 const FLY_TIME := 0.28
@@ -478,7 +479,25 @@ func start_level(index: int) -> void:
 		var intro: Dictionary = levels[index].intro
 		get_tree().create_timer(intro_at).timeout.connect(func():
 			if state.tiles.size() > 0 and not _blocked():
-				_open_popup(intro.title, intro.text, [["知道了", _close_popup]]))
+				_open_intro(intro))
+
+## New-mechanic popup: the rule in words plus a looping demo of it.
+func _open_intro(intro: Dictionary) -> void:
+	var def: Dictionary = levels[level_index]
+	var mechanic := ""
+	for k in ["candles", "locks", "stacks", "ice", "mystery"]:
+		if def.has(k):
+			mechanic = k
+			break
+	var h := 540.0 if mechanic != "" else 0.0
+	var panel := _open_popup(intro.title, intro.text, [["知道了", _close_popup]], -1, h + 20)
+	if mechanic == "":
+		return
+	var demo := IntroDemo.new()
+	var w: float = panel.size.x - 100
+	demo.setup(mechanic, w, h)
+	demo.position = Vector2(50, float(panel.get_meta("body_top")))
+	panel.add_child(demo)
 
 func _fit_board() -> void:
 	var minx := 999; var maxx := -999; var miny := 999; var maxy := -999
