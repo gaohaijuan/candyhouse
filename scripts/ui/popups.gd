@@ -598,10 +598,10 @@ func reward(r: Dictionary, then := Callable(), title := "恭喜获得") -> void:
 	t.add_theme_constant_override("shadow_offset_y", 6)
 	var items: Array = []
 	if int(r.get("coins", 0)) > 0:
-		items.append(["coin_pile_small", "+%d" % int(r.coins), Rect2(32, 40, 239, 194)])
+		items.append(["coin_pile_small", "+%d" % int(r.coins), Rect2(53, 24, 200, 162)])
 	var icons := {"undo": "icon_undo", "move_out": "icon_move_out", "shuffle": "icon_shuffle", "extra_slot": "icon_extra_slot", "magnet": "icon_magnet"}
 	for k in r.get("boosters", {}):
-		items.append([icons.get(k, "icon_shuffle"), "×%d" % int(r.boosters[k]), Rect2(45, 45, 220, 190)])
+		items.append([icons.get(k, "icon_shuffle"), "×%d" % int(r.boosters[k]), Rect2(63, 26, 180, 156)])
 	var cw := 306.0
 	var gap := 14.0
 	# Four or more cards shrink to fit the screen width.
@@ -615,7 +615,10 @@ func reward(r: Dictionary, then := Callable(), title := "恭喜获得") -> void:
 		root.add_child(card)
 		Kit.art(card, "reward_card", Rect2(Vector2.ZERO, card.size), "", Color("#FFF4DE"))
 		Kit.art(card, it[0], it[2])
-		Kit.text_at(card, it[1], Rect2(30, 250, cw - 60, 66), 62, Kit.BROWN)
+		# The card's face ends at y 277 (its lip below); the count sits on the face.
+		var n := Kit.text_at(card, it[1], Rect2(20, 192, cw - 40, 74), 66, Color("#672709"), Color("#FFF7DD"), 10)
+		n.add_theme_color_override("font_shadow_color", Color(0.4, 0.15, 0.05, 0.3))
+		n.add_theme_constant_override("shadow_offset_y", 4)
 		card.pivot_offset = card.size / 2
 		card.scale = Vector2.ZERO
 		card.create_tween().tween_property(card, "scale", Vector2(fit, fit), 0.3).set_delay(0.25 + i * 0.1).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
