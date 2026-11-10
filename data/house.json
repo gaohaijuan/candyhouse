@@ -113,17 +113,50 @@
       {
        "id": "curtain_bow",
        "name": "蝴蝶结窗帘",
-       "price": 120
+       "price": 120,
+       "width_L": 172,
+       "anchor_L": [
+        170.0,
+        224.0
+       ],
+       "width_B": 164,
+       "anchor_B": [
+        170.5,
+        204.0
+       ],
+       "main": "#F9477A"
       },
       {
        "id": "curtain_lace",
        "name": "蕾丝窗帘",
-       "price": 350
+       "price": 350,
+       "width_L": 172,
+       "anchor_L": [
+        177.5,
+        209.0
+       ],
+       "width_B": 164,
+       "anchor_B": [
+        169.5,
+        225.5
+       ],
+       "main": "#F94D7B"
       },
       {
        "id": "curtain_cotton",
        "name": "棉花糖窗帘",
-       "price": 800
+       "price": 800,
+       "width_L": 172,
+       "anchor_L": [
+        175.5,
+        225.0
+       ],
+       "width_B": 164,
+       "anchor_B": [
+        164.0,
+        189.0
+       ],
+       "main": "#F95683"
       }
      ]
     },
@@ -135,17 +168,35 @@
       {
        "id": "sofa_cream",
        "name": "奶油蛋糕沙发",
-       "price": 250
+       "price": 250,
+       "width": 260,
+       "anchor": [
+        260.0,
+        368.9
+       ],
+       "main": "#F564A5"
       },
       {
        "id": "sofa_berry",
        "name": "草莓沙发",
-       "price": 600
+       "price": 600,
+       "width": 260,
+       "anchor": [
+        260.0,
+        396.1
+       ],
+       "main": "#F360A7"
       },
       {
        "id": "sofa_castle",
        "name": "城堡蛋糕沙发",
-       "price": 1200
+       "price": 1200,
+       "width": 291,
+       "anchor": [
+        296.6,
+        457.3
+       ],
+       "main": "#F45CA9"
       }
      ]
     },
@@ -157,17 +208,35 @@
       {
        "id": "table_macaron",
        "name": "马卡龙茶几",
-       "price": 180
+       "price": 180,
+       "width": 200,
+       "anchor": [
+        200.0,
+        251.4
+       ],
+       "main": "#F972B6"
       },
       {
        "id": "table_pudding",
        "name": "布丁茶几",
-       "price": 450
+       "price": 450,
+       "width": 200,
+       "anchor": [
+        200.0,
+        258.1
+       ],
+       "main": "#FA68A3"
       },
       {
        "id": "table_tier",
        "name": "多层蛋糕茶几",
-       "price": 1000
+       "price": 1000,
+       "width": 224,
+       "anchor": [
+        224.0,
+        293.3
+       ],
+       "main": "#FA63A3"
       }
      ]
     },
@@ -179,17 +248,35 @@
       {
        "id": "chair_donut",
        "name": "甜甜圈椅",
-       "price": 200
+       "price": 200,
+       "width": 150,
+       "anchor": [
+        155.8,
+        280.3
+       ],
+       "main": "#812A1F"
       },
       {
        "id": "chair_jelly",
        "name": "果冻椅",
-       "price": 500
+       "price": 500,
+       "width": 150,
+       "anchor": [
+        152.9,
+        277.6
+       ],
+       "main": "#F64B7F"
       },
       {
        "id": "chair_icecream",
        "name": "冰淇淋椅",
-       "price": 1000
+       "price": 1000,
+       "width": 168,
+       "anchor": [
+        171.2,
+        320.4
+       ],
+       "main": "#F75185"
       }
      ]
     },
@@ -201,17 +288,35 @@
       {
        "id": "lamp_icecream",
        "name": "冰淇淋台灯",
-       "price": 120
+       "price": 120,
+       "width": 114,
+       "anchor": [
+        114.0,
+        375.3
+       ],
+       "main": "#85D985"
       },
       {
        "id": "lamp_cupcake",
        "name": "杯子蛋糕台灯",
-       "price": 350
+       "price": 350,
+       "width": 114,
+       "anchor": [
+        116.2,
+        392.4
+       ],
+       "main": "#92DB94"
       },
       {
        "id": "lamp_lollipop",
        "name": "棒棒糖落地灯",
-       "price": 800
+       "price": 800,
+       "width": 114,
+       "anchor": [
+        114.0,
+        567.6
+       ],
+       "main": "#F75682"
       }
      ]
     },
@@ -223,17 +328,35 @@
       {
        "id": "rug_cookie",
        "name": "饼干地毯",
-       "price": 120
+       "price": 120,
+       "width": 200,
+       "anchor": [
+        200.0,
+        120.0
+       ],
+       "main": "#FA6490"
       },
       {
        "id": "rug_berry",
        "name": "草莓地毯",
-       "price": 350
+       "price": 350,
+       "width": 200,
+       "anchor": [
+        200.0,
+        121.5
+       ],
+       "main": "#F56EB5"
       },
       {
        "id": "rug_flower",
        "name": "糖霜花朵地毯",
-       "price": 800
+       "price": 800,
+       "width": 224,
+       "anchor": [
+        224.0,
+        132.0
+       ],
+       "main": "#FA6698"
       }
      ]
     },
@@ -245,17 +368,35 @@
       {
        "id": "cabinet_choco",
        "name": "巧克力书柜",
-       "price": 250
+       "price": 250,
+       "width": 170,
+       "anchor": [
+        173.3,
+        491.7
+       ],
+       "main": "#872C23"
       },
       {
        "id": "cabinet_cupcake",
        "name": "杯子蛋糕展示柜",
-       "price": 600
+       "price": 600,
+       "width": 170,
+       "anchor": [
+        176.5,
+        388.8
+       ],
+       "main": "#F05E9B"
       },
       {
        "id": "cabinet_glass",
        "name": "糖果玻璃柜",
-       "price": 1200
+       "price": 1200,
+       "width": 190,
+       "anchor": [
+        193.6,
+        430.4
+       ],
+       "main": "#FA61B0"
       }
      ]
     },
@@ -267,17 +408,35 @@
       {
        "id": "deco_painting",
        "name": "蛋糕挂画",
-       "price": 100
+       "price": 100,
+       "width": 110,
+       "anchor": [
+        110.0,
+        126.5
+       ],
+       "main": "#F759A6"
       },
       {
        "id": "deco_garland",
        "name": "糖果花环",
-       "price": 300
+       "price": 300,
+       "width": 110,
+       "anchor": [
+        110.0,
+        130.0
+       ],
+       "main": "#F35FA2"
       },
       {
        "id": "deco_trophy",
        "name": "金色奖杯架",
-       "price": 700
+       "price": 700,
+       "width": 110,
+       "anchor": [
+        110.0,
+        153.0
+       ],
+       "main": "#F661A2"
       }
      ]
     }
@@ -587,8 +746,8 @@
       800
      ],
      "rug": [
-      430,
-      890
+      470,
+      900
      ],
      "chair": [
       790,
@@ -634,8 +793,8 @@
      },
      "rug": {
       "pos": [
-       520,
-       860
+       556,
+       858
       ],
       "width": 260
      },

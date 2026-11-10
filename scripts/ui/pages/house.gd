@@ -160,7 +160,10 @@ func _draw_slot(slot_id: String) -> void:
 		"window":
 			for side in layout.windows:
 				var p: Array = layout.windows[side]
-				var n := _item_sprite(slot_id, layer.curtain, "%s_%s" % [item.id, side], item, color, Vector2(p[0], p[1]), float(item.get("width_" + side, 175)), true)
+				var art := item.duplicate()
+				if item.has("anchor_" + side):
+					art.anchor = item["anchor_" + side]
+				var n := _item_sprite(slot_id, layer.curtain, "%s_%s" % [item.id, side], art, color, Vector2(p[0], p[1]), float(item.get("width_" + side, 175)), true)
 				hit[slot_id].append(Rect2(n.position, n.size))
 		_:
 			var cfg: Dictionary = layout.slots[slot_id]
