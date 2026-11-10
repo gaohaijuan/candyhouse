@@ -486,7 +486,7 @@ func offer(id: String) -> void:
 	root.add_child(strike)
 	if p.has("tag") and Kit.words("sticker_1zhe"):
 		# A pack's own deal tag as the big exploding-star sticker (set A).
-		_pulse(Kit.art(root, "sticker_1zhe", Rect2(585, 1100 + drop, 250, 215)))
+		_pulse(Kit.art(root, "sticker_1zhe", Rect2(585, 1080 + drop, 250, 215)))
 	elif p.has("tag"):
 		Common.deal_sticker(root, String(p.tag), Vector2(700, 1205 + drop), 1.35)
 	elif Kit.tex("badge_value"):
