@@ -1173,6 +1173,11 @@ func _arm_magnet(on: bool) -> void:
 
 ## Magnet: the tapped dessert flies out with two of its kind, wherever they are.
 func _use_magnet(id: int) -> void:
+	if state.is_locked(id) or state.is_frozen(id):
+		# Stay armed: the player picks another dessert.
+		sound.play("nope")
+		app.toast("带锁或冰封的甜点吸不走")
+		return
 	var r := state.magnet(id)
 	_arm_magnet(false)
 	if not r.ok:

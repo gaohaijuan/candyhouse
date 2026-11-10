@@ -252,8 +252,18 @@ func shuffle() -> Dictionary:
 ## dessert and it leaves with two more of its kind: those in the tray first,
 ## then parked ones, then the highest on the board even when buried. Counts as a match (thaws ice, opens locks).
 ## Returns {ok, ids, unlocked, thawed}.
+## Locked and frozen desserts stay put: the magnet neither takes them when
+## tapped nor pulls them along (producer, 2026-11-10).
 func can_magnet(id: int) -> bool:
-	return int(boosters.get("magnet", 0)) > 0 and not is_finished() and tiles.has(id) and tiles[id].place != "gone"
+	if int(boosters.get("magnet", 0)) <= 0 or is_finished() or not tiles.has(id) or tiles[id].place == "gone":
+		return false
+	if not _magnet_movable(id):
+		return false
+	var type := int(tiles[id].type)
+	return tiles.values().filter(func(t): return int(t.type) == type and t.place != "gone" and _magnet_movable(t.id)).size() >= MATCH
+
+func _magnet_movable(id: int) -> bool:
+	return tiles[id].place != "board" or not (is_locked(id) or is_frozen(id))
 
 func magnet(id: int) -> Dictionary:
 	if not can_magnet(id):
@@ -263,7 +273,7 @@ func magnet(id: int) -> Dictionary:
 	for x in tray + hold:
 		if int(tiles[x].type) == type and x != id:
 			ids.append(x)
-	var rest: Array = board_tiles().filter(func(t): return int(t.type) == type and not ids.has(t.id))
+	var rest: Array = board_tiles().filter(func(t): return int(t.type) == type and not ids.has(t.id) and _magnet_movable(t.id))
 	rest.sort_custom(func(p, q): return (is_free(p.id) and not is_free(q.id)) or (is_free(p.id) == is_free(q.id) and int(p.layer) > int(q.layer)))
 	for t in rest:
 		if ids.size() >= MATCH:

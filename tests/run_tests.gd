@@ -372,11 +372,23 @@ func _test_start_boosters(levels: Array) -> void:
 		check(not s.magnet(s.solution[0]).ok, "L%d magnet needs the booster" % level.id)
 		s.boosters["magnet"] = 1
 		# Tap the deepest tile: its partners may be buried anywhere.
-		var deep: Dictionary = s.board_tiles().reduce(func(a, t): return t if int(t.layer) < int(a.layer) else a)
+		var movable: Array = s.board_tiles().filter(func(t): return s.can_magnet(t.id))
+		var deep: Dictionary = movable.reduce(func(a, t): return t if int(t.layer) < int(a.layer) else a)
 		var r := s.magnet(deep.id)
 		check(r.ok and s.remaining() == before - 3 and r.ids.has(deep.id), "L%d magnet clears the tapped dessert's triple" % level.id)
 		check(r.ids.all(func(x): return int(s.tiles[x].type) == int(deep.type)), "L%d magnet takes one kind" % level.id)
 		check(not s.magnet(s.board_tiles()[0].id).ok, "L%d magnet works once" % level.id)
+		# Locked or frozen desserts are never taken by the magnet.
+		var stuck: Array = GameState.new(level).board_tiles().filter(func(t): return t.has("lock") or int(t.get("ice", 0)) > 0)
+		if not stuck.is_empty():
+			var g := GameState.new(level)
+			g.boosters["magnet"] = 1
+			check(not g.magnet(stuck[0].id).ok, "L%d magnet refuses a locked or frozen dessert" % level.id)
+			var plain: Array = g.board_tiles().filter(func(t): return not t.has("lock") and int(t.get("ice", 0)) <= 0)
+			var r3 := g.magnet(plain[0].id)
+			if r3.ok:
+				var was := GameState.new(level)
+				check(r3.ids.all(func(x): return not was.tiles[x].has("lock") and int(was.tiles[x].get("ice", 0)) <= 0), "L%d magnet never pulls locked or frozen partners" % level.id)
 	# Partial triple in the tray goes first.
 	var m := GameState.new(levels[0])
 	m.boosters["magnet"] = 1

@@ -78,6 +78,7 @@ func _ready() -> void:
 	popup_layer.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(popup_layer)
 	ads.overlay_parent = self
+	ads.ad_free = func(): return bool(profile.data.no_ads)
 	if debug_args.has("level"):
 		goto("game", {"level": int(debug_args.level) - 1})
 	elif debug_args.has("page"):

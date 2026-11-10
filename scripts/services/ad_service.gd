@@ -10,10 +10,20 @@ const MOCK_SECONDS := 2.0
 var overlay_parent: Control
 var fail_next := false          # testing: make the next ad fail to load
 var busy := false
+## Returns true when the player bought "remove ads": rewarded ads then grant
+## at once and interstitials are skipped.
+var ad_free := Callable()
+
+func _skip() -> bool:
+	return ad_free.is_valid() and bool(ad_free.call())
 
 ## Rewarded video. `done` is called with true only when the reward is earned.
 func show_rewarded(placement: String, done: Callable) -> void:
 	if busy:
+		return
+	if _skip():
+		ad_finished.emit(placement, true)
+		done.call(true)
 		return
 	if fail_next:
 		fail_next = false
@@ -24,7 +34,7 @@ func show_rewarded(placement: String, done: Callable) -> void:
 
 ## Interstitial between levels; `done` always runs afterwards.
 func show_interstitial(done: Callable) -> void:
-	if busy:
+	if busy or _skip():
 		done.call()
 		return
 	_play("interstitial", func(_ok): done.call(), false)

@@ -58,7 +58,7 @@ func _rebuild() -> void:
 	var free := _card("card_wide", Rect2(37, y, 1010, 178))
 	Kit.art(free, "icon_free_coins", Rect2(35, 16, 281, 145), "免费", Color("#C8E6C9"))
 	Kit.text_at(free, "免费金币", Rect2(345, 22, 330, 64), 56, Kit.BROWN, Kit.CREAM, 6)
-	Kit.text_at(free, "看广告领 %d 金币" % int(app.economy.ad_free_coins), Rect2(330, 92, 345, 48), 38, Kit.BROWN)
+	Kit.text_at(free, ("免费领 %d 金币" if app.profile.data.no_ads else "看广告领 %d 金币") % int(app.economy.ad_free_coins), Rect2(330, 92, 345, 48), 38, Kit.BROWN)
 	var fb := _price_button(free, "免费 (%d/%d)" % [left, int(app.economy.ad_limits.free_coins)], "green", Rect2(687, 36, 293, 106), _free_coins)
 	if left <= 0:
 		fb.disabled = true

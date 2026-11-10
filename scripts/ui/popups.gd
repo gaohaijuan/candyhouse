@@ -39,16 +39,26 @@ func _button(info: Dictionary, text: String, style: String, action: Callable, sz
 	info.body.add_child(Kit.centered(b))
 	return b
 
+## Ad button caption: after "remove ads" the reward is free, so no "watch ad".
+func _ad_label(text: String) -> String:
+	if not app.profile.data.no_ads:
+		return text
+	return text.replace("看广告 ", "免费 ").replace("看广告", "免费").replace("免费 免费", "免费")
+
+func _ad_icon() -> String:
+	return "" if app.profile.data.no_ads else "icon_ad_tv"
+
 ## Rewarded-ad button that respects the daily limit; `reward` runs on success.
 func _ad_button(info: Dictionary, text: String, kind: String, reward: Callable) -> TextureButton:
 	var left: int = app.profile.ads_left(kind, app.now())
-	var b := _button(info, text, "green", func():
+	var b := _button(info, _ad_label(text), "green", func():
 		app.ads.show_rewarded(kind, func(ok):
 			if ok:
 				app.profile.note_ad(kind, app.now())
 				reward.call()
 				app.save()))
-	Kit.pill_icon(b, "icon_ad_tv")
+	if _ad_icon() != "":
+		Kit.pill_icon(b, _ad_icon())
 	if left <= 0:
 		b.disabled = true
 		b.modulate.a = 0.5
@@ -68,12 +78,12 @@ func _pill_at(box: Control, text: String, style: String, rect: Rect2, action: Ca
 
 ## Green rewarded-ad pill at a rect; greyed out when today's limit is used.
 func _ad_pill_at(box: Control, text: String, kind: String, rect: Rect2, reward: Callable) -> TextureButton:
-	var b := _pill_at(box, text, "green", rect, func():
+	var b := _pill_at(box, _ad_label(text), "green", rect, func():
 		app.ads.show_rewarded(kind, func(ok):
 			if ok:
 				app.profile.note_ad(kind, app.now())
 				reward.call()
-				app.save()), "icon_ad_tv")
+				app.save()), _ad_icon())
 	if app.profile.ads_left(kind, app.now()) <= 0:
 		b.disabled = true
 		b.modulate.a = 0.5
@@ -628,10 +638,11 @@ func reward(r: Dictionary, then := Callable(), title := "恭喜获得") -> void:
 		if then.is_valid():
 			then.call()
 	var left: int = app.profile.ads_left("chest_double", app.now())
-	var ad := Kit.pill("看广告 双倍领取", "green", Vector2(861, 203))
+	var ad := Kit.pill(_ad_label("看广告 双倍领取"), "green", Vector2(861, 203))
 	ad.position = Vector2(108, 1381)
 	root.add_child(ad)
-	Kit.pill_icon(ad, "icon_ad_tv")
+	if _ad_icon() != "":
+		Kit.pill_icon(ad, _ad_icon())
 	if left <= 0:
 		ad.disabled = true
 		ad.modulate.a = 0.5
