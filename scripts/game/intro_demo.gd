@@ -6,7 +6,6 @@ extends Control
 const TileView = preload("res://scripts/game/tile_view.gd")
 const Art = preload("res://scripts/game/art.gd")
 const TS := 132.0                 # board tile side
-const TRAY_H := 150.0
 const A := 0                      # macaron
 const B := 1                      # donut
 const C := 2                      # cupcake
@@ -17,6 +16,8 @@ var tray_tiles: Array = []
 var hand: TextureRect
 var run_id := 0
 var planned := 0                  # tray cells taken once the queued actions run
+var tray_h := 150.0
+var tray_k := 0.78                # tile scale once it sits in the tray
 
 func setup(mechanic: String, width: float, height: float) -> void:
 	kind = mechanic
@@ -38,7 +39,7 @@ func _run() -> void:
 	hand.texture = Art.ui("tutorial_hand")
 	hand.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	hand.size = Vector2(150, 150)
-	hand.position = Vector2(size.x - 120, size.y - TRAY_H - 140)
+	hand.position = Vector2(size.x - 120, size.y - tray_h - 140)
 	hand.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	hand.modulate.a = 0.0
 	add_child(hand)
@@ -57,26 +58,40 @@ func _run() -> void:
 
 # ---------------------------------------------------------------- pieces
 
+## The game's own tray picture at its own proportions, with the cells and the
+## tile size taken from the same layout numbers the board uses.
 func _build_tray() -> void:
-	var w := minf(size.x, 7 * TS * 0.86 + 60)
-	var r := Rect2((size.x - w) / 2, size.y - TRAY_H, w, TRAY_H)
+	tray_slots.clear()
 	var t := Art.ui("tray")
-	if t:
+	var layout: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://data/layout.json"))
+	if t and layout.has("tray_texture_slots"):
+		var w := minf(size.x, t.get_width() * 0.62)
+		var k := w / t.get_width()
+		tray_h = t.get_height() * k
 		var tr := TextureRect.new()
 		tr.texture = t
 		tr.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 		tr.stretch_mode = TextureRect.STRETCH_SCALE
-		tr.position = r.position
-		tr.size = r.size
+		tr.position = Vector2((size.x - w) / 2, size.y - tray_h)
+		tr.size = Vector2(w, tray_h)
 		tr.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		add_child(tr)
-	else:
-		var p := ColorRect.new()
-		p.color = Color("#F7E3CC")
-		p.position = r.position
-		p.size = r.size
-		add_child(p)
-	tray_slots.clear()
+		var s: Dictionary = layout.tray_texture_slots
+		for i in 7:
+			tray_slots.append(tr.position + Vector2(float(s.cx[i]), float(s.cy)) * k)
+		# in the game a tray tile is tray_slot px where a cell is w px of art
+		# squeezed into the frame; keep that same tile-to-cell ratio here
+		var f: Array = layout.tray_texture_frame
+		var cell_on_screen: float = float(s.w) * float(layout.tray[2]) / float(f[2])
+		tray_k = float(s.w) * k * float(layout.tray_slot) / cell_on_screen / TS
+		return
+	tray_h = 150.0
+	var r := Rect2((size.x - 7 * TS * 0.86 - 60) / 2, size.y - tray_h, 7 * TS * 0.86 + 60, tray_h)
+	var p := ColorRect.new()
+	p.color = Color("#F7E3CC")
+	p.position = r.position
+	p.size = r.size
+	add_child(p)
 	for i in 7:
 		tray_slots.append(Vector2(r.position.x + r.size.x * (0.075 + i * 0.1417), r.position.y + r.size.y * 0.47))
 
@@ -88,7 +103,7 @@ func _tile(type: int, at: Vector2) -> TileView:
 
 ## Board cell centre on a 5 x 2 grid above the tray.
 func _cell(col: float, row: float) -> Vector2:
-	var top := (size.y - TRAY_H) / 2 - TS * 0.54
+	var top := (size.y - tray_h) / 2 - TS * 0.54
 	return Vector2(size.x / 2 + (col - 2) * TS * 1.08, top + row * TS * 1.08)
 
 # ---------------------------------------------------------------- actions (all chained on one tween)
@@ -118,9 +133,8 @@ func _take(tw: Tween, v: TileView, landed := Callable()) -> void:
 		tray_tiles.append(v))
 	var slot: Vector2 = tray_slots[planned]
 	planned += 1
-	var k := 0.78
 	tw.tween_property(v, "position", slot - v.size / 2, 0.32).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
-	tw.parallel().tween_property(v, "scale", Vector2(k, k), 0.32)
+	tw.parallel().tween_property(v, "scale", Vector2(tray_k, tray_k), 0.32)
 	if landed.is_valid():
 		tw.tween_callback(landed)
 
@@ -188,7 +202,7 @@ func _mystery(tw: Tween) -> void:
 		var t := m.create_tween()
 		t.tween_property(m, "scale:x", 0.0, 0.12)
 		t.tween_callback(func(): m.face_down = false)
-		t.tween_property(m, "scale:x", 0.78, 0.12))
+		t.tween_property(m, "scale:x", tray_k, 0.12))
 	tw.tween_interval(0.5)
 	_take(tw, a1)
 	_take(tw, a2)
