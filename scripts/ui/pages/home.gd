@@ -30,7 +30,7 @@ func setup(owner_app, _args: Dictionary) -> void:
 		Common.logo(mid, Vector2(540, 510), 860)
 	Kit.nine(mid, "level_plaque", Rect2(302, 792, 473, 150), [185, 55, 185, 55], Color("#FFF4DE"), 150.0 / 228.0)
 	# Centred between the plaque's two wheat sprigs (x 377 and 706), on its face.
-	Kit.text_at(mid, "第 %d 关" % (app.current_level_index() + 1), Rect2(386, 826, 311, 78), 64, Kit.BROWN)
+	Kit.text_at(mid, tr("第 %d 关") % (app.current_level_index() + 1), Rect2(386, 826, 311, 78), 64, Kit.BROWN)
 	var play := Kit.art_button(low, "button_play", Rect2(90, 1209, 900, 233), "开始游戏")
 	play.pressed.connect(func(): app.popups.level_start(app.current_level_index()))
 	var pt := Kit.text_at(play, "开始游戏", Rect2(175, 48, 554, 121), 108, Kit.CREAM, Kit.OUTLINE, 14)
@@ -82,10 +82,10 @@ func setup(owner_app, _args: Dictionary) -> void:
 			if pk.has("tag"):
 				Common.deal_sticker(mid, String(pk.tag), Vector2(215, 770), 1.25)
 			elif shown == "limited":
-				Common.deal_sticker(mid, Kit.price_text(pk.price), Vector2(215, 770), 1.25)
+				Common.deal_sticker(mid, Kit.price_text(pk), Vector2(215, 770), 1.25)
 		if pk.has("days"):
 			Kit.nine(mid, "tag_plate", Rect2(70, 985, 172, 67), [42, 14, 43, 14])
-			Kit.text_at(mid, app.popups.offer_time_left(shown).trim_prefix("仅"), Rect2(84, 994, 144, 48), 34, Kit.BROWN)
+			Kit.text_at(mid, app.popups.offer_time_left(shown, true), Rect2(84, 994, 144, 48), 34, Kit.BROWN)
 		if shown == "limited" and app.profile.offer_first_show("limited"):
 			app.save()
 			get_tree().create_timer(0.6).timeout.connect(func():

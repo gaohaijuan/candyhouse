@@ -2,6 +2,8 @@ extends SceneTree
 ## Profile and economy tests: godot --headless --path . --script res://tests/meta_tests.gd
 
 const Profile = preload("res://scripts/meta/profile.gd")
+const Lang = preload("res://scripts/core/lang.gd")
+const Kit = preload("res://scripts/ui/kit.gd")
 
 var failures := 0
 var checks := 0
@@ -32,6 +34,7 @@ func _init() -> void:
 	_comeback_gifts()
 	_perfect_chests()
 	_house()
+	_language()
 	print("checks=%d failures=%d" % [checks, failures])
 	quit(1 if failures > 0 else 0)
 
@@ -222,3 +225,21 @@ func _house() -> void:
 	var q := Profile.new(economy, "user://test_profile.json")
 	q.load_or_create(1_800_000_000)
 	check(q.house_slot("living", "sofa").item == "sofa_cream" and q.house_owns("sofa_berry") and q.house_progress(room).x == 10, "house survives save and load")
+
+func _language() -> void:
+	var p := fresh()
+	check(p.data.settings.lang == "en", "new players start in English")
+	var pack: Dictionary = {}
+	for it in economy.iap:
+		if it.id == "starter":
+			pack = it
+	Lang.use("en")
+	check(Lang.t("设置") == "Settings" and Lang.t("第 %d 关") % 3 == "Level 3", "English texts and formats")
+	check(Kit.price_text(pack) == "$1.99", "English prices in dollars")
+	Lang.use("zh")
+	check(Lang.t("设置") == "设置" and Lang.t("第 %d 关") % 3 == "第 3 关", "Chinese stays Chinese")
+	check(Kit.price_text(pack) == "¥3", "Chinese prices in yuan")
+	Lang.use("fr")
+	check(Lang.code == "en", "unknown language falls back to English")
+	for it in economy.iap:
+		check(float(it.get("usd", 0)) > 0, "%s has a dollar price" % it.id)

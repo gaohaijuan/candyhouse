@@ -18,6 +18,10 @@ window/stretch/mode="canvas_items"
 window/stretch/aspect="keep_width"
 window/handheld/orientation=1
 
+[internationalization]
+
+locale/fallback="zh"
+
 [rendering]
 
 environment/defaults/default_clear_color=Color(0.96, 0.84, 0.86, 1)

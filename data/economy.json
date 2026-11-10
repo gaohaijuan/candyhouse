@@ -93,41 +93,48 @@
   {
    "id": "coins_600",
    "price": 6,
+   "usd": 0.99,
    "coins": 600
   },
   {
    "id": "coins_3300",
    "price": 30,
+   "usd": 4.99,
    "coins": 3300,
    "bonus": "+10%"
   },
   {
    "id": "coins_8000",
    "price": 68,
+   "usd": 9.99,
    "coins": 8000,
    "bonus": "+18%"
   },
   {
    "id": "coins_16000",
    "price": 128,
+   "usd": 19.99,
    "coins": 16000,
    "bonus": "+25%"
   },
   {
    "id": "coins_45000",
    "price": 328,
+   "usd": 49.99,
    "coins": 45000,
    "bonus": "+35%"
   },
   {
    "id": "coins_95000",
    "price": 648,
+   "usd": 99.99,
    "coins": 95000,
    "bonus": "+45%"
   },
   {
    "id": "starter",
    "price": 3,
+   "usd": 1.99,
    "coins": 1500,
    "boosters": {
     "undo": 5,
@@ -143,6 +150,7 @@
   {
    "id": "limited",
    "price": 0.1,
+   "usd": 0.99,
    "coins": 200,
    "boosters": {
     "undo": 2,
@@ -157,6 +165,7 @@
   {
    "id": "no_ads",
    "price": 18,
+   "usd": 2.99,
    "no_ads": true,
    "once": true
   }

@@ -4,6 +4,7 @@ extends RefCounted
 
 const Kit = preload("res://scripts/ui/kit.gd")
 const Common = preload("res://scripts/ui/pages/_common.gd")
+const Lang = preload("res://scripts/core/lang.gd")
 
 var app
 var open: Array = []    # popup roots, top last
@@ -44,7 +45,7 @@ func _button(info: Dictionary, text: String, style: String, action: Callable, sz
 func _ad_label(text: String) -> String:
 	if not app.profile.data.no_ads:
 		return text
-	return text.replace("看广告 ", "免费 ").replace("看广告", "免费").replace("免费 免费", "免费")
+	return text.replace("看广告 ", "免费 ").replace("看广告", "免费").replace("免费 免费", "免费")  # i18n: parts; the results are in the tables
 
 func _ad_icon() -> String:
 	return "" if app.profile.data.no_ads else "icon_ad_tv"
@@ -127,7 +128,7 @@ func settings() -> void:
 		var key: String = entry[0]
 		var row := _fixed_row(120)
 		Kit.art(row, entry[2], Rect2(30, 12, 150, 96), "", Color("#F8BBD0"))
-		Kit.text_at(row, entry[1], Rect2(205, 25, 160, 70), 56, Kit.BROWN).horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
+		Kit.text_at(row, entry[1], Rect2(205, 25, 300, 70), 56, Kit.BROWN).horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
 		var toggle: Button = _toggle(bool(st[key]))
 		toggle.position = Vector2(525, 18)
 		toggle.toggled.connect(func(on):
@@ -137,6 +138,16 @@ func settings() -> void:
 			_style_toggle(toggle, on))
 		row.add_child(toggle)
 		body.add_child(row)
+	# Language: the pill shows the current one in its own name; a tap moves on
+	# to the next and reopens settings in it.
+	var lang_row := _fixed_row(120)
+	Kit.art(lang_row, "icon_language", Rect2(30, 12, 150, 96), "A文", Color("#F8BBD0"))
+	Kit.text_at(lang_row, "语言", Rect2(205, 25, 300, 70), 56, Kit.BROWN).horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
+	_pill_at(lang_row, Lang.name_of(Lang.code), "cream", Rect2(480, 18, 300, 88), func():
+		close(info)
+		app.set_language(Lang.next())
+		settings())
+	body.add_child(lang_row)
 	body.add_child(_fixed_row(14))
 	var links := [["用户协议", "用户协议内容将在正式版提供。"], ["隐私政策", "隐私政策内容将在正式版提供。"], ["联系我们", "客服邮箱将在正式版提供。"], ["恢复购买", ""]]
 	for i in links.size():
@@ -153,7 +164,7 @@ func settings() -> void:
 			else:
 				app.toast(msg))
 		row.add_child(hit)
-		Kit.text_at(row, title, Rect2(45, 18, 300, 60), 50, Kit.BROWN).horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
+		Kit.text_at(row, title, Rect2(45, 18, 600, 60), 50, Kit.BROWN).horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
 		if Kit.tex("row_arrow"):
 			Kit.art(row, "row_arrow", Rect2(694, 23, 31, 50))
 		else:
@@ -219,7 +230,7 @@ func level_start(index: int) -> void:
 		lives()
 		return
 	# Layout follows mockup M6_A; positions are mockup pixels minus the body origin.
-	var info := _make("第 %d 关" % level_id, true, 1020.0)
+	var info := _make(Lang.t("第 %d 关") % level_id, true, 1020.0)
 	var body: VBoxContainer = info.body
 	body.position.y = 50
 	var tag: String = app.difficulty(index)
@@ -303,14 +314,14 @@ func lives() -> void:
 	var timer := Kit.text_at(box, "", Rect2(Vector2(240, 860) - o, Vector2(610, 62)), 58, Kit.BROWN)
 	var tick := func():
 		var wait: int = app.profile.next_life_in(app.now())
-		timer.text = "体力已满" if wait <= 0 else "下一点体力 %02d:%02d" % [wait / 60, wait % 60]
+		timer.text = "体力已满" if wait <= 0 else Lang.t("下一点体力 %02d:%02d") % [wait / 60, wait % 60]
 	tick.call()
 	var clock := Timer.new()
 	clock.wait_time = 1.0
 	clock.autostart = true
 	clock.timeout.connect(tick)
 	box.add_child(clock)
-	_pill_at(box, "%d 金币 补满体力" % int(app.economy.lives.refill_price), "pink", Rect2(Vector2(154, 954) - o, Vector2(774, 178)), func():
+	_pill_at(box, Lang.t("%d 金币 补满体力") % int(app.economy.lives.refill_price), "pink", Rect2(Vector2(154, 954) - o, Vector2(774, 178)), func():
 		if app.profile.refill_lives(app.now()):
 			app.save()
 			app.toast("体力已补满")
@@ -321,7 +332,7 @@ func lives() -> void:
 		app.profile.add_life(app.now())
 		app.toast("+1 体力")
 		close(info))
-	Kit.text_at(box, "今日剩余 %d 次" % app.profile.ads_left("life", t), Rect2(Vector2(340, 1353) - o, Vector2(400, 56)), 50, Kit.BROWN)
+	Kit.text_at(box, Lang.t("今日剩余 %d 次") % app.profile.ads_left("life", t), Rect2(Vector2(340, 1353) - o, Vector2(400, 56)), 50, Kit.BROWN)
 	Kit.finish_popup(info, 95.0)
 
 # ---------------------------------------------------------------- boosters & purchases
@@ -335,8 +346,8 @@ func booster_shortage(kind: String, got: Callable) -> void:
 	var box := _abs_body(info, 110, 866)
 	Kit.art(box, "booster_disc", Rect2(Vector2(365, 565) - o, Vector2(343, 325)), "", Color("#FDE0EA"))
 	Kit.art(box, "icon_" + kind, Rect2(Vector2(409, 616) - o, Vector2(255, 220)), names[kind], Color("#FDE0EA"))
-	Kit.text_at(box, "%s ×1" % names[kind], Rect2(Vector2(343, 893) - o, Vector2(403, 87)), 72, Kit.BROWN, Kit.CREAM, 6)
-	_pill_at(box, "%d 金币购买" % int(app.economy.booster_price[kind]), "pink", Rect2(Vector2(164, 993) - o, Vector2(748, 185)), func():
+	Kit.text_at(box, "%s ×1" % Lang.t(names[kind]), Rect2(Vector2(343, 893) - o, Vector2(403, 87)), 72, Kit.BROWN, Kit.CREAM, 6)
+	_pill_at(box, Lang.t("%d 金币购买") % int(app.economy.booster_price[kind]), "pink", Rect2(Vector2(164, 993) - o, Vector2(748, 185)), func():
 		if app.profile.buy_booster(kind):
 			app.save()
 			close(info)
@@ -348,7 +359,7 @@ func booster_shortage(kind: String, got: Callable) -> void:
 		app.profile.add_booster(kind)
 		close(info)
 		got.call())
-	Kit.text_at(box, "今日剩余 %d 次" % app.profile.ads_left("booster", app.now()), Rect2(Vector2(343, 1386) - o, Vector2(400, 62)), 50, Kit.BROWN)
+	Kit.text_at(box, Lang.t("今日剩余 %d 次") % app.profile.ads_left("booster", app.now()), Rect2(Vector2(343, 1386) - o, Vector2(400, 62)), 50, Kit.BROWN)
 	Kit.finish_popup(info, 86.0)
 
 ## Picture for a store product: its coin tier, the starter bundle or no-ads.
@@ -370,19 +381,19 @@ func _product_name(product_id: String, p: Dictionary) -> String:
 		return String(p.name)
 	if product_id == "no_ads":
 		return "去除插屏广告"
-	return "%d 金币" % int(p.get("coins", 0))
+	return Lang.t("%d 金币") % int(p.get("coins", 0))
 
 ## Pack offer from the home (starter pack, or the ¥0.1 limited pack from
 ## level 5): only this pack, shown as a big glowing gift with what is inside,
 ## what it is worth and the price, so it reads as a bargain (producer,
 ## 2026-11-10). Worth uses the shop's own rates: coins at the ¥6 pack's 100
 ## per yuan, boosters at their coin prices.
-## "仅剩2天" / "仅剩5小时" for a time-limited offer.
-func offer_time_left(id: String) -> String:
+## "仅剩2天" / "仅剩5小时" for a time-limited offer ("剩2天" when short).
+func offer_time_left(id: String, short := false) -> String:
 	var left: int = app.profile.iap_seconds_left(id, app.now())
 	if left >= 86400:
-		return "仅剩%d天" % ceili(left / 86400.0)
-	return "仅剩%d小时" % maxi(1, ceili(left / 3600.0))
+		return Lang.t("剩%d天" if short else "仅剩%d天") % ceili(left / 86400.0)
+	return Lang.t("剩%d小时" if short else "仅剩%d小时") % maxi(1, ceili(left / 3600.0))
 
 func offer(id: String) -> void:
 	var p: Dictionary = app.profile.iap(id)
@@ -449,10 +460,10 @@ func offer(id: String) -> void:
 	var worth := int(p.coins) / 100.0
 	for k in p.get("boosters", {}):
 		worth += int(p.boosters[k]) * int(app.economy.booster_price.get(k, 0)) / 100.0
-	var times := worth / float(p.price)
+	var times := worth / float(p.price) if Lang.is_zh() else worth * Kit.USD_PER_YUAN / float(p.get("usd", 0.99))
 	var times_text := ("%d" % int(times)) if times >= 10 else ("%.1f" % times)
 	# Worth, struck through, then the price: the bargain at a glance.
-	var was := Kit.text_at(root, "价值 ¥%d" % int(worth), Rect2(240, 1175 + drop, 300, 70), 52, Color("#FFE9EF"), Color("#7A1E3A"), 8)
+	var was := Kit.text_at(root, Lang.t("价值 %s") % Kit.money(worth), Rect2(240, 1175 + drop, 300, 70), 52, Color("#FFE9EF"), Color("#7A1E3A"), 8)
 	var strike := ColorRect.new()
 	strike.color = Color("#FF5C7A")
 	strike.position = Vector2(270, 1207 + drop)
@@ -464,13 +475,13 @@ func offer(id: String) -> void:
 		Common.deal_sticker(root, String(p.tag), Vector2(700, 1205 + drop), 1.35)
 	else:
 		var deal := Kit.art(root, "bonus_tag", Rect2(560, 1168 + drop, 270, 90), "", Color("#7CC84A"))
-		Kit.text_at(root, "超值 %s 倍" % times_text, Rect2(585, 1182 + drop, 225, 60), 44, Color("#FFF7E0"), Color("#3D7415"), 7)
+		Kit.text_at(root, Lang.t("超值 %s 倍") % times_text, Rect2(585, 1182 + drop, 225, 60), 44, Color("#FFF7E0"), Color("#3D7415"), 7)
 		deal.pivot_offset = deal.size / 2
 		var pulse := deal.create_tween().set_loops()
 		pulse.tween_property(deal, "scale", Vector2(1.08, 1.08), 0.5).set_trans(Tween.TRANS_SINE)
 		pulse.tween_property(deal, "scale", Vector2.ONE, 0.5).set_trans(Tween.TRANS_SINE)
 	was.modulate.a = 0.95
-	var buy := Kit.pill("仅需 " + Kit.price_text(p.price), "pink", Vector2(861, 209))
+	var buy := Kit.pill(Lang.t("仅需 %s") % Kit.price_text(p), "pink", Vector2(861, 209))
 	buy.position = Vector2(108, 1300 + drop)
 	root.add_child(buy)
 	buy.pressed.connect(func():
@@ -502,7 +513,7 @@ func purchase(product_id: String) -> void:
 	var box := _abs_body(info, 90, 624)
 	Kit.art(box, _product_art(product_id), Rect2(Vector2(371, 266) - o, Vector2(320, 224)), "金币", Color("#FFE7A8"))
 	Kit.text_at(box, _product_name(product_id, p), Rect2(Vector2(291, 509) - o, Vector2(504, 91)), 74, Kit.BROWN, Kit.CREAM, 6)
-	Kit.text_at(box, "支付 " + Kit.price_text(p.price), Rect2(Vector2(342, 610) - o, Vector2(413, 82)), 68, Kit.BROWN)
+	Kit.text_at(box, Lang.t("支付 %s") % Kit.price_text(p), Rect2(Vector2(342, 610) - o, Vector2(413, 82)), 68, Kit.BROWN)
 	_pill_at(box, "取消", "cream", Rect2(Vector2(161, 714) - o, Vector2(363, 163)), func(): close(info))
 	_pill_at(box, "确认", "pink", Rect2(Vector2(546, 714) - o, Vector2(373, 163)), func():
 		close(info)
@@ -594,7 +605,7 @@ func lose(index: int, title: String, subtitle: String, can_revive: bool, revive:
 	desc.autowrap_mode = TextServer.AUTOWRAP_OFF
 	if can_revive:
 		var price := int(app.economy.revive_price)
-		_pill_at(box, "%d 金币复活" % price, "pink", Rect2(Vector2(172, 892) - o, Vector2(720, 154)), func():
+		_pill_at(box, Lang.t("%d 金币复活") % price, "pink", Rect2(Vector2(172, 892) - o, Vector2(720, 154)), func():
 			if app.profile.spend(price):
 				app.save()
 				close(info)
@@ -649,11 +660,11 @@ func checkin() -> void:
 			cell.modulate = Color(0.85, 0.8, 0.76)
 		var ink := Color("#915C41") if claimed else Kit.BROWN
 		var w := rect.size.x
-		Kit.text_at(cell, "第%d天" % (i + 1), Rect2(0, 14, w, 52), 50, ink)
+		Kit.text_at(cell, Lang.t("第%d天") % (i + 1), Rect2(0, 14, w, 52), 50, ink)
 		var amount := ""
 		if i == 6:
 			Kit.art(cell, "chest_small", Rect2(w / 2 - 124, 66, 248, 160), "宝箱", Color("#F8BBD0"))
-			amount = "%d+道具" % int(r.get("coins", 0))
+			amount = Lang.t("%d+道具") % int(r.get("coins", 0))
 			Kit.count_label(cell, amount, Rect2(w / 2 - 200, 230, 400, 60), 58)
 		else:
 			if r.has("coins"):
@@ -686,7 +697,7 @@ func checkin() -> void:
 func star_chest() -> void:
 	var p: Vector2i = app.profile.chest_progress()
 	if not app.profile.can_open_chest():
-		app.toast("再收集 %d 颗星星就能开启宝箱" % (p.y - p.x))
+		app.toast(Lang.t("再收集 %d 颗星星就能开启宝箱") % (p.y - p.x))
 		return
 	var r: Dictionary = app.profile.open_chest(randi() % 3)
 	app.save()

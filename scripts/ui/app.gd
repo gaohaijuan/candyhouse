@@ -11,6 +11,7 @@ const PurchaseService = preload("res://scripts/services/purchase_service.gd")
 const Popups = preload("res://scripts/ui/popups.gd")
 const Kit = preload("res://scripts/ui/kit.gd")
 const Art = preload("res://scripts/game/art.gd")
+const Lang = preload("res://scripts/core/lang.gd")
 const PAGES := {
 	"splash": preload("res://scripts/ui/pages/splash.gd"),
 	"home": preload("res://scripts/ui/pages/home.gd"),
@@ -63,6 +64,9 @@ func _ready() -> void:
 	if debug_args.has("fresh") and FileAccess.file_exists(save_path):
 		DirAccess.remove_absolute(ProjectSettings.globalize_path(save_path))
 	profile.load_or_create(now())
+	if debug_args.has("lang"):
+		profile.data.settings.lang = debug_args.lang
+	Lang.use(String(profile.data.settings.lang))
 	# Test builds may open every level on the map without touching progress.
 	unlock_all = str(debug_args.unlock_all) != "0" if debug_args.has("unlock_all") else _build_flag("unlock_all")
 	sound = Sound.new()
@@ -129,6 +133,15 @@ func save() -> void:
 	profile.save()
 	wallet_changed.emit()
 
+## Switches the game language. Plain labels follow on their own; menu pages
+## are rebuilt for the composed ones (a level in play is left running).
+func set_language(lang: String) -> void:
+	profile.data.settings.lang = lang
+	Lang.use(lang)
+	save()
+	if page_name != "game":
+		goto(page_name)
+
 func goto(name: String, args := {}) -> void:
 	popups.close_all()
 	if page:
@@ -171,6 +184,21 @@ func toast(text: String) -> void:
 	tw.parallel().tween_property(l, "modulate:a", 0.0, 0.6).set_delay(0.6)
 	tw.tween_callback(l.queue_free)
 
+var reported := {}
+
+## Capture runs in a non-Chinese language print each visible text still
+## showing Chinese once ("UNTRANSLATED ..."), so screenshots double as a check.
+func _report_untranslated(n: Node) -> void:
+	if n is CanvasItem and not (n as CanvasItem).is_visible_in_tree():
+		return
+	if n is Label or n is Button:
+		var shown: String = tr(n.text)
+		if shown not in reported and RegEx.create_from_string("[\\x{4e00}-\\x{9fff}]").search(shown) and not shown.begins_with("简体中文") and shown != "A文":
+			reported[shown] = true
+			print("UNTRANSLATED %s | %s" % [n.get_path(), shown.replace("\n", " / ")])
+	for c in n.get_children():
+		_report_untranslated(c)
+
 func _process(delta: float) -> void:
 	var lives := profile.lives(now())
 	if lives != last_lives:
@@ -182,3 +210,5 @@ func _process(delta: float) -> void:
 			capture_clock = 0.0
 			get_viewport().get_texture().get_image().save_png("%s/frame_%04d.png" % [capture_dir, capture_index])
 			capture_index += 1
+			if not Lang.is_zh():
+				_report_untranslated(get_tree().root)

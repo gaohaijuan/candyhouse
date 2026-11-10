@@ -438,7 +438,7 @@ func start_level(index: int) -> void:
 	if popup:
 		popup.queue_free()
 		popup = null
-	hud.level.get_child(0).text = "第 %d 关" % levels[index].id
+	hud.level.get_child(0).text = tr("第 %d 关") % levels[index].id
 	_fit_board()
 	var by_layer := state.tiles.values()
 	by_layer.sort_custom(func(a, b): return a.layer < b.layer or (a.layer == b.layer and (a.y < b.y or (a.y == b.y and a.x < b.x))))
@@ -1007,7 +1007,7 @@ func _present_gifts() -> void:
 	note.position = Vector2(540 - 380, box.position.y + 450)
 	note.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	var nl := Label.new()
-	nl.text = "送你 %d 个道具,本关可用" % gifts.size()
+	nl.text = tr("送你 %d 个道具,本关可用") % gifts.size()
 	nl.size = note.size
 	nl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	nl.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
@@ -1830,7 +1830,7 @@ func _shrink_to_fit(l: Label) -> void:
 	var fs := l.get_theme_font_size("font_size")
 	var font := l.get_theme_font("font")
 	var widest := 0.0
-	for line in l.text.split("\n"):
+	for line in tr(l.text).split("\n"):
 		widest = maxf(widest, font.get_string_size(line, HORIZONTAL_ALIGNMENT_LEFT, -1, fs).x)
 	if widest > l.size.x and widest > 0:
 		l.add_theme_font_size_override("font_size", int(fs * l.size.x / widest))

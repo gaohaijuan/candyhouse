@@ -5,6 +5,7 @@ extends Control
 
 const Kit = preload("res://scripts/ui/kit.gd")
 const Common = preload("res://scripts/ui/pages/_common.gd")
+const Lang = preload("res://scripts/core/lang.gd")
 const TOP := 170.0          # scroll area starts here; content y = mockup y - TOP
 const BOOSTER_ICONS := ["icon_undo", "icon_move_out", "icon_shuffle"]
 
@@ -57,13 +58,14 @@ func _rebuild() -> void:
 			Kit.art(card, "chest_big_open", Rect2(110, 18, 220, 232), "礼包", Color("#FDE0EA"))
 		Kit.text_at(card, String(pk.name), Rect2(370, 24, 330, 72), 60, Kit.BROWN, Kit.CREAM, 6)
 		if pk.has("tag"):
-			_deal_sticker(card, String(pk.tag), Vector2(330, 60), 0.8)
+			# English tags are wider: they go on the gift art, clear of the name.
+			_deal_sticker(card, String(pk.tag), Vector2(330, 60) if Lang.is_zh() else Vector2(120, 52), 0.8)
 		var n := 0
 		for k in pk.get("boosters", {}):
 			n += int(pk.boosters[k])
-		Kit.text_at(card, "%d 金币 + %d 个道具" % [int(pk.coins), n], Rect2(345, 102, 380, 42), 36, Kit.BROWN)
+		Kit.text_at(card, tr("%d 金币 + %d 个道具") % [int(pk.coins), n], Rect2(345, 102, 380, 42), 36, Kit.BROWN)
 		var pid: String = id
-		_price_button(card, Kit.price_text(pk.price), "pink", Rect2(707, 124, 265, 109), func(): app.popups.offer(pid))
+		_price_button(card, Kit.price_text(pk), "pink", Rect2(707, 124, 265, 109), func(): app.popups.offer(pid))
 		if pk.has("days"):
 			Kit.art(card, "ribbon_limited", Rect2(816, -8, 188, 122), "", Color("#E53935"))
 			Kit.text_at(card, "限时", Rect2(852, 14, 116, 58), 44, Kit.CREAM, Color("#B33319"), 6).rotation = 0.17
@@ -72,8 +74,8 @@ func _rebuild() -> void:
 	var free := _card("card_wide", Rect2(37, y, 1010, 178))
 	Kit.art(free, "icon_free_coins", Rect2(35, 16, 281, 145), "免费", Color("#C8E6C9"))
 	Kit.text_at(free, "免费金币", Rect2(345, 22, 330, 64), 56, Kit.BROWN, Kit.CREAM, 6)
-	Kit.text_at(free, ("免费领 %d 金币" if app.profile.data.no_ads else "看广告领 %d 金币") % int(app.economy.ad_free_coins), Rect2(330, 92, 345, 48), 38, Kit.BROWN)
-	var fb := _price_button(free, "免费 (%d/%d)" % [left, int(app.economy.ad_limits.free_coins)], "green", Rect2(687, 36, 293, 106), _free_coins)
+	Kit.text_at(free, tr("免费领 %d 金币" if app.profile.data.no_ads else "看广告领 %d 金币") % int(app.economy.ad_free_coins), Rect2(330, 92, 345, 48), 38, Kit.BROWN)
+	var fb := _price_button(free, tr("免费 (%d/%d)") % [left, int(app.economy.ad_limits.free_coins)], "green", Rect2(687, 36, 293, 106), _free_coins)
 	if left <= 0:
 		fb.disabled = true
 		fb.modulate.a = 0.5
@@ -86,7 +88,7 @@ func _rebuild() -> void:
 	for k in 3:
 		Kit.art(bundle, BOOSTER_ICONS[k], Rect2(28 + k * 88, 45, 110, 110), "", Color("#FDE0EA"))
 	Kit.text_at(bundle, "道具组合包", Rect2(330, 30, 340, 66), 56, Kit.BROWN, Kit.CREAM, 6)
-	Kit.text_at(bundle, "撤回、移出、洗牌 各 %d 个" % int(app.economy.booster_bundle.each), Rect2(320, 104, 360, 48), 36, Kit.BROWN)
+	Kit.text_at(bundle, tr("撤回、移出、洗牌 各 %d 个") % int(app.economy.booster_bundle.each), Rect2(320, 104, 360, 48), 36, Kit.BROWN)
 	_price_button(bundle, "%d" % int(app.economy.booster_bundle.price), "pink", Rect2(687, 43, 293, 116), _buy_bundle, "coin_small")
 	y += 216
 	if not app.profile.data.no_ads:
@@ -134,7 +136,7 @@ func _pack_card(p: Dictionary, tier: int, rect: Rect2) -> void:
 	var card := _card("card_square", rect)
 	Kit.art(card, "coin_tier_%d" % tier, Rect2(97, 12, 300, 138), "金币", Color("#FFE7A8"))
 	Kit.count_label(card, str(int(p.coins)), Rect2(0, 146, rect.size.x, 60), 54)
-	_price_button(card, Kit.price_text(p.price), "pink", Rect2(92, 208, 310, 92), func(): app.popups.purchase(p.id))
+	_price_button(card, Kit.price_text(p), "pink", Rect2(92, 208, 310, 92), func(): app.popups.purchase(p.id))
 	if p.has("bonus"):
 		Kit.art(card, "bonus_tag", Rect2(331, 5, 153, 84), "", Color("#7CC84A"))
 		Kit.text_at(card, str(p.bonus), Rect2(345, 18, 128, 50), 38, Color("#FFF7E0"), Color("#3D7415"), 6)
@@ -148,7 +150,7 @@ func _free_coins() -> void:
 			app.profile.note_ad("free_coins", app.now())
 			app.profile.add_coins(int(app.economy.ad_free_coins))
 			app.save()
-			app.toast("+%d 金币" % int(app.economy.ad_free_coins)))
+			app.toast(tr("+%d 金币") % int(app.economy.ad_free_coins)))
 
 func _buy_bundle() -> void:
 	if app.profile.buy_bundle():

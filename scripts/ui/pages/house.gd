@@ -335,7 +335,7 @@ func _refresh_header() -> void:
 		return
 	balance.text = str(app.profile.data.coins)
 	var p: Vector2i = app.profile.house_progress(room)
-	progress.text = "装修度 %d/%d" % [p.x, p.y]
+	progress.text = tr("装修度 %d/%d") % [p.x, p.y]
 
 # ---------------------------------------------------------------- picking
 
@@ -635,7 +635,7 @@ func _buy(slot_id: String) -> void:
 		for g in layout.get("gifts", []):
 			if int(g.tier) == before + 1:
 				_draw_gifts(true)
-				_say("装修度 %d/%d,送你装修小礼物!" % [before + 1, room.slots.size()])
+				_say(tr("装修度 %d/%d,送你装修小礼物!") % [before + 1, room.slots.size()])
 				break
 		var p: Vector2i = app.profile.house_progress(room)
 		if p.x == p.y:

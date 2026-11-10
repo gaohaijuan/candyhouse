@@ -2,6 +2,8 @@ extends RefCounted
 ## Art lookup. Uses sliced textures when they exist and placeholder drawing
 ## otherwise, so code and art can land independently.
 
+const Lang = preload("res://scripts/core/lang.gd")
+
 const DESSERTS := [
 	{"key": "macaron", "name": "马卡龙", "color": Color("#F48FB1")},
 	{"key": "donut", "name": "甜甜圈", "color": Color("#8D5A3B")},
@@ -40,6 +42,10 @@ static func dessert_icon(type: int) -> Texture2D:
 	return texture("res://assets/desserts/%s.png" % DESSERTS[type].key)
 
 static func ui(name: String) -> Texture2D:
+	if Lang.code != "" and not Lang.is_zh():
+		var own := texture("res://assets/ui/%s_%s.png" % [name, Lang.code])
+		if own:
+			return own
 	return texture("res://assets/ui/%s.png" % name)
 
 static var font: Font = load("res://assets/fonts/LXGW975YuanSC-700W.ttf")

@@ -3,6 +3,8 @@ extends RefCounted
 ## sliced art when it exists (assets/ui/<name>.png) and a clean placeholder
 ## otherwise, so pages work before their art arrives.
 
+const Lang = preload("res://scripts/core/lang.gd")
+const USD_PER_YUAN := 0.99 / 6.0
 const Art = preload("res://scripts/game/art.gd")
 
 const BROWN := Color("#6B2404")
@@ -127,10 +129,21 @@ static func text_at(parent: Control, text: String, rect: Rect2, size: int, color
 	parent.add_child(l)
 	return l
 
-## Price in yuan: whole yuan without decimals, else one decimal (¥0.1).
-static func price_text(price) -> String:
-	var f := float(price)
+## A store product's price in the language's currency: its dollar price
+## ($0.99) in English; in Chinese yuan, whole without decimals, else one
+## decimal (¥3, ¥0.1).
+static func price_text(p: Dictionary) -> String:
+	if not Lang.is_zh():
+		return "$%.2f" % float(p.get("usd", 0.99))
+	var f := float(p.price)
 	return "¥%d" % int(f) if is_equal_approx(f, roundf(f)) else "¥%.1f" % f
+
+## An amount given in yuan (what a pack is worth) in the language's currency.
+## Dollars follow the store tiers, where ¥6 sells at $0.99.
+static func money(yuan: float) -> String:
+	if not Lang.is_zh():
+		return "$%.2f" % (yuan * USD_PER_YUAN)
+	return "¥%d" % int(yuan)
 
 ## Reward counts and amounts (+100, ×1, 3300): dark brown with a cream
 ## outline and a soft shadow, the same everywhere.
@@ -268,7 +281,7 @@ static func shrink_to_fit(l: Label, max_w := 0.0) -> void:
 	var fs := l.get_theme_font_size("font_size")
 	var font := l.get_theme_font("font")
 	var widest := 0.0
-	for line in l.text.split("\n"):
+	for line in TranslationServer.translate(l.text).split("\n"):
 		widest = maxf(widest, font.get_string_size(line, HORIZONTAL_ALIGNMENT_LEFT, -1, fs).x)
 	if widest > w and widest > 0:
 		l.add_theme_font_size_override("font_size", int(fs * w / widest))

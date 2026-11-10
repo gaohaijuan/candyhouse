@@ -22,7 +22,7 @@ func _fresh(now: int) -> Dictionary:
 		"chests_opened": 0, "chapter_chests": [],
 		"checkin": {"day": 0, "last": ""},
 		"purchases": {}, "no_ads": false,
-		"settings": {"music": true, "sfx": true, "vibrate": true},
+		"settings": {"music": true, "sfx": true, "vibrate": true, "lang": "en"},
 		"privacy_accepted": false,
 		"ads_today": {"date": "", "counts": {}},
 		"first_day": "",
@@ -61,6 +61,8 @@ func _normalize() -> void:
 	data.perfect_chests = pc
 	for k in economy.start_boosters:
 		data.boosters[k] = int(data.boosters.get(k, 0))
+	if not data.settings.has("lang"):
+		data.settings.lang = "en"
 	for k in ["placed", "owned", "rewarded"]:
 		if not data.house.has(k):
 			data.house[k] = {} if k == "placed" else []
