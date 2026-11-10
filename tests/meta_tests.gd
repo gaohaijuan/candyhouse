@@ -121,7 +121,7 @@ func _purchases() -> void:
 	var p := fresh(t)
 	check(p.grant_purchase("coins_3300", t) and p.data.coins == 3500, "coin pack adds coins")
 	check(p.grant_purchase("coins_3300", t), "coin packs can be bought again")
-	check(p.grant_purchase("starter", t) and p.booster_count("undo") == 6, "starter pack gives boosters")
+	check(p.grant_purchase("starter", t) and p.booster_count("undo") == 8 and p.booster_count("magnet") == 3 and p.booster_count("extra_slot") == 3, "starter pack gives boosters")
 	check(not p.iap_available("starter", t), "starter pack only once")
 	var q := fresh(t)
 	check(q.iap_available("starter", t + 40 * 86400), "starter pack never expires")

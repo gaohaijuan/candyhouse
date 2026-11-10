@@ -404,7 +404,7 @@ func offer(id: String) -> void:
 	var glow := Kit.art(root, "glow_rays", Rect2(90, 250, 900, 900))
 	glow.pivot_offset = glow.size / 2
 	glow.create_tween().set_loops().tween_property(glow, "rotation", TAU, 14.0).from(0.0)
-	var gift := Kit.art(root, "starter_bundle", Rect2(200, 470, 680, 348), "礼包", Color("#FDE0EA")) if id == "starter" else Kit.art(root, _product_art(id), Rect2(330, 420, 420, 442), "礼包", Color("#FDE0EA"))
+	var gift := Kit.art(root, "starter_bundle", Rect2(230, 430, 620, 317), "礼包", Color("#FDE0EA")) if id == "starter" else Kit.art(root, _product_art(id), Rect2(330, 420, 420, 442), "礼包", Color("#FDE0EA"))
 	gift.pivot_offset = gift.size / 2
 	gift.scale = Vector2(0.4, 0.4)
 	var gt := gift.create_tween()
@@ -422,15 +422,23 @@ func offer(id: String) -> void:
 		Kit.art(root, "ribbon_limited", Rect2(770, 400, 230, 135), "", Color("#E53935"))
 		Kit.text_at(root, offer_time_left(id), Rect2(800, 425, 175, 60), 40, Kit.CREAM, Color("#B33319"), 7).rotation = 0.17
 	var items: Array = [["coin_pile_small", "%d" % int(p.coins)]]
-	var icons := {"undo": "icon_undo", "move_out": "icon_move_out", "shuffle": "icon_shuffle"}
+	var icons := {"undo": "icon_undo", "move_out": "icon_move_out", "shuffle": "icon_shuffle", "magnet": "icon_magnet", "extra_slot": "icon_extra_slot"}
 	for k in p.get("boosters", {}):
 		items.append([icons.get(k, "icon_shuffle"), "×%d" % int(p.boosters[k])])
+	# Up to four cards in one row; more go in rows of three and the rest of
+	# the popup moves down by the extra row.
 	var cw := 230.0
 	var gap := 18.0
-	var x0 := (1080 - items.size() * cw - (items.size() - 1) * gap) / 2
+	var per := items.size() if items.size() <= 4 else 3
+	var rows := ceili(items.size() / float(per))
+	var top_y := 880.0 if rows == 1 else 800.0
+	var drop := (rows - 1) * (265 + gap) - (880.0 - top_y)
 	for i in items.size():
+		var row := i / per
+		var in_row := mini(per, items.size() - row * per)
+		var x0 := (1080 - in_row * cw - (in_row - 1) * gap) / 2
 		var card := Control.new()
-		card.position = Vector2(x0 + i * (cw + gap), 880)
+		card.position = Vector2(x0 + (i % per) * (cw + gap), top_y + row * (265 + gap))
 		card.size = Vector2(cw, 265)
 		root.add_child(card)
 		Kit.art(card, "reward_card", Rect2(Vector2.ZERO, card.size), "", Color("#FFF4DE"))
@@ -445,22 +453,22 @@ func offer(id: String) -> void:
 	var times := worth / float(p.price)
 	var times_text := ("%d" % int(times)) if times >= 10 else ("%.1f" % times)
 	# Worth, struck through, then the price: the bargain at a glance.
-	var was := Kit.text_at(root, "价值 ¥%d" % int(worth), Rect2(240, 1175, 300, 70), 52, Color("#FFE9EF"), Color("#7A1E3A"), 8)
+	var was := Kit.text_at(root, "价值 ¥%d" % int(worth), Rect2(240, 1175 + drop, 300, 70), 52, Color("#FFE9EF"), Color("#7A1E3A"), 8)
 	var strike := ColorRect.new()
 	strike.color = Color("#FF5C7A")
-	strike.position = Vector2(270, 1207)
+	strike.position = Vector2(270, 1207 + drop)
 	strike.size = Vector2(240, 7)
 	strike.rotation = -0.06
 	root.add_child(strike)
-	var deal := Kit.art(root, "bonus_tag", Rect2(560, 1168, 270, 90), "", Color("#7CC84A"))
-	Kit.text_at(root, "超值 %s 倍" % times_text, Rect2(585, 1182, 225, 60), 44, Color("#FFF7E0"), Color("#3D7415"), 7)
+	var deal := Kit.art(root, "bonus_tag", Rect2(560, 1168 + drop, 270, 90), "", Color("#7CC84A"))
+	Kit.text_at(root, "超值 %s 倍" % times_text, Rect2(585, 1182 + drop, 225, 60), 44, Color("#FFF7E0"), Color("#3D7415"), 7)
 	deal.pivot_offset = deal.size / 2
 	var pulse := deal.create_tween().set_loops()
 	pulse.tween_property(deal, "scale", Vector2(1.08, 1.08), 0.5).set_trans(Tween.TRANS_SINE)
 	pulse.tween_property(deal, "scale", Vector2.ONE, 0.5).set_trans(Tween.TRANS_SINE)
 	was.modulate.a = 0.95
 	var buy := Kit.pill("仅需 " + Kit.price_text(p.price), "pink", Vector2(861, 209))
-	buy.position = Vector2(108, 1300)
+	buy.position = Vector2(108, 1300 + drop)
 	root.add_child(buy)
 	buy.pressed.connect(func():
 		app.sound.play("tap")
@@ -473,8 +481,8 @@ func offer(id: String) -> void:
 					app.goto("home")
 			else:
 				app.toast("购买未完成")))
-	var later := Kit.text_at(root, "以后再说", Rect2(390, 1540, 300, 80), 50, Color("#FFF1E6"), Color("#5A1A2A"), 8)
-	var later_hit := Kit.hit_area(root, Rect2(390, 1530, 300, 100))
+	var later := Kit.text_at(root, "以后再说", Rect2(390, 1540 + drop, 300, 80), 50, Color("#FFF1E6"), Color("#5A1A2A"), 8)
+	var later_hit := Kit.hit_area(root, Rect2(390, 1530 + drop, 300, 100))
 	later_hit.pressed.connect(func(): close(info))
 	later.modulate.a = 0.9
 	var x := Kit.art_button(root, "button_close", Rect2(900, 150, 120, 123), "×")

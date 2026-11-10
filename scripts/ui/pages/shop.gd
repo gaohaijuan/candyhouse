@@ -56,8 +56,10 @@ func _rebuild() -> void:
 		else:
 			Kit.art(card, "chest_big_open", Rect2(110, 18, 220, 232), "礼包", Color("#FDE0EA"))
 		Kit.text_at(card, "新手礼包" if id == "starter" else "限时礼包", Rect2(370, 24, 330, 72), 60, Kit.BROWN, Kit.CREAM, 6)
-		var each: int = int(pk.boosters.values()[0]) if pk.has("boosters") else 0
-		Kit.text_at(card, "%d 金币 + 道具各 %d 个" % [int(pk.coins), each], Rect2(345, 102, 380, 42), 36, Kit.BROWN)
+		var n := 0
+		for k in pk.get("boosters", {}):
+			n += int(pk.boosters[k])
+		Kit.text_at(card, "%d 金币 + %d 个道具" % [int(pk.coins), n], Rect2(345, 102, 380, 42), 36, Kit.BROWN)
 		var pid: String = id
 		_price_button(card, Kit.price_text(pk.price), "pink", Rect2(707, 124, 265, 109), func(): app.popups.offer(pid))
 		if pk.has("days"):

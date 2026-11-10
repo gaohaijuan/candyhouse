@@ -128,11 +128,13 @@
   {
    "id": "starter",
    "price": 6,
-   "coins": 1000,
+   "coins": 1500,
    "boosters": {
-    "undo": 3,
-    "move_out": 3,
-    "shuffle": 3
+    "undo": 5,
+    "move_out": 5,
+    "shuffle": 5,
+    "magnet": 2,
+    "extra_slot": 2
    },
    "once": true
   },
