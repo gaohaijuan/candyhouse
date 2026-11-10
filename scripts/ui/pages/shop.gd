@@ -96,7 +96,7 @@ func _rebuild() -> void:
 		Kit.art(na, "icon_no_ads", Rect2(64, 15, 247, 168), "去广告", Color("#FDE0EA"))
 		Kit.text_at(na, "去除广告", Rect2(330, 30, 340, 66), 56, Kit.BROWN, Kit.CREAM, 6)
 		Kit.text_at(na, "去除插屏广告", Rect2(330, 104, 340, 48), 40, Kit.BROWN)
-		_price_button(na, "¥18", "pink", Rect2(687, 40, 293, 122), func(): app.popups.purchase("no_ads"))
+		_price_button(na, Kit.price_text(app.profile.iap("no_ads")), "pink", Rect2(687, 40, 293, 122), func(): app.popups.purchase("no_ads"))
 		y += 216
 	content.custom_minimum_size = Vector2(1080, y + 40)
 	scroll.set_deferred("scroll_vertical", keep)

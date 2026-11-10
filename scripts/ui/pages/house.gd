@@ -340,6 +340,9 @@ func _refresh_header() -> void:
 	balance.text = str(app.profile.data.coins)
 	var p: Vector2i = app.profile.house_progress(room)
 	progress.text = tr("装修度 %d/%d") % [p.x, p.y]
+	# Refit on every change: the plate's blank is 197 wide and 10/10 is wider than 0/10.
+	progress.add_theme_font_size_override("font_size", 40 if Kit.tex("plaque_progress") else 42)
+	Kit.shrink_to_fit(progress, 165.0 if Kit.tex("plaque_progress") else 250.0)
 
 # ---------------------------------------------------------------- picking
 
@@ -660,8 +663,9 @@ func _open_drawer(slot_id: String) -> void:
 func _set_pill(b: TextureButton, text: String, price: String) -> void:
 	for c in b.get_children():
 		if c is Label:
-			c.text = text + ("  " + price if price != "" else "")
+			c.text = tr(text) + ("  " + price if price != "" else "")
 			c.add_theme_font_size_override("font_size", 68)
+			Kit.shrink_to_fit(c, b.size.x - 80)
 
 func _icon(it: Dictionary) -> Control:
 	var t := _house_tex(it.id)

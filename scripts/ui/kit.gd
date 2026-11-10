@@ -214,7 +214,8 @@ static func pill(text: String, style := "pink", sz := Vector2(700, 160)) -> Text
 		p.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		b.add_child(p)
 	var l := label(text, int(sz.y * 0.42), BROWN if style == "cream" else CREAM, CREAM if style == "cream" else OUTLINE, 6 if style == "cream" else 12)
-	shrink_to_fit(l, sz.x - 40)
+	# Keep clear of the rounded ends.
+	shrink_to_fit(l, sz.x - sz.y * 0.55)
 	l.size = sz - Vector2(40, 10)
 	l.position = Vector2(20, 0)
 	b.add_child(l)
