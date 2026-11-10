@@ -141,9 +141,11 @@ static func _place_mechanics(tiles: Array, level: Dictionary, rng: RandomNumberG
 	var top := 0
 	for t in board:
 		top = maxi(top, int(t.layer))
-	# Mystery tiles hide their dessert until taken, so they matter on any
-	# layer: about half sit where the player can reach them early.
-	var pool := board.duplicate()
+	# Mystery tiles hide their dessert until taken: about half sit where the
+	# player can reach them early, the rest deeper. Never on the bottom layer:
+	# by the time the player digs down there the level is as good as won
+	# (producer, 2026-11-10).
+	var pool := board.filter(func(t): return int(t.layer) > 0)
 	_shuffle(pool, rng)
 	var want := int(level.get("mystery", 0))
 	var near: Array = pool.filter(func(t): return int(t.layer) >= top - 1)
@@ -153,6 +155,9 @@ static func _place_mechanics(tiles: Array, level: Dictionary, rng: RandomNumberG
 		near[i]["mystery"] = true
 	for i in mini(want - take_near, far.size()):
 		far[i]["mystery"] = true
+	# Shallow boards have no deep layer above the bottom: the rest go near too.
+	for i in range(take_near, mini(want - mini(want - take_near, far.size()), near.size())):
+		near[i]["mystery"] = true
 	var upper := board.filter(func(t): return _peek.has(t.id) and not t.get("mystery", false))
 	_shuffle(upper, rng)
 	var ice: Array = level.get("ice", [])

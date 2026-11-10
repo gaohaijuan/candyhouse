@@ -293,6 +293,8 @@ func _test_design(levels: Array) -> void:
 					check(peek.has(t.id), "L%d lock/key visible at the start" % level.id)
 				if int(t.get("ice", 0)) > 0:
 					check(peek.has(t.id), "L%d ice visible at the start" % level.id)
+				if t.get("mystery", false):
+					check(int(t.layer) > 0, "L%d mystery tile not on the bottom layer" % level.id)
 			var g: GameState = s.clone()
 			var plan: Array = s.solution.duplicate()
 			check(g.wins_with(plan), "L%d has a winning order (trial %d)" % [level.id, trial])

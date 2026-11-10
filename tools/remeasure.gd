@@ -10,6 +10,8 @@ func _init() -> void:
 	for a in args:
 		if a.begins_with("trials="):
 			trials = int(a.substr(7))
+		if a == "ref=planner":
+			Author.planner = true
 	var spec: Dictionary = {}
 	for L in JSON.parse_string(FileAccess.get_file_as_string("res://data/level_plan.json")).levels:
 		if int(L.id) == id:
