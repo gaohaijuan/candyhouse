@@ -49,7 +49,7 @@ func setup(owner_app, _args: Dictionary) -> void:
 	var back := Kit.art_button(top, "button_back", Rect2(18, 14, 131, 132), "返")
 	back.pressed.connect(func(): app.goto("home"))
 	Kit.art(top, "popup_ribbon", Rect2(213, 13, 590, 170))
-	Kit.text_at(top, "我的糖果屋", Rect2(330, 32, 356, 90), 68, Kit.CREAM, Kit.OUTLINE, 12)
+	Kit.ribbon_title(top, "我的糖果屋", Rect2(213, 13, 590, 170))
 	Kit.art(top, "coin_pill", Rect2(792, 36, 272, 92))
 	balance = Kit.text_at(top, "", Rect2(868, 57, 135, 50), 42, Kit.BROWN)
 	if Kit.tex("plaque_progress"):
@@ -520,7 +520,7 @@ func _new_panel(title: String) -> Control:
 	add_child(panel)
 	Kit.nine(panel, "card_wide", Rect2(14, 40, 1052, 1920 - PANEL_Y + Kit.extra), [90, 90, 90, 90], Color("#FFF4DE"), 0.72)
 	Kit.art(panel, "popup_ribbon", Rect2(250, -40, 580, 168))
-	Kit.text_at(panel, title, Rect2(360, -22, 360, 84), 60, Kit.CREAM, Kit.OUTLINE, 10)
+	Kit.ribbon_title(panel, title, Rect2(250, -40, 580, 168))
 	var close := Kit.art_button(panel, "button_close", Rect2(944, 34, 110, 110), "×")
 	close.pressed.connect(func(): _close_panel())
 	panel.position.y += 300

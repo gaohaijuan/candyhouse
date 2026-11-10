@@ -290,6 +290,30 @@ static func shrink_to_fit(l: Label, max_w := 0.0) -> void:
 	if widest > w and widest > 0:
 		l.add_theme_font_size_override("font_size", int(fs * w / widest))
 
+## Title words for a popup_ribbon drawn into `rect` (the art keeps its
+## proportions, centred): inside the ribbon's flat band, clear of the gloss
+## strip above and the fold line below, sized from the band so every
+## ribbon in the game reads the same.
+static func ribbon_title(parent: Control, text: String, rect: Rect2) -> Label:
+	var t := tex("popup_ribbon")
+	var art := Vector2(t.get_width(), t.get_height()) if t else Vector2(762, 258)
+	var k := minf(rect.size.x / art.x, rect.size.y / art.y)
+	var o := rect.position + (rect.size - art * k) / 2
+	var tb: Array = _layout().get("popup", {}).get("ribbon_text_box", [177, 40, 408, 110])
+	var band := Rect2(o + Vector2(tb[0], tb[1]) * k, Vector2(tb[2], tb[3]) * k)
+	var fs := int(band.size.y * 0.64)
+	var l := label(text, fs, CREAM, OUTLINE, maxi(6, int(fs * 0.14)))
+	l.add_theme_color_override("font_shadow_color", Color(0.39, 0.1, 0.03, 0.68))
+	l.add_theme_constant_override("shadow_offset_y", maxi(3, int(fs * 0.07)))
+	shrink_to_fit(l, band.size.x * 0.86)
+	# Centred on the ink, not the line box: the line box sits the letters
+	# high, Chinese, Japanese and Korean ones higher still (measured).
+	var ink := l.get_theme_font_size("font_size")
+	l.position = band.position + Vector2(0, ink * (0.11 if Lang.code == "en" else 0.22))
+	l.size = band.size
+	parent.add_child(l)
+	return l
+
 ## Ribbon title over a pink-framed cream panel. Returns {root, panel, body, close}.
 ## Add content to `body` (a VBoxContainer), then call `finish_popup(info)`.
 static func popup(host: Control, title: String, width := 907.0, closable := false) -> Dictionary:
@@ -343,15 +367,7 @@ static func popup(host: Control, title: String, width := 907.0, closable := fals
 		ribbon.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		panel.add_child(ribbon)
 	# The ribbon's flat band, between its gloss strip and its lower fold line.
-	var tb: Array = pl.get("ribbon_text_box", [177, 36, 408, 118])
-	var kk: float = rr.size.x / (rtex.get_width() if rtex else 762.0)
-	var t := label(title, 78, CREAM, OUTLINE, 11)
-	t.add_theme_color_override("font_shadow_color", Color(0.39, 0.1, 0.03, 0.68))
-	t.add_theme_constant_override("shadow_offset_y", 6)
-	shrink_to_fit(t, tb[2] * kk)
-	t.position = rr.position + Vector2(tb[0], tb[1]) * kk
-	t.size = Vector2(tb[2], tb[3]) * kk
-	panel.add_child(t)
+	ribbon_title(panel, title, rr)
 	var body := VBoxContainer.new()
 	body.add_theme_constant_override("separation", 28)
 	body.alignment = BoxContainer.ALIGNMENT_BEGIN

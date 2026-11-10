@@ -97,10 +97,10 @@
    "shadow_y": 3
   },
   "popup_title": {
-   "size": 78,
+   "size": 62,
    "color": "#FFF6D5",
    "outline": "#742507",
-   "outline_size": 11,
+   "outline_size": 9,
    "shadow": "#631907AF",
    "shadow_x": 2,
    "shadow_y": 6
@@ -232,9 +232,9 @@
   ],
   "ribbon_text_box": [
    177,
-   36,
+   40,
    408,
-   118
+   110
   ],
   "content_top": 170,
   "star_size": 194,

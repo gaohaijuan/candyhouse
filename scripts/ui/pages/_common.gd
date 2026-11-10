@@ -55,11 +55,7 @@ static func title_ribbon(page: Control, text: String, y := 20.0) -> void:
 	var r := Kit.picture("popup_ribbon", Vector2(w, w * 0.34))
 	r.position = Vector2((1080 - w) / 2, y)
 	page.add_child(r)
-	var l := Kit.label(text, 64, Kit.CREAM, Kit.OUTLINE, 12)
-	l.position = r.position + Vector2(w * 0.2, w * 0.05)
-	l.size = Vector2(w * 0.6, w * 0.17)
-	Kit.shrink_to_fit(l)
-	page.add_child(l)
+	Kit.ribbon_title(page, text, Rect2(r.position, r.size))
 
 ## Exaggerated deal sticker ("1折"): a tilted red ribbon with big cream text
 ## and a thick outline, pulsing so it catches the eye.

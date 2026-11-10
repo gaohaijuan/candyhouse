@@ -1703,17 +1703,7 @@ func _open_popup(title: String, subtitle: String, buttons: Array, stars := -1, b
 		ribbon.size = rr.size
 		ribbon.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		panel.add_child(ribbon)
-		var tb: Array = pl.ribbon_text_box
-		var kk: float = rr.size.x / ribbon_tex.get_width()
-		var t := Label.new()
-		t.text = title
-		t.position = rr.position + Vector2(tb[0], tb[1]) * kk
-		t.size = Vector2(tb[2], tb[3]) * kk
-		t.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		t.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-		_apply_text_style(t, _text_style("popup_title"))
-		_shrink_to_fit(t)
-		panel.add_child(t)
+		Kit.ribbon_title(panel, title, rr)
 	else:
 		var t := Label.new()
 		t.text = title

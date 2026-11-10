@@ -31,7 +31,7 @@ func setup(owner_app, _args: Dictionary) -> void:
 	var back := Kit.art_button(top, "button_back", Rect2(18, 14, 131, 132), "返")
 	back.pressed.connect(func(): app.goto("home"))
 	Kit.art(top, "popup_ribbon", Rect2(283, 13, 505, 152))
-	Kit.text_at(top, "商店", Rect2(400, 30, 280, 82), 70, Kit.CREAM, Kit.OUTLINE, 12)
+	Kit.ribbon_title(top, "商店", Rect2(283, 13, 505, 152))
 	Kit.art(top, "coin_pill", Rect2(792, 36, 272, 92))
 	balance = Kit.text_at(top, "", Rect2(868, 57, 135, 50), 42, Kit.BROWN)
 	app.wallet_changed.connect(_rebuild)

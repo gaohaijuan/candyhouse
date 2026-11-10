@@ -449,9 +449,7 @@ func offer(id: String) -> void:
 		bob.tween_property(gift, "position:y", gift.position.y - 12, 1.0).set_trans(Tween.TRANS_SINE)
 		bob.tween_property(gift, "position:y", gift.position.y, 1.0).set_trans(Tween.TRANS_SINE))
 	Kit.art(root, "popup_ribbon", Rect2(100, 140, 877, 295))
-	var t := Kit.text_at(root, _product_name(id, p), Rect2(262, 181, 571, 136), 96, Kit.CREAM, Kit.OUTLINE, 13)
-	t.add_theme_color_override("font_shadow_color", Color(0.39, 0.1, 0.03, 0.68))
-	t.add_theme_constant_override("shadow_offset_y", 6)
+	Kit.ribbon_title(root, _product_name(id, p), Rect2(100, 140, 877, 295))
 	if p.has("days"):
 		if Kit.tex("badge_timer"):
 			# Alarm-clock plate (set A); the words go in its blank, measured on the art.
@@ -772,9 +770,7 @@ func reward(r: Dictionary, then := Callable(), title := "恭喜获得") -> void:
 	chest.scale = Vector2(0.3, 0.3)
 	chest.create_tween().tween_property(chest, "scale", Vector2.ONE, 0.45).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 	Kit.art(root, "popup_ribbon", Rect2(100, 125, 877, 295))
-	var t := Kit.text_at(root, title, Rect2(262, 166, 571, 136), 96, Kit.CREAM, Kit.OUTLINE, 13)
-	t.add_theme_color_override("font_shadow_color", Color(0.39, 0.1, 0.03, 0.68))
-	t.add_theme_constant_override("shadow_offset_y", 6)
+	Kit.ribbon_title(root, title, Rect2(100, 125, 877, 295))
 	var items: Array = []
 	if int(r.get("coins", 0)) > 0:
 		items.append(["coin_pile_small", "+%d" % int(r.coins), Rect2(53, 24, 200, 162)])
