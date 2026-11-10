@@ -46,10 +46,12 @@ func setup(owner_app, _args: Dictionary) -> void:
 	Kit.art(top, "coin_pill", Rect2(792, 36, 272, 92))
 	balance = Kit.text_at(top, "", Rect2(868, 57, 135, 50), 42, Kit.BROWN)
 	if Kit.tex("plaque_progress"):
-		Kit.art(top, "plaque_progress", Rect2(700, 150, 370, 87))
+		# Plaque 648 x 184, text area (150, 53, 345, 90), shown at 0.57.
+		Kit.art(top, "plaque_progress", Rect2(700, 150, 370, 105))
+		progress = Kit.text_at(top, "", Rect2(786, 180, 197, 51), 40, Kit.BROWN)
 	else:
 		Kit.nine(top, "tag_plate", Rect2(740, 150, 320, 80), [42, 14, 43, 14])
-	progress = Kit.text_at(top, "", Rect2(760, 163, 280, 56), 42, Kit.BROWN)
+		progress = Kit.text_at(top, "", Rect2(760, 163, 280, 56), 42, Kit.BROWN)
 	app.wallet_changed.connect(_refresh_header)
 	_refresh_header()
 	if app.profile.house_reward_ready(room):
@@ -216,6 +218,7 @@ func _pattern(slot_id: String, parent: Control, face: Dictionary, item: Dictiona
 		poly.uv = uv
 		poly.texture_repeat = CanvasItem.TEXTURE_REPEAT_ENABLED
 		poly.material = _tint(TINT_MUL, item, color)
+		poly.material.set_shader_parameter("min_sat", 0.03)
 	else:
 		var c: Color = Color(house.colors[color].hex) if color >= 0 else Color(item.get("main", DEFAULT_MAIN))
 		poly.color = c.lerp(Color.WHITE, 0.55)
@@ -232,13 +235,13 @@ func _refresh_markers() -> void:
 		if not _shown(s.id).is_empty():
 			continue
 		var at := _marker_at(s.id)
-		var size := Vector2(200, 100) if s.kind == "item" or s.kind == "floor" else Vector2(130, 130)
+		var size := Vector2(200, 100) if s.kind == "item" or s.kind == "floor" else Vector2(150, 75)
 		var b := TextureButton.new()
 		b.position = at - size / 2
 		b.size = size
 		b.pivot_offset = size / 2
 		var t := Kit.tex("slot_plus")
-		if t and size.x > size.y:
+		if t:
 			b.texture_normal = t
 			b.ignore_texture_size = true
 			b.stretch_mode = TextureButton.STRETCH_KEEP_ASPECT_CENTERED
@@ -456,7 +459,7 @@ func _buy(slot_id: String) -> void:
 		if p.x == p.y:
 			get_tree().create_timer(0.9).timeout.connect(_room_done)
 		elif p.x * 4 / p.y != (p.x - 1) * 4 / p.y:
-			app.toast("装修度 %d%%!" % (p.x * 100 / p.y))
+			app.toast("装修度 %d%%!" % (p.x * 4 / p.y * 25))
 
 ## Colour panel: eight sweets colours; the item's own colour is the ball
 ## closest to it, so picking that ball keeps the art untouched.
@@ -498,12 +501,26 @@ func _open_colors(slot_id: String) -> void:
 		_draw_slot(slot_id)
 		_select(slot_id))
 
+## The chosen ball wears the gold ring and the tick (mockup H1_A).
 func _mark_ball(balls: Array, i: int) -> void:
 	for k in balls.size():
 		var b: Control = balls[k]
-		b.scale = Vector2(1.18, 1.18) if k == i else Vector2.ONE
+		for c in b.get_children():
+			if c.has_meta("mark"):
+				c.queue_free()
 		b.pivot_offset = b.size / 2
-		b.modulate = Color.WHITE if k == i else Color(0.9, 0.9, 0.9)
+		b.scale = Vector2(1.1, 1.1) if k == i else Vector2.ONE
+		if k != i:
+			continue
+		var ring := Kit.picture("ball_selected_ring", b.size * 1.1)
+		ring.position = -b.size * 0.05
+		ring.set_meta("mark", true)
+		b.add_child(ring)
+		if Kit.tex("ball_check"):
+			var tick := Kit.picture("ball_check", Vector2(54, 41))
+			tick.position = (b.size - tick.size) / 2
+			tick.set_meta("mark", true)
+			b.add_child(tick)
 
 func _nearest_color(c: Color) -> int:
 	var best := 0

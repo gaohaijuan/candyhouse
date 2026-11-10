@@ -6,6 +6,8 @@ uniform bool enabled = false;
 uniform vec4 ref : source_color = vec4(0.94, 0.42, 0.62, 1.0);
 uniform vec4 target : source_color = vec4(0.94, 0.42, 0.62, 1.0);
 uniform float hue_range = 0.075;
+// Pale patterns are barely colourful; they lower the colourfulness floor.
+uniform float min_sat = 0.08;
 
 vec3 rgb2hsv(vec3 c) {
 	vec4 K = vec4(0.0, -1.0 / 3.0, 2.0 / 3.0, -1.0);
@@ -28,7 +30,7 @@ void fragment() {
 		vec3 t = rgb2hsv(target.rgb);
 		float dh = abs(h.x - r.x);
 		dh = min(dh, 1.0 - dh);
-		float w = (1.0 - smoothstep(hue_range * 0.6, hue_range, dh)) * smoothstep(0.08, 0.2, h.y);
+		float w = (1.0 - smoothstep(hue_range * 0.6, hue_range, dh)) * smoothstep(min_sat, min_sat + 0.12, h.y);
 		vec3 n = vec3(t.x, clamp(h.y * t.y / max(r.y, 0.05), 0.0, 1.0), clamp(h.z * t.z / max(r.z, 0.05), 0.0, 1.0));
 		c.rgb = mix(c.rgb, hsv2rgb(n), w);
 	}
