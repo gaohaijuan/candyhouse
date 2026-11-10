@@ -127,6 +127,11 @@ static func text_at(parent: Control, text: String, rect: Rect2, size: int, color
 	parent.add_child(l)
 	return l
 
+## Price in yuan: whole yuan without decimals, else one decimal (¥0.1).
+static func price_text(price) -> String:
+	var f := float(price)
+	return "¥%d" % int(f) if is_equal_approx(f, roundf(f)) else "¥%.1f" % f
+
 ## Reward counts and amounts (+100, ×1, 3300): dark brown with a cream
 ## outline and a soft shadow, the same everywhere.
 static func count_label(parent: Control, text: String, rect: Rect2, size: int) -> Label:

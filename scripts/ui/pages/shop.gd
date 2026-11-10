@@ -45,14 +45,24 @@ func _rebuild() -> void:
 		c.queue_free()
 	var t: int = app.now()
 	var y := 179.0 - TOP
-	if app.profile.iap_available("starter", t):
+	# Packs: the ¥0.1 limited pack (level 5, 3 days) and the starter pack (always).
+	for id in ["limited", "starter"]:
+		if not app.profile.iap_available(id, t):
+			continue
+		var pk: Dictionary = app.profile.iap(id)
 		var card := _card("card_wide", Rect2(37, y, 1009, 271))
-		Kit.art(card, "starter_bundle", Rect2(30, 22, 480, 238), "礼包", Color("#FDE0EA"))
-		Kit.text_at(card, "新手礼包", Rect2(370, 24, 330, 72), 60, Kit.BROWN, Kit.CREAM, 6)
-		Kit.text_at(card, "1000 金币 + 道具各 3 个", Rect2(345, 102, 380, 42), 36, Kit.BROWN)
-		_price_button(card, "¥6", "pink", Rect2(707, 124, 265, 109), func(): app.popups.purchase("starter"))
-		Kit.art(card, "ribbon_limited", Rect2(816, -8, 188, 122), "", Color("#E53935"))
-		Kit.text_at(card, "限时", Rect2(852, 14, 116, 58), 44, Kit.CREAM, Color("#B33319"), 6).rotation = 0.17
+		if id == "starter":
+			Kit.art(card, "starter_bundle", Rect2(30, 22, 480, 238), "礼包", Color("#FDE0EA"))
+		else:
+			Kit.art(card, "chest_big_open", Rect2(110, 18, 220, 232), "礼包", Color("#FDE0EA"))
+		Kit.text_at(card, "新手礼包" if id == "starter" else "限时礼包", Rect2(370, 24, 330, 72), 60, Kit.BROWN, Kit.CREAM, 6)
+		var each: int = int(pk.boosters.values()[0]) if pk.has("boosters") else 0
+		Kit.text_at(card, "%d 金币 + 道具各 %d 个" % [int(pk.coins), each], Rect2(345, 102, 380, 42), 36, Kit.BROWN)
+		var pid: String = id
+		_price_button(card, Kit.price_text(pk.price), "pink", Rect2(707, 124, 265, 109), func(): app.popups.offer(pid))
+		if pk.has("days"):
+			Kit.art(card, "ribbon_limited", Rect2(816, -8, 188, 122), "", Color("#E53935"))
+			Kit.text_at(card, "限时", Rect2(852, 14, 116, 58), 44, Kit.CREAM, Color("#B33319"), 6).rotation = 0.17
 		y += 286
 	var left: int = app.profile.ads_left("free_coins", t)
 	var free := _card("card_wide", Rect2(37, y, 1010, 178))
@@ -116,7 +126,7 @@ func _pack_card(p: Dictionary, tier: int, rect: Rect2) -> void:
 	var card := _card("card_square", rect)
 	Kit.art(card, "coin_tier_%d" % tier, Rect2(97, 12, 300, 138), "金币", Color("#FFE7A8"))
 	Kit.count_label(card, str(int(p.coins)), Rect2(0, 146, rect.size.x, 60), 54)
-	_price_button(card, "¥%d" % int(p.price), "pink", Rect2(92, 208, 310, 92), func(): app.popups.purchase(p.id))
+	_price_button(card, Kit.price_text(p.price), "pink", Rect2(92, 208, 310, 92), func(): app.popups.purchase(p.id))
 	if p.has("bonus"):
 		Kit.art(card, "bonus_tag", Rect2(331, 5, 153, 84), "", Color("#7CC84A"))
 		Kit.text_at(card, str(p.bonus), Rect2(345, 18, 128, 50), 38, Color("#FFF7E0"), Color("#3D7415"), 6)

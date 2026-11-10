@@ -134,8 +134,20 @@
     "move_out": 3,
     "shuffle": 3
    },
+   "once": true
+  },
+  {
+   "id": "limited",
+   "price": 0.1,
+   "coins": 200,
+   "boosters": {
+    "undo": 2,
+    "move_out": 2,
+    "shuffle": 2
+   },
    "once": true,
-   "days": 3
+   "days": 3,
+   "from_level": 5
   },
   {
    "id": "no_ads",

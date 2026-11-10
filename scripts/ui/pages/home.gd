@@ -58,16 +58,31 @@ func setup(owner_app, _args: Dictionary) -> void:
 	Kit.nine(mid, "tag_plate", Rect2(830, 985, 190, 67), [42, 14, 43, 14])
 	Kit.text_at(mid, "宝箱", Rect2(846, 994, 158, 48), 38, Kit.BROWN)
 	var now: int = app.now()
+	if not app.profile.start_offers(now).is_empty():
+		app.save()
 	if app.profile.iap_available("starter", now):
 		var gift := Kit.art_button(mid, "starter_gift", Rect2(27, 760, 256, 236), "礼包", Color("#F5B82E"))
-		gift.pressed.connect(func(): app.popups.starter_offer())
-		# The gift art carries a blank plate for the caption; the day count sits on a tag below.
-		# On the plate's cream face (x 55-255, centre y 940), clear of its rim.
+		gift.pressed.connect(func(): app.popups.offer("starter"))
+		# The gift art carries a blank plate for the caption, on its cream face
+		# (x 55-255, centre y 940), clear of its rim. The starter pack never expires.
 		Kit.text_at(mid, "新手礼包", Rect2(65, 914, 180, 52), 40, Kit.CREAM, Kit.OUTLINE, 9)
-		var days: int = app.profile.iap_days_left("starter", now)
-		if days > 0:
-			Kit.nine(mid, "tag_plate", Rect2(70, 985, 172, 67), [42, 14, 43, 14])
-			Kit.text_at(mid, "%d天" % days, Rect2(90, 994, 132, 48), 38, Kit.BROWN)
+	# ¥0.1 limited pack, from level 5 for 3 days: top left under the wallet,
+	# with its time left; it pops up by itself the first time.
+	if app.profile.iap_available("limited", now):
+		var lim := Kit.art_button(top, "chest_small", Rect2(40, 178, 190, 157), "限", Color("#E53935"))
+		lim.pressed.connect(func(): app.popups.offer("limited"))
+		var bob := lim.create_tween().set_loops()
+		bob.tween_property(lim, "rotation", 0.06, 0.4).from(-0.06).set_trans(Tween.TRANS_SINE)
+		bob.tween_property(lim, "rotation", -0.06, 0.4).set_trans(Tween.TRANS_SINE)
+		Kit.art(top, "ribbon_limited", Rect2(150, 165, 120, 70), "", Color("#E53935"))
+		Kit.text_at(top, Kit.price_text(app.profile.iap("limited").price), Rect2(163, 177, 92, 40), 30, Kit.CREAM, Color("#B33319"), 5).rotation = 0.17
+		Kit.nine(top, "tag_plate", Rect2(30, 330, 210, 62), [42, 14, 43, 14])
+		Kit.text_at(top, app.popups.offer_time_left("limited").trim_prefix("仅"), Rect2(44, 338, 182, 46), 32, Kit.BROWN)
+		if app.profile.offer_first_show("limited"):
+			app.save()
+			get_tree().create_timer(0.6).timeout.connect(func():
+				if is_inside_tree() and app.popups.open.is_empty():
+					app.popups.offer("limited"))
 	app.wallet_changed.connect(_refresh)
 	_refresh()
 

@@ -124,6 +124,8 @@ func apply_settings() -> void:
 
 ## Persist and tell every widget the wallet may have changed.
 func save() -> void:
+	# Level-gated offers (the ¥0.1 limited pack) start their clock on reaching their level.
+	profile.start_offers(now())
 	profile.save()
 	wallet_changed.emit()
 

@@ -124,7 +124,23 @@ func _purchases() -> void:
 	check(p.grant_purchase("starter", t) and p.booster_count("undo") == 6, "starter pack gives boosters")
 	check(not p.iap_available("starter", t), "starter pack only once")
 	var q := fresh(t)
-	check(not q.iap_available("starter", t + 4 * 86400), "starter pack expires after 3 days")
+	check(q.iap_available("starter", t + 40 * 86400), "starter pack never expires")
+	# Limited pack: opens when level 5 is reached, ¥0.1, for 3 days from then.
+	check(not q.iap_available("limited", t), "limited pack hidden before level 5")
+	q.data.unlocked = 4
+	check(q.start_offers(t).is_empty(), "limited pack still hidden at level 4")
+	q.data.unlocked = 5
+	var t5 := t + 5 * 86400
+	check(q.start_offers(t5) == ["limited"] and q.start_offers(t5 + 10).is_empty(), "limited pack opens once at level 5")
+	check(q.iap_available("limited", t5 + 2 * 86400) and q.iap_days_left("limited", t5 + 86400) == 2, "limited pack runs 3 days from level 5")
+	check(not q.iap_available("limited", t5 + 3 * 86400), "limited pack gone after 3 days")
+	check(q.offer_first_show("limited") and not q.offer_first_show("limited"), "limited pack pops up by itself once")
+	check(float(q.iap("limited").price) < 1.0, "limited pack costs under a yuan")
+	var r := fresh(t)
+	r.data.unlocked = 5
+	r.start_offers(t)
+	var c0: int = r.data.coins
+	check(r.grant_purchase("limited", t + 100) and r.data.coins == c0 + 200 and not r.iap_available("limited", t + 200), "limited pack buys once")
 	check(q.grant_purchase("no_ads", t) and q.data.no_ads, "no-ads purchase")
 
 func _persistence() -> void:

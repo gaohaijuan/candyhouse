@@ -354,6 +354,8 @@ func booster_shortage(kind: String, got: Callable) -> void:
 func _product_art(product_id: String) -> String:
 	if product_id == "starter":
 		return "starter_bundle"
+	if product_id == "limited":
+		return "chest_big_open"
 	if product_id == "no_ads":
 		return "icon_no_ads"
 	var packs: Array = app.economy.iap.filter(func(q): return str(q.id).begins_with("coins_"))
@@ -365,17 +367,27 @@ func _product_art(product_id: String) -> String:
 func _product_name(product_id: String, p: Dictionary) -> String:
 	if product_id == "starter":
 		return "新手礼包"
+	if product_id == "limited":
+		return "限时礼包"
 	if product_id == "no_ads":
 		return "去除插屏广告"
 	return "%d 金币" % int(p.get("coins", 0))
 
-## Starter pack offer from the home gift: only this pack, shown as a big
-## glowing gift with what is inside, what it is worth and the price, so it
-## reads as a bargain (producer, 2026-11-10). Worth uses the shop's own rates:
-## coins at the ¥6 pack's 100 per yuan, boosters at their coin prices.
-func starter_offer() -> void:
-	var p: Dictionary = app.profile.iap("starter")
-	if p.is_empty() or not app.profile.iap_available("starter", app.now()):
+## Pack offer from the home (starter pack, or the ¥0.1 limited pack from
+## level 5): only this pack, shown as a big glowing gift with what is inside,
+## what it is worth and the price, so it reads as a bargain (producer,
+## 2026-11-10). Worth uses the shop's own rates: coins at the ¥6 pack's 100
+## per yuan, boosters at their coin prices.
+## "仅剩2天" / "仅剩5小时" for a time-limited offer.
+func offer_time_left(id: String) -> String:
+	var left: int = app.profile.iap_seconds_left(id, app.now())
+	if left >= 86400:
+		return "仅剩%d天" % ceili(left / 86400.0)
+	return "仅剩%d小时" % maxi(1, ceili(left / 3600.0))
+
+func offer(id: String) -> void:
+	var p: Dictionary = app.profile.iap(id)
+	if p.is_empty() or not app.profile.iap_available(id, app.now()):
 		app.goto("shop")
 		return
 	var root := Control.new()
@@ -392,7 +404,7 @@ func starter_offer() -> void:
 	var glow := Kit.art(root, "glow_rays", Rect2(90, 250, 900, 900))
 	glow.pivot_offset = glow.size / 2
 	glow.create_tween().set_loops().tween_property(glow, "rotation", TAU, 14.0).from(0.0)
-	var gift := Kit.art(root, "starter_bundle", Rect2(200, 470, 680, 348), "礼包", Color("#FDE0EA"))
+	var gift := Kit.art(root, "starter_bundle", Rect2(200, 470, 680, 348), "礼包", Color("#FDE0EA")) if id == "starter" else Kit.art(root, _product_art(id), Rect2(330, 420, 420, 442), "礼包", Color("#FDE0EA"))
 	gift.pivot_offset = gift.size / 2
 	gift.scale = Vector2(0.4, 0.4)
 	var gt := gift.create_tween()
@@ -403,12 +415,12 @@ func starter_offer() -> void:
 		bob.tween_property(gift, "position:y", gift.position.y - 12, 1.0).set_trans(Tween.TRANS_SINE)
 		bob.tween_property(gift, "position:y", gift.position.y, 1.0).set_trans(Tween.TRANS_SINE))
 	Kit.art(root, "popup_ribbon", Rect2(100, 140, 877, 295))
-	var t := Kit.text_at(root, "新手礼包", Rect2(262, 183, 571, 140), 120, Kit.CREAM, Kit.OUTLINE, 16)
+	var t := Kit.text_at(root, _product_name(id, p), Rect2(262, 183, 571, 140), 120, Kit.CREAM, Kit.OUTLINE, 16)
 	t.add_theme_color_override("font_shadow_color", Color(0.39, 0.1, 0.03, 0.68))
 	t.add_theme_constant_override("shadow_offset_y", 6)
-	var days: int = app.profile.iap_days_left("starter", app.now())
-	Kit.art(root, "ribbon_limited", Rect2(770, 400, 230, 135), "", Color("#E53935"))
-	Kit.text_at(root, "仅剩%d天" % maxi(1, days), Rect2(800, 425, 175, 60), 40, Kit.CREAM, Color("#B33319"), 7).rotation = 0.17
+	if p.has("days"):
+		Kit.art(root, "ribbon_limited", Rect2(770, 400, 230, 135), "", Color("#E53935"))
+		Kit.text_at(root, offer_time_left(id), Rect2(800, 425, 175, 60), 40, Kit.CREAM, Color("#B33319"), 7).rotation = 0.17
 	var items: Array = [["coin_pile_small", "%d" % int(p.coins)]]
 	var icons := {"undo": "icon_undo", "move_out": "icon_move_out", "shuffle": "icon_shuffle"}
 	for k in p.get("boosters", {}):
@@ -431,6 +443,7 @@ func starter_offer() -> void:
 	for k in p.get("boosters", {}):
 		worth += int(p.boosters[k]) * int(app.economy.booster_price.get(k, 0)) / 100.0
 	var times := worth / float(p.price)
+	var times_text := ("%d" % int(times)) if times >= 10 else ("%.1f" % times)
 	# Worth, struck through, then the price: the bargain at a glance.
 	var was := Kit.text_at(root, "价值 ¥%d" % int(worth), Rect2(240, 1175, 300, 70), 52, Color("#FFE9EF"), Color("#7A1E3A"), 8)
 	var strike := ColorRect.new()
@@ -440,22 +453,22 @@ func starter_offer() -> void:
 	strike.rotation = -0.06
 	root.add_child(strike)
 	var deal := Kit.art(root, "bonus_tag", Rect2(560, 1168, 270, 90), "", Color("#7CC84A"))
-	Kit.text_at(root, "超值 %.1f 倍" % times, Rect2(585, 1182, 225, 60), 44, Color("#FFF7E0"), Color("#3D7415"), 7)
+	Kit.text_at(root, "超值 %s 倍" % times_text, Rect2(585, 1182, 225, 60), 44, Color("#FFF7E0"), Color("#3D7415"), 7)
 	deal.pivot_offset = deal.size / 2
 	var pulse := deal.create_tween().set_loops()
 	pulse.tween_property(deal, "scale", Vector2(1.08, 1.08), 0.5).set_trans(Tween.TRANS_SINE)
 	pulse.tween_property(deal, "scale", Vector2.ONE, 0.5).set_trans(Tween.TRANS_SINE)
 	was.modulate.a = 0.95
-	var buy := Kit.pill("仅需 ¥%d" % int(p.price), "pink", Vector2(861, 209))
+	var buy := Kit.pill("仅需 " + Kit.price_text(p.price), "pink", Vector2(861, 209))
 	buy.position = Vector2(108, 1300)
 	root.add_child(buy)
 	buy.pressed.connect(func():
 		app.sound.play("tap")
-		app.iap.buy("starter", func(success):
-			if success and app.profile.grant_purchase("starter", app.now()):
+		app.iap.buy(id, func(success):
+			if success and app.profile.grant_purchase(id, app.now()):
 				close(info)
 				app.save()
-				purchase_done("starter", p)
+				purchase_done(id, p)
 				if app.page_name == "home":
 					app.goto("home")
 			else:
@@ -478,7 +491,7 @@ func purchase(product_id: String) -> void:
 	var box := _abs_body(info, 90, 624)
 	Kit.art(box, _product_art(product_id), Rect2(Vector2(371, 266) - o, Vector2(320, 224)), "金币", Color("#FFE7A8"))
 	Kit.text_at(box, _product_name(product_id, p), Rect2(Vector2(291, 509) - o, Vector2(504, 91)), 74, Kit.BROWN, Kit.CREAM, 6)
-	Kit.text_at(box, "支付 ¥%d" % int(p.price), Rect2(Vector2(342, 610) - o, Vector2(413, 82)), 68, Kit.BROWN)
+	Kit.text_at(box, "支付 " + Kit.price_text(p.price), Rect2(Vector2(342, 610) - o, Vector2(413, 82)), 68, Kit.BROWN)
 	_pill_at(box, "取消", "cream", Rect2(Vector2(161, 714) - o, Vector2(363, 163)), func(): close(info))
 	_pill_at(box, "确认", "pink", Rect2(Vector2(546, 714) - o, Vector2(373, 163)), func():
 		close(info)
@@ -496,7 +509,7 @@ func purchase_done(product_id: String, p: Dictionary) -> void:
 	var info := _make("购买成功", false, 929.0)
 	var o := Vector2(146, 1179)
 	var box := _abs_body(info, 90, 613)
-	var art := "coin_pile_big" if p.has("coins") and product_id != "starter" else _product_art(product_id)
+	var art := "coin_pile_big" if p.has("coins") and not p.has("boosters") else _product_art(product_id)
 	Kit.art(box, art, Rect2(Vector2(238, 1169) - o, Vector2(592, 316)), "金币", Color("#FFE7A8"))
 	var what := "+%d" % int(p.coins) if p.has("coins") else "已去除插屏广告"
 	Kit.text_at(box, what, Rect2(Vector2(252, 1500) - o, Vector2(582, 105)), 90 if p.has("coins") else 66, Kit.BROWN, Kit.CREAM, 8)
@@ -775,6 +788,7 @@ func debug_open(name: String) -> void:
 		"shortage": booster_shortage("shuffle", func(): pass)
 		"purchase": purchase("coins_3300")
 		"purchase_done": purchase_done("coins_3300", app.profile.iap("coins_3300"))
-		"starter": starter_offer()
+		"starter": offer("starter")
+		"limited": offer("limited")
 		"win": win(0, 2, 30, func(): pass)
 		"lose": lose(5, "托盘满了", "再想想顺序吧", true, func(): pass, func(_w): pass)

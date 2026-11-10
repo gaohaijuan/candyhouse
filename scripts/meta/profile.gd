@@ -29,6 +29,7 @@ func _fresh(now: int) -> Dictionary:
 		"last_interstitial": 0, "levels_since_ad": 0,
 		"failures": {"level": 0, "count": 0}, "perfect_chests": [],
 		"house": {"placed": {}, "owned": [], "rewarded": []},
+		"offers": {}, "offers_seen": [],
 	}
 
 # ---------------------------------------------------------------- persistence
@@ -335,19 +336,48 @@ func iap_available(id: String, now: int) -> bool:
 		return false
 	if p.get("once", false) and data.purchases.has(id):
 		return false
-	if p.has("days"):
-		var first: int = Time.get_unix_time_from_datetime_string(data.first_day + "T00:00:00") - tz_seconds
-		if now - first > int(p.days) * 86400:
-			return false
+	if p.has("from_level") and not data.offers.has(id):
+		return false
+	if p.has("days") and now >= _offer_end(id):
+		return false
 	return true
+
+## Offers with `from_level` open when the player reaches that level and run
+## `days` from then; others with `days` run from the first day played.
+## Returns the ids that opened now.
+func start_offers(now: int) -> Array:
+	var opened: Array = []
+	for p in economy.iap:
+		if p.has("from_level") and not data.offers.has(p.id) and int(data.unlocked) >= int(p.from_level):
+			data.offers[p.id] = now
+			opened.append(p.id)
+	return opened
+
+func _offer_end(id: String) -> int:
+	var p := iap(id)
+	var start: int
+	if p.has("from_level"):
+		start = int(data.offers.get(id, 0))
+	else:
+		start = Time.get_unix_time_from_datetime_string(data.first_day + "T00:00:00") - tz_seconds
+	return start + int(p.days) * 86400
+
+## Seconds left before a time-limited offer disappears (0 if none or over).
+func iap_seconds_left(id: String, now: int) -> int:
+	if not iap(id).has("days") or not iap_available(id, now):
+		return 0
+	return maxi(0, _offer_end(id) - now)
 
 ## Whole days left before a time-limited offer disappears (0 if none).
 func iap_days_left(id: String, now: int) -> int:
-	var p := iap(id)
-	if not p.has("days"):
-		return 0
-	var first: int = Time.get_unix_time_from_datetime_string(data.first_day + "T00:00:00") - tz_seconds
-	return maxi(0, ceili((first + int(p.days) * 86400 - now) / 86400.0))
+	return ceili(iap_seconds_left(id, now) / 86400.0)
+
+## A newly opened offer pops up once by itself; returns true the first time.
+func offer_first_show(id: String) -> bool:
+	if data.offers_seen.has(id):
+		return false
+	data.offers_seen.append(id)
+	return true
 
 ## Grants a completed purchase.
 func grant_purchase(id: String, now: int) -> bool:
