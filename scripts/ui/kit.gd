@@ -341,9 +341,10 @@ static func popup(host: Control, title: String, width := 907.0, closable := fals
 		ribbon.size = rr.size
 		ribbon.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		panel.add_child(ribbon)
-	var tb: Array = pl.get("ribbon_text_box", [177, 48, 408, 112])
+	# The ribbon's flat band, between its gloss strip and its lower fold line.
+	var tb: Array = pl.get("ribbon_text_box", [177, 36, 408, 118])
 	var kk: float = rr.size.x / (rtex.get_width() if rtex else 762.0)
-	var t := label(title, 96, CREAM, OUTLINE, 14)
+	var t := label(title, 78, CREAM, OUTLINE, 11)
 	t.add_theme_color_override("font_shadow_color", Color(0.39, 0.1, 0.03, 0.68))
 	t.add_theme_constant_override("shadow_offset_y", 6)
 	shrink_to_fit(t, tb[2] * kk)
