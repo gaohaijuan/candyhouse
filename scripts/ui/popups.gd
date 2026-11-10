@@ -369,6 +369,104 @@ func _product_name(product_id: String, p: Dictionary) -> String:
 		return "去除插屏广告"
 	return "%d 金币" % int(p.get("coins", 0))
 
+## Starter pack offer from the home gift: only this pack, shown as a big
+## glowing gift with what is inside, what it is worth and the price, so it
+## reads as a bargain (producer, 2026-11-10). Worth uses the shop's own rates:
+## coins at the ¥6 pack's 100 per yuan, boosters at their coin prices.
+func starter_offer() -> void:
+	var p: Dictionary = app.profile.iap("starter")
+	if p.is_empty() or not app.profile.iap_available("starter", app.now()):
+		app.goto("shop")
+		return
+	var root := Control.new()
+	root.size = Vector2(1080, 1920)
+	root.mouse_filter = Control.MOUSE_FILTER_STOP
+	app.popup_layer.add_child(root)
+	open.append(root)
+	var info := {"root": root}
+	var dim := ColorRect.new()
+	dim.color = Color(0.133, 0.078, 0.094, 0.78)
+	dim.position = Kit.screen_rect().position
+	dim.size = Kit.screen_rect().size
+	root.add_child(dim)
+	var glow := Kit.art(root, "glow_rays", Rect2(90, 250, 900, 900))
+	glow.pivot_offset = glow.size / 2
+	glow.create_tween().set_loops().tween_property(glow, "rotation", TAU, 14.0).from(0.0)
+	var gift := Kit.art(root, "starter_bundle", Rect2(200, 470, 680, 348), "礼包", Color("#FDE0EA"))
+	gift.pivot_offset = gift.size / 2
+	gift.scale = Vector2(0.4, 0.4)
+	var gt := gift.create_tween()
+	gt.tween_property(gift, "scale", Vector2(1.05, 1.05), 0.35).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	gt.tween_property(gift, "scale", Vector2.ONE, 0.15)
+	gt.tween_callback(func():
+		var bob := gift.create_tween().set_loops()
+		bob.tween_property(gift, "position:y", gift.position.y - 12, 1.0).set_trans(Tween.TRANS_SINE)
+		bob.tween_property(gift, "position:y", gift.position.y, 1.0).set_trans(Tween.TRANS_SINE))
+	Kit.art(root, "popup_ribbon", Rect2(100, 140, 877, 295))
+	var t := Kit.text_at(root, "新手礼包", Rect2(262, 183, 571, 140), 120, Kit.CREAM, Kit.OUTLINE, 16)
+	t.add_theme_color_override("font_shadow_color", Color(0.39, 0.1, 0.03, 0.68))
+	t.add_theme_constant_override("shadow_offset_y", 6)
+	var days: int = app.profile.iap_days_left("starter", app.now())
+	Kit.art(root, "ribbon_limited", Rect2(770, 400, 230, 135), "", Color("#E53935"))
+	Kit.text_at(root, "仅剩%d天" % maxi(1, days), Rect2(800, 425, 175, 60), 40, Kit.CREAM, Color("#B33319"), 7).rotation = 0.17
+	var items: Array = [["coin_pile_small", "%d" % int(p.coins)]]
+	var icons := {"undo": "icon_undo", "move_out": "icon_move_out", "shuffle": "icon_shuffle"}
+	for k in p.get("boosters", {}):
+		items.append([icons.get(k, "icon_shuffle"), "×%d" % int(p.boosters[k])])
+	var cw := 230.0
+	var gap := 18.0
+	var x0 := (1080 - items.size() * cw - (items.size() - 1) * gap) / 2
+	for i in items.size():
+		var card := Control.new()
+		card.position = Vector2(x0 + i * (cw + gap), 880)
+		card.size = Vector2(cw, 265)
+		root.add_child(card)
+		Kit.art(card, "reward_card", Rect2(Vector2.ZERO, card.size), "", Color("#FFF4DE"))
+		Kit.art(card, items[i][0], Rect2(35, 18, 160, 130))
+		Kit.count_label(card, items[i][1], Rect2(10, 146, cw - 20, 56), 54)
+		card.pivot_offset = card.size / 2
+		card.scale = Vector2.ZERO
+		card.create_tween().tween_property(card, "scale", Vector2.ONE, 0.3).set_delay(0.3 + i * 0.08).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	var worth := int(p.coins) / 100.0
+	for k in p.get("boosters", {}):
+		worth += int(p.boosters[k]) * int(app.economy.booster_price.get(k, 0)) / 100.0
+	var times := worth / float(p.price)
+	# Worth, struck through, then the price: the bargain at a glance.
+	var was := Kit.text_at(root, "价值 ¥%d" % int(worth), Rect2(240, 1175, 300, 70), 52, Color("#FFE9EF"), Color("#7A1E3A"), 8)
+	var strike := ColorRect.new()
+	strike.color = Color("#FF5C7A")
+	strike.position = Vector2(270, 1207)
+	strike.size = Vector2(240, 7)
+	strike.rotation = -0.06
+	root.add_child(strike)
+	var deal := Kit.art(root, "bonus_tag", Rect2(560, 1168, 270, 90), "", Color("#7CC84A"))
+	Kit.text_at(root, "超值 %.1f 倍" % times, Rect2(585, 1182, 225, 60), 44, Color("#FFF7E0"), Color("#3D7415"), 7)
+	deal.pivot_offset = deal.size / 2
+	var pulse := deal.create_tween().set_loops()
+	pulse.tween_property(deal, "scale", Vector2(1.08, 1.08), 0.5).set_trans(Tween.TRANS_SINE)
+	pulse.tween_property(deal, "scale", Vector2.ONE, 0.5).set_trans(Tween.TRANS_SINE)
+	was.modulate.a = 0.95
+	var buy := Kit.pill("仅需 ¥%d" % int(p.price), "pink", Vector2(861, 209))
+	buy.position = Vector2(108, 1300)
+	root.add_child(buy)
+	buy.pressed.connect(func():
+		app.sound.play("tap")
+		app.iap.buy("starter", func(success):
+			if success and app.profile.grant_purchase("starter", app.now()):
+				close(info)
+				app.save()
+				purchase_done("starter", p)
+				if app.page_name == "home":
+					app.goto("home")
+			else:
+				app.toast("购买未完成")))
+	var later := Kit.text_at(root, "以后再说", Rect2(390, 1540, 300, 80), 50, Color("#FFF1E6"), Color("#5A1A2A"), 8)
+	var later_hit := Kit.hit_area(root, Rect2(390, 1530, 300, 100))
+	later_hit.pressed.connect(func(): close(info))
+	later.modulate.a = 0.9
+	var x := Kit.art_button(root, "button_close", Rect2(900, 150, 120, 123), "×")
+	x.pressed.connect(func(): close(info))
+
 func purchase(product_id: String) -> void:
 	var p: Dictionary = app.profile.iap(product_id)
 	if p.is_empty() or not app.profile.iap_available(product_id, app.now()):
@@ -677,5 +775,6 @@ func debug_open(name: String) -> void:
 		"shortage": booster_shortage("shuffle", func(): pass)
 		"purchase": purchase("coins_3300")
 		"purchase_done": purchase_done("coins_3300", app.profile.iap("coins_3300"))
+		"starter": starter_offer()
 		"win": win(0, 2, 30, func(): pass)
 		"lose": lose(5, "托盘满了", "再想想顺序吧", true, func(): pass, func(_w): pass)

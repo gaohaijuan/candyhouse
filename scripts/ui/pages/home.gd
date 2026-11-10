@@ -60,7 +60,7 @@ func setup(owner_app, _args: Dictionary) -> void:
 	var now: int = app.now()
 	if app.profile.iap_available("starter", now):
 		var gift := Kit.art_button(mid, "starter_gift", Rect2(27, 760, 256, 236), "礼包", Color("#F5B82E"))
-		gift.pressed.connect(func(): app.goto("shop"))
+		gift.pressed.connect(func(): app.popups.starter_offer())
 		# The gift art carries a blank plate for the caption; the day count sits on a tag below.
 		# On the plate's cream face (x 55-255, centre y 940), clear of its rim.
 		Kit.text_at(mid, "新手礼包", Rect2(65, 914, 180, 52), 40, Kit.CREAM, Kit.OUTLINE, 9)
