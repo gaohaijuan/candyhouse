@@ -530,18 +530,19 @@ func checkin() -> void:
 		Kit.text_at(cell, "第%d天" % (i + 1), Rect2(0, 14, w, 52), 50, ink)
 		var amount := ""
 		if i == 6:
-			Kit.art(cell, "chest_small", Rect2(w / 2 - 138, 72, 275, 177), "宝箱", Color("#F8BBD0"))
+			Kit.art(cell, "chest_small", Rect2(w / 2 - 124, 66, 248, 160), "宝箱", Color("#F8BBD0"))
 			amount = "%d+道具" % int(r.get("coins", 0))
-			Kit.text_at(cell, amount, Rect2(w / 2 - 200, 254, 400, 60), 58, ink)
+			Kit.count_label(cell, amount, Rect2(w / 2 - 200, 230, 400, 60), 58)
 		else:
 			if r.has("coins"):
-				Kit.art(cell, "coin_small", Rect2(w / 2 - 62, 72, 124, 121), "金", Color("#F5B82E"))
+				Kit.art(cell, "coin_small", Rect2(w / 2 - 56, 64, 112, 109), "金", Color("#F5B82E"))
 				amount = str(int(r.coins))
 			else:
 				var k: String = r.boosters.keys()[0]
-				Kit.art(cell, icons.get(k, "icon_shuffle"), Rect2(w / 2 - 76, 80, 151, 104), "道具", Color("#C8E6C9"))
+				Kit.art(cell, icons.get(k, "icon_shuffle"), Rect2(w / 2 - 70, 70, 140, 96), "道具", Color("#C8E6C9"))
 				amount = "×%d" % int(r.boosters[k])
-			Kit.text_at(cell, amount, Rect2(0, 196, w, 54), 52, ink)
+			# Kept clear of the cell's rounded bottom edge (UI audit 2026-11-10).
+			Kit.count_label(cell, amount, Rect2(0, 174, w, 56), 52)
 		if claimed:
 			Kit.art(cell, "check_stamp", Rect2(w / 2 + 34, 135, 72, 71), "✔", Color("#7CC84A"))
 	if today >= 0:
@@ -626,9 +627,7 @@ func reward(r: Dictionary, then := Callable(), title := "恭喜获得") -> void:
 		Kit.art(card, "reward_card", Rect2(Vector2.ZERO, card.size), "", Color("#FFF4DE"))
 		Kit.art(card, it[0], it[2])
 		# The card's face ends at y 277 (its lip below); the count sits on the face.
-		var n := Kit.text_at(card, it[1], Rect2(20, 192, cw - 40, 74), 66, Color("#672709"), Color("#FFF7DD"), 10)
-		n.add_theme_color_override("font_shadow_color", Color(0.4, 0.15, 0.05, 0.3))
-		n.add_theme_constant_override("shadow_offset_y", 4)
+		Kit.count_label(card, it[1], Rect2(20, 192, cw - 40, 74), 66)
 		card.pivot_offset = card.size / 2
 		card.scale = Vector2.ZERO
 		card.create_tween().tween_property(card, "scale", Vector2(fit, fit), 0.3).set_delay(0.25 + i * 0.1).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)

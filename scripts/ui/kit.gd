@@ -127,6 +127,14 @@ static func text_at(parent: Control, text: String, rect: Rect2, size: int, color
 	parent.add_child(l)
 	return l
 
+## Reward counts and amounts (+100, ×1, 3300): dark brown with a cream
+## outline and a soft shadow, the same everywhere.
+static func count_label(parent: Control, text: String, rect: Rect2, size: int) -> Label:
+	var l := text_at(parent, text, rect, size, Color("#672709"), Color("#FFF7DD"), 10)
+	l.add_theme_color_override("font_shadow_color", Color(0.4, 0.15, 0.05, 0.3))
+	l.add_theme_constant_override("shadow_offset_y", 4)
+	return l
+
 ## Invisible tap area over art (keeps the art's own look, adds press feedback).
 static func art_button(parent: Control, name: String, rect: Rect2, glyph := "", ring := PINK) -> TextureButton:
 	var b := round_button(name, minf(rect.size.x, rect.size.y), glyph, ring)

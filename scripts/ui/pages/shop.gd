@@ -115,7 +115,7 @@ func _price_button(card: Control, text: String, style: String, rect: Rect2, acti
 func _pack_card(p: Dictionary, tier: int, rect: Rect2) -> void:
 	var card := _card("card_square", rect)
 	Kit.art(card, "coin_tier_%d" % tier, Rect2(97, 12, 300, 138), "金币", Color("#FFE7A8"))
-	Kit.text_at(card, str(int(p.coins)), Rect2(0, 146, rect.size.x, 60), 54, Kit.BROWN, Kit.CREAM, 6)
+	Kit.count_label(card, str(int(p.coins)), Rect2(0, 146, rect.size.x, 60), 54)
 	_price_button(card, "¥%d" % int(p.price), "pink", Rect2(92, 208, 310, 92), func(): app.popups.purchase(p.id))
 	if p.has("bonus"):
 		Kit.art(card, "bonus_tag", Rect2(331, 5, 153, 84), "", Color("#7CC84A"))
