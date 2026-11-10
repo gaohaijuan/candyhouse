@@ -54,6 +54,9 @@ static func _layout() -> Dictionary:
 static func tex(name: String) -> Texture2D:
 	return Art.ui(name)
 
+static func words(name: String) -> Texture2D:
+	return Art.ui_words(name)
+
 ## Text in the game's rounded font. `outline` is drawn only when size > 0.
 static func label(text: String, size: int, color := BROWN, outline := Color.TRANSPARENT, outline_size := 0) -> Label:
 	var l := Label.new()

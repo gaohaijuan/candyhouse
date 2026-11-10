@@ -67,7 +67,7 @@ func setup(owner_app, _args: Dictionary) -> void:
 	if shown != "":
 		var pk: Dictionary = app.profile.iap(shown)
 		var art := "icon_pack_" + shown
-		var own_art := Kit.tex(art) != null
+		var own_art := Kit.words(art) != null
 		if not own_art:
 			art = "starter_gift" if shown == "starter" else "chest_small"
 		var gift := Kit.art_button(mid, art, Rect2(27, 760, 256, 236), "礼包", Color("#F5B82E"))
@@ -76,8 +76,11 @@ func setup(owner_app, _args: Dictionary) -> void:
 		var bob := gift.create_tween().set_loops()
 		bob.tween_property(gift, "scale", Vector2(1.05, 1.05), 0.6).set_trans(Tween.TRANS_SINE)
 		bob.tween_property(gift, "scale", Vector2.ONE, 0.6).set_trans(Tween.TRANS_SINE)
-		# The icon carries a blank cream plate (x 55-255, centre y 940) for the name.
-		Kit.text_at(mid, String(pk.get("name", "礼包")), Rect2(65, 914, 180, 52), 40, Kit.CREAM, Kit.OUTLINE, 9)
+		# The icon carries a blank cream plate for the name: on the set A icons
+		# (fitted 256 x 218 from y 769) it sits at x 55-251, centre y 962;
+		# the older gift art had it at centre y 940.
+		var plate := Rect2(55, 937, 196, 50) if own_art else Rect2(65, 914, 180, 52)
+		Kit.text_at(mid, String(pk.get("name", "礼包")), plate, 38, Kit.CREAM, Kit.OUTLINE, 9)
 		if not own_art:
 			if pk.has("tag"):
 				Common.deal_sticker(mid, String(pk.tag), Vector2(215, 770), 1.25)

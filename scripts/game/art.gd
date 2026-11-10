@@ -48,4 +48,12 @@ static func ui(name: String) -> Texture2D:
 			return own
 	return texture("res://assets/ui/%s.png" % name)
 
+## Art with words in it (a "1折" sticker): only the current language's own
+## version, the Chinese original or its <name>_<code> twin; null when that
+## language has none, so callers draw the words in the game's font instead.
+static func ui_words(name: String) -> Texture2D:
+	if Lang.code == "" or Lang.is_zh():
+		return texture("res://assets/ui/%s.png" % name)
+	return texture("res://assets/ui/%s_%s.png" % [name, Lang.code])
+
 static var font: Font = load("res://assets/fonts/LXGW975YuanSC-700W.ttf")

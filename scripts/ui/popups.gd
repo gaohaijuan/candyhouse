@@ -388,6 +388,13 @@ func _product_name(product_id: String, p: Dictionary) -> String:
 ## what it is worth and the price, so it reads as a bargain (producer,
 ## 2026-11-10). Worth uses the shop's own rates: coins at the ¥6 pack's 100
 ## per yuan, boosters at their coin prices.
+## Slow breathing scale that draws the eye to a deal sticker or plate.
+func _pulse(c: Control) -> void:
+	c.pivot_offset = c.size / 2
+	var tw := c.create_tween().set_loops()
+	tw.tween_property(c, "scale", Vector2(1.08, 1.08), 0.5).set_trans(Tween.TRANS_SINE)
+	tw.tween_property(c, "scale", Vector2.ONE, 0.5).set_trans(Tween.TRANS_SINE)
+
 ## "仅剩2天" / "仅剩5小时" for a time-limited offer ("剩2天" when short).
 func offer_time_left(id: String, short := false) -> String:
 	var left: int = app.profile.iap_seconds_left(id, app.now())
@@ -429,8 +436,15 @@ func offer(id: String) -> void:
 	t.add_theme_color_override("font_shadow_color", Color(0.39, 0.1, 0.03, 0.68))
 	t.add_theme_constant_override("shadow_offset_y", 6)
 	if p.has("days"):
-		Kit.art(root, "ribbon_limited", Rect2(770, 400, 230, 135), "", Color("#E53935"))
-		Kit.text_at(root, offer_time_left(id), Rect2(800, 425, 175, 60), 40, Kit.CREAM, Color("#B33319"), 7).rotation = 0.17
+		if Kit.tex("badge_timer"):
+			# Alarm-clock plate (set A); the words go in its blank, measured on the art.
+			Kit.art(root, "badge_timer", Rect2(700, 395, 368, 138))
+			Kit.text_at(root, offer_time_left(id), Rect2(826, 452, 201, 47), 42, Kit.CREAM, Color("#8E1E12"), 7)
+		else:
+			Kit.art(root, "ribbon_limited", Rect2(770, 400, 230, 135), "", Color("#E53935"))
+			Kit.text_at(root, offer_time_left(id), Rect2(800, 425, 175, 60), 40, Kit.CREAM, Color("#B33319"), 7).rotation = 0.17
+		if Kit.words("sticker_price_limited"):
+			_pulse(Kit.art(root, "sticker_price_limited", Rect2(40, 470, 270, 222)))
 	var items: Array = [["coin_pile_small", "%d" % int(p.coins)]]
 	var icons := {"undo": "icon_undo", "move_out": "icon_move_out", "shuffle": "icon_shuffle", "magnet": "icon_magnet", "extra_slot": "icon_extra_slot"}
 	for k in p.get("boosters", {}):
@@ -470,16 +484,20 @@ func offer(id: String) -> void:
 	strike.size = Vector2(240, 7)
 	strike.rotation = -0.06
 	root.add_child(strike)
-	if p.has("tag"):
-		# A pack's own deal tag ("1折") as a big red sticker.
+	if p.has("tag") and Kit.words("sticker_1zhe"):
+		# A pack's own deal tag as the big exploding-star sticker (set A).
+		_pulse(Kit.art(root, "sticker_1zhe", Rect2(585, 1100 + drop, 250, 215)))
+	elif p.has("tag"):
 		Common.deal_sticker(root, String(p.tag), Vector2(700, 1205 + drop), 1.35)
+	elif Kit.tex("badge_value"):
+		# Big green value plate (set A) with the words in its measured blank.
+		var plate := Kit.art(root, "badge_value", Rect2(545, 1145 + drop, 400, 148))
+		Kit.text_at(plate, Lang.t("超值 %s 倍") % times_text, Rect2(54, 44, 292, 55), 48, Color("#FFF7E0"), Color("#3D7415"), 8)
+		_pulse(plate)
 	else:
 		var deal := Kit.art(root, "bonus_tag", Rect2(560, 1168 + drop, 270, 90), "", Color("#7CC84A"))
 		Kit.text_at(root, Lang.t("超值 %s 倍") % times_text, Rect2(585, 1182 + drop, 225, 60), 44, Color("#FFF7E0"), Color("#3D7415"), 7)
-		deal.pivot_offset = deal.size / 2
-		var pulse := deal.create_tween().set_loops()
-		pulse.tween_property(deal, "scale", Vector2(1.08, 1.08), 0.5).set_trans(Tween.TRANS_SINE)
-		pulse.tween_property(deal, "scale", Vector2.ONE, 0.5).set_trans(Tween.TRANS_SINE)
+		_pulse(deal)
 	was.modulate.a = 0.95
 	var buy := Kit.pill(Lang.t("仅需 %s") % Kit.price_text(p), "pink", Vector2(861, 209))
 	buy.position = Vector2(108, 1300 + drop)
