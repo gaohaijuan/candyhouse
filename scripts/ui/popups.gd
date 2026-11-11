@@ -12,8 +12,6 @@ var open: Array = []    # popup roots, top last
 func _init(owner_app) -> void:
 	app = owner_app
 
-var open_language := Callable()   # the settings popup's drop-down (debug shots)
-
 func _make(title: String, closable := false, width := 907.0) -> Dictionary:
 	var info := Kit.popup(app.popup_layer, title, width, closable)
 	open.append(info.root)
@@ -152,10 +150,12 @@ func settings() -> void:
 	lang_hit.flat = true
 	lang_hit.focus_mode = Control.FOCUS_NONE
 	lang_hit.size = Vector2(777, 120)
-	open_language = func(): _language_list(info, lang_row)
+	# Kept on the popup's node (freed with it) for debug shots; a field here
+	# would tie this object to itself and leak at exit.
+	info.root.set_meta("open_language", func(): _language_list(info, lang_row))
 	lang_hit.pressed.connect(func():
 		app.sound.play("tap")
-		open_language.call())
+		_language_list(info, lang_row))
 	lang_row.add_child(lang_hit)
 	if Kit.tex("icon_language"):
 		Kit.art(lang_row, "icon_language", Rect2(30, 12, 150, 96))
@@ -905,7 +905,7 @@ func debug_open(name: String) -> void:
 			settings()
 			await app.get_tree().process_frame
 			await app.get_tree().process_frame
-			open_language.call()
+			(open.back() as Control).get_meta("open_language").call()
 		"privacy": privacy(func(): pass)
 		"lives": lives()
 		"checkin": checkin()
