@@ -20,8 +20,14 @@ static var code := ""
 static var _fonts := {}
 static var _own: Array[RegEx] = []     # this language's texts as patterns (checks)
 
-## Loads the tables once and switches to `lang` (unknown codes fall back to
-## the default).
+## The device's language when the game has it (any Chinese reads Simplified),
+## else English.
+static func system() -> String:
+	var l := OS.get_locale_language()
+	return l if l in ["zh", "ja", "ko"] else DEFAULT
+
+## Loads the tables once and switches to `lang`: "" follows the device,
+## unknown codes fall back to the default.
 static func use(lang: String) -> void:
 	if code == "":
 		for l in LANGS:
@@ -36,6 +42,8 @@ static func use(lang: String) -> void:
 			for k in table:
 				tr.add_message(k, table[k])
 			TranslationServer.add_translation(tr)
+	if lang == "":
+		lang = system()
 	code = lang if LANGS.any(func(l): return l[0] == lang) else DEFAULT
 	TranslationServer.set_locale(code)
 
@@ -84,10 +92,3 @@ static func name_of(lang: String) -> String:
 		if l[0] == lang:
 			return l[1]
 	return lang
-
-## The language after the current one (the settings row cycles through them).
-static func next() -> String:
-	for i in LANGS.size():
-		if LANGS[i][0] == code:
-			return LANGS[(i + 1) % LANGS.size()][0]
-	return DEFAULT

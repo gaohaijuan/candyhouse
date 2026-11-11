@@ -228,7 +228,9 @@ func _house() -> void:
 
 func _language() -> void:
 	var p := fresh()
-	check(p.data.settings.lang == "en", "new players start in English")
+	check(p.data.settings.lang == "" and not p.data.settings.lang_chosen, "new players follow the device language")
+	Lang.use("")
+	check(Lang.code == Lang.system() and Lang.system() in ["en", "zh", "ja", "ko"], "empty language means the device's")
 	var pack: Dictionary = {}
 	for it in economy.iap:
 		if it.id == "starter":

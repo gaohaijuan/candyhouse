@@ -12,6 +12,8 @@ var open: Array = []    # popup roots, top last
 func _init(owner_app) -> void:
 	app = owner_app
 
+var open_language := Callable()   # the settings popup's drop-down (debug shots)
+
 func _make(title: String, closable := false, width := 907.0) -> Dictionary:
 	var info := Kit.popup(app.popup_layer, title, width, closable)
 	open.append(info.root)
@@ -143,27 +145,28 @@ func settings() -> void:
 		row.add_child(toggle)
 		body.add_child(row)
 	# Language: a plain settings row, the current language (in its own name)
-	# and an arrow on the right like the link rows; a tap anywhere on the row
-	# moves on to the next language and reopens settings in it.
+	# and a down arrow on the right; a tap opens a drop-down list of the
+	# languages under the row (producer 2026-11-11).
 	var lang_row := _fixed_row(120)
 	var lang_hit := Button.new()
 	lang_hit.flat = true
 	lang_hit.focus_mode = Control.FOCUS_NONE
 	lang_hit.size = Vector2(777, 120)
+	open_language = func(): _language_list(info, lang_row)
 	lang_hit.pressed.connect(func():
 		app.sound.play("tap")
-		close(info)
-		app.set_language(Lang.next())
-		settings())
+		open_language.call())
 	lang_row.add_child(lang_hit)
 	if Kit.tex("icon_language"):
 		Kit.art(lang_row, "icon_language", Rect2(30, 12, 150, 96))
 	Kit.text_at(lang_row, "语言", Rect2(205, 25, 260, 70), 56, Kit.BROWN).horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
 	Kit.text_at(lang_row, Lang.name_of(Lang.code), Rect2(440, 28, 240, 64), 48, Kit.BROWN).horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	if Kit.tex("row_arrow"):
-		Kit.art(lang_row, "row_arrow", Rect2(694, 35, 31, 50))
+		var arrow := Kit.art(lang_row, "row_arrow", Rect2(694, 35, 31, 50))
+		arrow.pivot_offset = arrow.size / 2
+		arrow.rotation_degrees = 90
 	else:
-		Kit.text_at(lang_row, "›", Rect2(680, 28, 50, 60), 60, Kit.BROWN)
+		Kit.text_at(lang_row, "⌄", Rect2(680, 20, 50, 60), 60, Kit.BROWN)
 	body.add_child(lang_row)
 	body.add_child(_fixed_row(14))
 	var links := [["用户协议", "用户协议内容将在正式版提供。"], ["隐私政策", "隐私政策内容将在正式版提供。"], ["联系我们", "客服邮箱将在正式版提供。"], ["恢复购买", ""]]
@@ -195,6 +198,72 @@ func settings() -> void:
 	Kit.finish_popup(info, 50.0)
 
 ## A fixed-height row for absolute layouts inside a popup body.
+## The language drop-down: a cream card with a pink rim under the language
+## row's right side, one line per language in its own name, a tick on the
+## current one. A tap outside closes it; a pick switches and reopens settings.
+func _language_list(info: Dictionary, row: Control) -> void:
+	var root: Control = info.root
+	var shield := Button.new()
+	shield.flat = true
+	shield.focus_mode = Control.FOCUS_NONE
+	shield.position = Vector2(-2000, -2000)
+	shield.size = Vector2(5000, 6000)
+	root.add_child(shield)
+	var line_h := 104.0
+	var card := Panel.new()
+	var sb := StyleBoxFlat.new()
+	sb.bg_color = Color("#FFF6E5")
+	sb.border_color = Color("#F06292")
+	sb.set_border_width_all(6)
+	sb.set_corner_radius_all(34)
+	sb.shadow_color = Color(0.45, 0.1, 0.2, 0.35)
+	sb.shadow_size = 18
+	sb.shadow_offset = Vector2(0, 8)
+	card.add_theme_stylebox_override("panel", sb)
+	card.size = Vector2(420, line_h * Lang.LANGS.size() + 24)
+	var at := row.get_global_rect().position - root.get_global_rect().position
+	card.position = at + Vector2(row.size.x - card.size.x - 36, row.size.y - 6)
+	root.add_child(card)
+	shield.pressed.connect(func():
+		shield.queue_free()
+		card.queue_free())
+	for i in Lang.LANGS.size():
+		var lc: String = Lang.LANGS[i][0]
+		var hit := Button.new()
+		hit.flat = true
+		hit.focus_mode = Control.FOCUS_NONE
+		hit.position = Vector2(12, 12 + i * line_h)
+		hit.size = Vector2(card.size.x - 24, line_h)
+		card.add_child(hit)
+		if lc == Lang.code:
+			var band := Panel.new()
+			var hb := StyleBoxFlat.new()
+			hb.bg_color = Color("#FCE4EC")
+			hb.set_corner_radius_all(24)
+			band.add_theme_stylebox_override("panel", hb)
+			band.mouse_filter = Control.MOUSE_FILTER_IGNORE
+			band.position = Vector2(6, 6)
+			band.size = hit.size - Vector2(12, 12)
+			hit.add_child(band)
+			var tick := Kit.text_at(hit, "✓", Rect2(hit.size.x - 92, 14, 70, 76), 56, Color("#E0527E"))
+			tick.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		var name_l := Kit.text_at(hit, String(Lang.LANGS[i][1]), Rect2(36, 16, hit.size.x - 140, 72), 50, Kit.BROWN)
+		name_l.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
+		name_l.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		if i > 0:
+			var sep := ColorRect.new()
+			sep.color = Color("#F3C6D3")
+			sep.position = Vector2(30, 0)
+			sep.size = Vector2(hit.size.x - 60, 2)
+			sep.mouse_filter = Control.MOUSE_FILTER_IGNORE
+			hit.add_child(sep)
+		hit.pressed.connect(func():
+			app.sound.play("tap")
+			close(info)
+			if lc != Lang.code or not bool(app.profile.data.settings.get("lang_chosen", false)):
+				app.set_language(lc)
+			settings())
+
 func _fixed_row(h: float) -> Control:
 	var c := Control.new()
 	c.custom_minimum_size = Vector2(777, h)
@@ -832,6 +901,11 @@ func reward(r: Dictionary, then := Callable(), title := "恭喜获得") -> void:
 func debug_open(name: String) -> void:
 	match name:
 		"settings": settings()
+		"language":
+			settings()
+			await app.get_tree().process_frame
+			await app.get_tree().process_frame
+			open_language.call()
 		"privacy": privacy(func(): pass)
 		"lives": lives()
 		"checkin": checkin()

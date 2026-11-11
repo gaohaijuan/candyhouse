@@ -137,6 +137,7 @@ func save() -> void:
 ## are rebuilt for the composed ones (a level in play is left running).
 func set_language(lang: String) -> void:
 	profile.data.settings.lang = lang
+	profile.data.settings.lang_chosen = true
 	Lang.use(lang)
 	theme.default_font = Art.font
 	save()
