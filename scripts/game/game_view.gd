@@ -1736,9 +1736,9 @@ func _open_popup(title: String, subtitle: String, buttons: Array, stars := -1, b
 		y += d + float(pl.block_gap)
 	if subtitle != "":
 		var st := Label.new()
-		st.text = subtitle
 		_apply_text_style(st, _text_style("popup_subtitle"))
-		var lines := subtitle.count("\n") + 1
+		st.text = _balance_lines(tr(subtitle), st, panel_w - 160)
+		var lines := st.text.count("\n") + 1
 		var lh: float = pl.subtitle_line
 		st.size = Vector2(panel_w - 160, lh * lines)
 		st.position = Vector2(80, y)
@@ -1816,6 +1816,26 @@ func _pill_button(label: String, style: String, sz: Vector2) -> BaseButton:
 	return b
 
 ## Reduce a label's font size until its text fits its box.
+## A one-line text too wide for `width` is split in two near the middle
+## (at a space, or between CJK characters but never before punctuation),
+## so it keeps its size instead of shrinking.
+func _balance_lines(text: String, l: Label, width: float) -> String:
+	if "\n" in text:
+		return text
+	var fs := l.get_theme_font_size("font_size")
+	if l.get_theme_font("font").get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1, fs).x <= width:
+		return text
+	var mid := text.length() / 2
+	if " " in text:
+		var best := -1
+		for i in text.length():
+			if text[i] == " " and (best < 0 or absi(i - mid) < absi(best - mid)):
+				best = i
+		return text.substr(0, best) + "\n" + text.substr(best + 1)
+	while mid < text.length() - 1 and text[mid] in "，。、！？；：…）」』,.!?":
+		mid += 1
+	return text.substr(0, mid) + "\n" + text.substr(mid)
+
 func _shrink_to_fit(l: Label) -> void:
 	var fs := l.get_theme_font_size("font_size")
 	var font := l.get_theme_font("font")

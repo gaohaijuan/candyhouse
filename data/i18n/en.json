@@ -235,11 +235,11 @@
  "神秘方块": "Mystery Tiles",
  "问号方块里的甜点看不见\n拿进托盘时才会揭晓": "? tiles hide their dessert\nuntil they reach the tray",
  "冰封方块": "Frozen Tiles",
- "冰上的数字是还要消除的次数\n每消除一组,冰就融化一点": "Frozen tiles need matches to thaw.\nEvery match melts the ice by 1",
+ "冰上的数字是还要消除的次数\n每消除一组,冰就融化一点": "The number is matches left\nEach match melts the ice",
  "甜点盒": "Dessert Boxes",
  "两侧的甜点盒一次只能拿最上面一块": "Only the top tile of a box\ncan be taken",
  "糖果锁": "Candy Locks",
- "带锁的方块暂时不能拿\n消除带钥匙的那组甜点,锁就会打开": "Locked tiles can't be taken.\nMatch the key's set to unlock",
+ "带锁的方块暂时不能拿\n消除带钥匙的甜点就能开锁": "Locked tiles can't be taken\nMatch the key to unlock",
  "生日蜡烛": "Candles",
  "蜡烛上的数字是剩余步数\n烧完之前一定要把它拿走": "The number is moves left.\nTake the candle in time!",
  "免费": "Free"

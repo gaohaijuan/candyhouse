@@ -305,7 +305,9 @@ static func ribbon_title(parent: Control, text: String, rect: Rect2) -> Label:
 	var l := label(text, fs, CREAM, OUTLINE, maxi(6, int(fs * 0.14)))
 	l.add_theme_color_override("font_shadow_color", Color(0.39, 0.1, 0.03, 0.68))
 	l.add_theme_constant_override("shadow_offset_y", maxi(3, int(fs * 0.07)))
-	shrink_to_fit(l, band.size.x * 0.86)
+	# Long titles may run onto the ribbon's front face beyond the flat band
+	# (face is art x 120..645 at band height) before the letters shrink.
+	shrink_to_fit(l, band.size.x * 1.1)
 	# Centred on the ink, not the line box: the line box sits the letters
 	# high, Chinese, Japanese and Korean ones higher still (measured).
 	var ink := l.get_theme_font_size("font_size")
