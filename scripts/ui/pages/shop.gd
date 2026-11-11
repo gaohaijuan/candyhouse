@@ -33,14 +33,14 @@ func setup(owner_app, _args: Dictionary) -> void:
 	Kit.art(top, "popup_ribbon", Rect2(283, 13, 505, 152))
 	Kit.ribbon_title(top, "商店", Rect2(283, 13, 505, 152))
 	Kit.art(top, "coin_pill", Rect2(792, 36, 272, 92))
-	balance = Kit.text_at(top, "", Rect2(868, 57, 135, 50), 42, Kit.BROWN)
+	balance = Kit.text_at(top, "", Kit.pill_text_rect("coin_pill", Rect2(792, 36, 272, 92)), 42, Kit.BROWN)
 	app.wallet_changed.connect(_rebuild)
 	_rebuild()
 
 func _rebuild() -> void:
 	if not is_instance_valid(content):
 		return
-	balance.text = str(app.profile.data.coins)
+	Kit.set_fit(balance, str(app.profile.data.coins), 42)
 	var keep: int = scroll.scroll_vertical
 	for c in content.get_children():
 		c.queue_free()

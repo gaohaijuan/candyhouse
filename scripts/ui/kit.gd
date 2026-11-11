@@ -332,6 +332,22 @@ static func _press_feedback(b: BaseButton) -> void:
 
 ## Shrinks the font so the widest line fits `max_w` (default: the label's
 ## width; pass it explicitly when the text may already have widened the label).
+## Where the number goes on the coin / life pill art (594 x 168): the cream
+## between the icon and the "+", inset 12 px (measured 2026-11-11; the coin
+## pill's cream runs x 157-462, the life pill's 177-461).
+const PILL_TEXT := {"coin_pill": Rect2(169, 40, 281, 88), "life_pill": Rect2(189, 40, 260, 88)}
+
+static func pill_text_rect(art: String, rect: Rect2) -> Rect2:
+	var k := rect.size / Vector2(594, 168)
+	var box: Rect2 = PILL_TEXT.get(art, PILL_TEXT.coin_pill)
+	return Rect2(rect.position + box.position * k, box.size * k)
+
+## Sets a label's text at its base size, shrinking it to its own width.
+static func set_fit(l: Label, text: String, base: int) -> void:
+	l.text = text
+	l.add_theme_font_size_override("font_size", base)
+	shrink_to_fit(l, l.size.x)
+
 static func shrink_to_fit(l: Label, max_w := 0.0) -> void:
 	var w := max_w if max_w > 0.0 else l.size.x
 	var fs := l.get_theme_font_size("font_size")
@@ -360,10 +376,11 @@ static func ribbon_title(parent: Control, text: String, rect: Rect2) -> Label:
 	# Long titles may run onto the ribbon's front face beyond the flat band
 	# (face is art x 120..645 at band height) before the letters shrink.
 	shrink_to_fit(l, band.size.x * 1.1)
-	# Centred on the ink, not the line box: the line box sits the letters
-	# high, Chinese, Japanese and Korean ones higher still (measured).
+	# Centred on the ink, not the line box (re-measured 2026-11-11 after the
+	# producer saw titles sitting low: the glyph middle lands 0.16 of the
+	# size below the band's middle with the old 0.11 / 0.22 nudges).
 	var ink := l.get_theme_font_size("font_size")
-	l.position = band.position + Vector2(0, ink * (0.11 if Lang.code == "en" else 0.22))
+	l.position = band.position + Vector2(0, ink * (-0.04 if Lang.code == "en" else 0.06))
 	l.size = band.size
 	parent.add_child(l)
 	return l

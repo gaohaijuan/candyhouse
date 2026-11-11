@@ -15,9 +15,9 @@ func setup(owner_app, with_lives := true) -> void:
 	show_lives = with_lives
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 	# Rects measured from the home mockup (M3_B).
-	coin_label = _pill(Rect2(46, 54, 393, 117), Rect2(170, 80, 186, 66), "coin_pill", "金", Color("#F5B82E"), func(): app.goto("shop"))
+	coin_label = _pill(Rect2(46, 54, 393, 117), Kit.pill_text_rect("coin_pill", Rect2(46, 54, 393, 117)), "coin_pill", "金", Color("#F5B82E"), func(): app.goto("shop"))
 	if show_lives:
-		life_label = _pill(Rect2(473, 54, 364, 117), Rect2(600, 80, 120, 66), "life_pill", "♥", Color("#F06292"), func(): app.popups.lives())
+		life_label = _pill(Rect2(473, 54, 364, 117), Kit.pill_text_rect("life_pill", Rect2(473, 54, 364, 117)), "life_pill", "♥", Color("#F06292"), func(): app.popups.lives())
 		timer_label = Kit.label("", 32, Color.WHITE, Color("#9C3219"), 8)
 		timer_label.position = Vector2(473, 166)
 		timer_label.size = Vector2(364, 42)
@@ -64,10 +64,10 @@ func _pill(rect: Rect2, text_rect: Rect2, art: String, glyph: String, color: Col
 func refresh() -> void:
 	if not is_instance_valid(coin_label):
 		return
-	coin_label.text = str(app.profile.data.coins)
+	Kit.set_fit(coin_label, str(app.profile.data.coins), 54)
 	if show_lives:
 		var t: int = app.now()
-		life_label.text = str(app.profile.lives(t))
+		Kit.set_fit(life_label, str(app.profile.lives(t)), 54)
 		var wait: int = app.profile.next_life_in(t)
 		timer_label.text = "" if wait <= 0 else "%02d:%02d" % [wait / 60, wait % 60]
 

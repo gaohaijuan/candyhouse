@@ -327,7 +327,7 @@ func level_start(index: int) -> void:
 	if tag != "normal":
 		Kit.art(box, "tag_hard" if tag == "hard" else "tag_super", Rect2(Vector2(380, 521) - o, Vector2(319, 142)), "", Color("#E53935") if tag == "hard" else Color("#8E24AA"))
 		Kit.text_at(box, "困难" if tag == "hard" else "超难", Rect2(Vector2(459, 571) - o, Vector2(166, 64)), 60, Kit.CREAM, Color("#A9171C") if tag == "hard" else Color("#5E1A78"), 8)
-	Kit.text_at(box, "选择开局道具", Rect2(Vector2(286, 697) - o, Vector2(515, 75)), 66, Kit.BROWN)
+	Kit.text_at(box, "选择开局道具", Rect2(Vector2(286, 716) - o, Vector2(515, 72)), 62, Kit.BROWN)
 	var chosen := {}
 	_booster_card(box, Rect2(Vector2(104, 810) - o, Vector2(420, 485)), "extra_slot", "多一格", "icon_extra_slot", Rect2(45, 101, 337, 177), chosen)
 	_booster_card(box, Rect2(Vector2(546, 811) - o, Vector2(420, 485)), "magnet", "磁铁", "icon_magnet", Rect2(39, 33, 339, 279), chosen)
@@ -657,7 +657,7 @@ func pause(costs_life: bool, resume: Callable, restart: Callable, home: Callable
 		if r[3]:
 			Kit.art(box, "heart_cost_badge", Rect2(rect.end.x - 110, rect.position.y - 22, 120, 103), "", Color("#E5484D"))
 			Kit.text_at(box, "-1", Rect2(rect.end.x - 92, rect.position.y - 4, 84, 56), 48, Color.WHITE, Color("#B5262C"), 6)
-	Kit.finish_popup(info, 60.0)
+	Kit.finish_popup(info, 100.0)
 
 # ---------------------------------------------------------------- results
 
@@ -762,19 +762,19 @@ func checkin() -> void:
 			cell.modulate = Color(0.85, 0.8, 0.76)
 		var ink := Color("#915C41") if claimed else Kit.BROWN
 		var w := rect.size.x
-		Kit.text_at(cell, Lang.t("第%d天") % (i + 1), Rect2(0, 14, w, 52), 50, ink)
+		Kit.text_at(cell, Lang.t("第%d天") % (i + 1), Rect2(0, 8, w, 50), 48, ink)
 		var amount := ""
 		if i == 6:
-			Kit.art(cell, "chest_small", Rect2(w / 2 - 124, 66, 248, 160), "宝箱", Color("#F8BBD0"))
+			Kit.art(cell, "chest_small", Rect2(w / 2 - 116, 74, 232, 150), "宝箱", Color("#F8BBD0"))
 			amount = Lang.t("%d+道具") % int(r.get("coins", 0))
 			Kit.count_label(cell, amount, Rect2(w / 2 - 200, 230, 400, 60), 58)
 		else:
 			if r.has("coins"):
-				Kit.art(cell, "coin_small", Rect2(w / 2 - 56, 64, 112, 109), "金", Color("#F5B82E"))
+				Kit.art(cell, "coin_small", Rect2(w / 2 - 50, 72, 100, 97), "金", Color("#F5B82E"))
 				amount = str(int(r.coins))
 			else:
 				var k: String = r.boosters.keys()[0]
-				Kit.art(cell, icons.get(k, "icon_shuffle"), Rect2(w / 2 - 70, 70, 140, 96), "道具", Color("#C8E6C9"))
+				Kit.art(cell, icons.get(k, "icon_shuffle"), Rect2(w / 2 - 66, 76, 132, 90), "道具", Color("#C8E6C9"))
 				amount = "×%d" % int(r.boosters[k])
 			# Kept clear of the cell's rounded bottom edge (UI audit 2026-11-10).
 			Kit.count_label(cell, amount, Rect2(0, 174, w, 56), 52)

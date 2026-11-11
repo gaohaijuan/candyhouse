@@ -1340,7 +1340,10 @@ func _refresh_hud() -> void:
 			entry.badge.get_child(0).text = str(state.boosters[key])
 			entry.badge.visible = state.boosters[key] > 0
 	if app and is_instance_valid(hud.coins):
-		hud.coins.get_child(0).text = str(app.profile.data.coins)
+		var cl: Label = hud.coins.get_child(0)
+		cl.text = str(app.profile.data.coins)
+		cl.add_theme_font_size_override("font_size", int(_text_style("coin_text").get("size", 40)))
+		_shrink_to_fit(cl)
 
 func _unlit_star_material() -> ShaderMaterial:
 	var sh := Shader.new()

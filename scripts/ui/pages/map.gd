@@ -175,7 +175,7 @@ func _node(content: Control, i: int, p: Vector2, state: String) -> void:
 		var s := 56.0
 		for k in stars:
 			var star := Kit.picture("map_star_small", Vector2(s, s), "★", Color("#FFC233"))
-			star.position = Vector2(p.x - stars * s * 0.5 + k * s, p.y + 40)
+			star.position = Vector2(p.x - stars * s * 0.5 + k * s, p.y + 52)
 			content.add_child(star)
 		# Producer 2026-11-09: a three-star win leaves a chest on the stars;
 		# tapping the stars (or the chest) opens it once.
@@ -207,13 +207,16 @@ func _header() -> void:
 	var back := Kit.art_button(top, "button_back", Rect2(14, 25, 141, 141), "返")
 	back.pressed.connect(func(): app.goto("home"))
 	# No chapter titles: the map shows only the level path (producer, 2026-11-10).
-	Kit.art(top, "coin_pill", Rect2(838, 54, 239, 84))
-	var coins := Kit.text_at(top, str(app.profile.data.coins), Rect2(905, 72, 112, 48), 40, Kit.BROWN)
-	var hit := Kit.hit_area(top, Rect2(838, 54, 239, 84))
+	# Same pill as the shop and the candy house (the smaller one left a
+	# five-digit balance touching the "+").
+	var pill := Rect2(792, 40, 272, 92)
+	Kit.art(top, "coin_pill", pill)
+	var coins := Kit.text_at(top, str(app.profile.data.coins), Kit.pill_text_rect("coin_pill", pill), 42, Kit.BROWN)
+	var hit := Kit.hit_area(top, pill)
 	hit.pressed.connect(func(): app.goto("shop"))
 	app.wallet_changed.connect(func():
 		if is_instance_valid(coins):
-			coins.text = str(app.profile.data.coins))
+			Kit.set_fit(coins, str(app.profile.data.coins), 42))
 
 func _bottom_bar() -> void:
 	var bottom := Kit.band(self, 1.0)
@@ -222,7 +225,7 @@ func _bottom_bar() -> void:
 	Kit.art(bottom, "star", Rect2(215, 1740, 123, 116), "★", Color("#FFC233"))
 	var pr: Vector2i = app.profile.chest_progress()
 	var ready := pr.x >= pr.y
-	Kit.text_at(bottom, "%d/%d" % [mini(pr.x, pr.y), pr.y], Rect2(345, 1752, 330, 92), 72, Kit.BROWN).horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
+	Kit.text_at(bottom, "%d/%d" % [mini(pr.x, pr.y), pr.y], Rect2(368, 1752, 310, 92), 72, Kit.BROWN).horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
 	var chest := Kit.art_button(bottom, "chest_closed", Rect2(736, 1717, 178, 164), "箱")
 	chest.pressed.connect(func(): app.popups.star_chest())
 	if ready:

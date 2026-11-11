@@ -51,11 +51,12 @@ func setup(owner_app, _args: Dictionary) -> void:
 	Kit.art(top, "popup_ribbon", Rect2(213, 13, 590, 170))
 	Kit.ribbon_title(top, "我的糖果屋", Rect2(213, 13, 590, 170))
 	Kit.art(top, "coin_pill", Rect2(792, 36, 272, 92))
-	balance = Kit.text_at(top, "", Rect2(868, 57, 135, 50), 42, Kit.BROWN)
+	balance = Kit.text_at(top, "", Kit.pill_text_rect("coin_pill", Rect2(792, 36, 272, 92)), 42, Kit.BROWN)
 	if Kit.tex("plaque_progress"):
-		# Plaque 648 x 184, text area (150, 53, 345, 90), shown at 0.57.
+		# Plaque 648 x 184 shown at 0.57; its cream plate (between the cream
+		# swirls) is x 144-520, y 60-160 on the art: text area (160, 72, 344, 80).
 		Kit.art(top, "plaque_progress", Rect2(700, 150, 370, 105))
-		progress = Kit.text_at(top, "", Rect2(786, 180, 197, 51), 40, Kit.BROWN)
+		progress = Kit.text_at(top, "", Rect2(791, 191, 196, 46), 40, Kit.BROWN)
 	else:
 		Kit.nine(top, "tag_plate", Rect2(740, 150, 320, 80), [42, 14, 43, 14])
 		progress = Kit.text_at(top, "", Rect2(760, 163, 280, 56), 42, Kit.BROWN)
@@ -337,7 +338,7 @@ func _marker_at(slot_id: String) -> Vector2:
 func _refresh_header() -> void:
 	if not is_instance_valid(balance):
 		return
-	balance.text = str(app.profile.data.coins)
+	Kit.set_fit(balance, str(app.profile.data.coins), 42)
 	var p: Vector2i = app.profile.house_progress(room)
 	progress.text = tr("装修度 %d/%d") % [p.x, p.y]
 	# Refit on every change: the plate's blank is 197 wide and 10/10 is wider than 0/10.

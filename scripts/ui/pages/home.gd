@@ -33,7 +33,7 @@ func setup(owner_app, _args: Dictionary) -> void:
 	Kit.text_at(mid, tr("第 %d 关") % (app.current_level_index() + 1), Rect2(386, 826, 311, 78), 64, Kit.BROWN)
 	var play := Kit.art_button(low, "button_play", Rect2(90, 1209, 900, 233), "开始游戏")
 	play.pressed.connect(func(): app.popups.level_start(app.current_level_index()))
-	var pt := Kit.text_at(play, "开始游戏", Rect2(175, 48, 554, 121), 108, Kit.CREAM, Kit.OUTLINE, 14)
+	var pt := Kit.text_at(play, "开始游戏", Rect2(175, 42, 554, 121), 108, Kit.CREAM, Kit.OUTLINE, 14)
 	pt.add_theme_color_override("font_shadow_color", Color(0.45, 0.08, 0.2, 0.55))
 	pt.add_theme_constant_override("shadow_offset_y", 6)
 	var entries := [
