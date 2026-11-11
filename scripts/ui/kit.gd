@@ -334,8 +334,9 @@ static func _press_feedback(b: BaseButton) -> void:
 ## width; pass it explicitly when the text may already have widened the label).
 ## Where the number goes on the coin / life pill art (594 x 168): the cream
 ## between the icon and the "+", inset 12 px (measured 2026-11-11; the coin
-## pill's cream runs x 157-462, the life pill's 177-461).
-const PILL_TEXT := {"coin_pill": Rect2(169, 40, 281, 88), "life_pill": Rect2(189, 40, 260, 88)}
+## pill's cream runs x 157-462, the life pill's 177-461; the box sits high
+## because digits ink below their line box: measured ink 12 px low at y 40).
+const PILL_TEXT := {"coin_pill": Rect2(169, 22, 281, 88), "life_pill": Rect2(189, 22, 260, 88)}
 
 static func pill_text_rect(art: String, rect: Rect2) -> Rect2:
 	var k := rect.size / Vector2(594, 168)
