@@ -132,6 +132,15 @@ static func text_at(parent: Control, text: String, rect: Rect2, size: int, color
 	parent.add_child(l)
 	return l
 
+## One row of like labels (tabs, booster names) all take the smallest size
+## any of them had to shrink to, so they share one size and baseline.
+static func same_size(ls: Array) -> void:
+	var fs := 1 << 20
+	for l in ls:
+		fs = mini(fs, l.get_theme_font_size("font_size"))
+	for l in ls:
+		l.add_theme_font_size_override("font_size", fs)
+
 ## A store product's price in the language's currency: its dollar price
 ## ($0.99) in English; in Chinese yuan, whole without decimals, else one
 ## decimal (¥3, ¥0.1).

@@ -42,11 +42,13 @@ func setup(owner_app, _args: Dictionary) -> void:
 		["home_icon_map", "地图", "图", Rect2(557, 1516, 245, 243), func(): app.goto("map")],
 		["home_icon_house", "糖果屋", "屋", Rect2(808, 1516, 244, 243), func(): app.goto("house")],
 	]
+	var tabs: Array[Label] = []
 	for e in entries:
 		var r: Rect2 = e[3]
 		var b := Kit.art_button(bottom, e[0], r, e[2])
 		b.pressed.connect(e[4])
-		Kit.text_at(bottom, e[1], Rect2(r.position.x, 1756, r.size.x, 72), 60, Kit.BROWN, Kit.CREAM, 8)
+		tabs.append(Kit.text_at(bottom, e[1], Rect2(r.position.x, 1756, r.size.x, 72), 60, Kit.BROWN, Kit.CREAM, 8))
+	Kit.same_size(tabs)
 	checkin_dot = Kit.art(bottom, "dot_red", Rect2(460, 1521, 51, 55), "", Color("#E5484D"))
 	# Star chest on the right, mirroring the starter gift (swapped with the
 	# candy house, producer 2026-11-10): icon, progress bar, caption plate.
@@ -82,7 +84,7 @@ func setup(owner_app, _args: Dictionary) -> void:
 		# the same brown as the other home plates; the older gift art had its
 		# plate at x 38-218, centre y 180.
 		var name_rect := Rect2(26, 176, 181, 40) if own_art else Rect2(38, 154, 180, 52)
-		Kit.text_at(gift, String(pk.get("name", "礼包")), name_rect, 32 if own_art else 40, Kit.BROWN)
+		Kit.text_at(gift, String(pk.get("name", "礼包")), name_rect, 37 if own_art else 40, Kit.BROWN)
 		if not own_art:
 			if pk.has("tag"):
 				Common.deal_sticker(mid, String(pk.tag), Vector2(215, 770), 1.25)

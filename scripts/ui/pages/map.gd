@@ -197,9 +197,10 @@ func _node(content: Control, i: int, p: Vector2, state: String) -> void:
 			hit.pressed.connect(claim)
 	var tag: String = app.difficulty(i)
 	if tag != "normal" and state != "locked" and state != "done":
-		var tr := Rect2(p.x + sz.x * 0.25, p.y - sz.y * 0.75, 150, 75)
+		# 1.35x the first cut: the words were 12-15 px tall in audit-4
+		var tr := Rect2(p.x + sz.x * 0.25 - 26, p.y - sz.y * 0.75 - 26, 202, 101)
 		Kit.art(content, "tag_hard" if tag == "hard" else "tag_super", tr, "", Color("#E53935") if tag == "hard" else Color("#8E24AA"))
-		Kit.text_at(content, "困难" if tag == "hard" else "超难", Rect2(tr.position.x + 32, tr.position.y + 27, 86, 28), 30, Kit.CREAM, Color("#8E1E25"), 6)
+		Kit.text_at(content, "困难" if tag == "hard" else "超难", Rect2(tr.position.x + 30, tr.position.y + 34, 142, 42), 42, Kit.CREAM, Color("#8E1E25"), 7)
 
 func _header() -> void:
 	var top := Kit.band(self, 0.0)
