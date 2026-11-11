@@ -242,9 +242,11 @@ func _language() -> void:
 	check(Lang.t("设置") == "设置" and Lang.t("第 %d 关") % 3 == "第 3 关", "Chinese stays Chinese")
 	check(Kit.price_text(pack) == "¥3", "Chinese prices in yuan")
 	Lang.use("ja")
-	check(Lang.t("设置") == "設定" and Lang.t("第 %d 关") % 3 == "レベル 3" and Kit.price_text(pack) == "$1.99", "Japanese texts, dollar prices")
+	check(Lang.t("设置") == "設定" and Lang.t("第 %d 关") % 3 == "レベル 3", "Japanese texts")
+	check(Kit.price_text(pack) == "¥300" and Kit.money(18.0) == "¥450", "Japanese prices in yen")
 	Lang.use("ko")
 	check(Lang.t("设置") == "설정" and Lang.t("第 %d 关") % 3 == "레벨 3" and Lang.font().has_char("설".unicode_at(0)), "Korean texts and font")
+	check(Kit.price_text(pack) == "₩3,000" and Kit.price_text({"usd": 99.99}) == "₩149,000", "Korean prices in won")
 	Lang.use("fr")
 	check(Lang.code == "en", "unknown language falls back to English")
 	for it in economy.iap:

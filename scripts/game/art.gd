@@ -41,11 +41,17 @@ static func texture(path: String) -> Texture2D:
 static func dessert_icon(type: int) -> Texture2D:
 	return texture("res://assets/desserts/%s.png" % DESSERTS[type].key)
 
+## Art with a dollar price painted in: another language may only use its own
+## twin (yen, won), never the English one, or it would show dollars.
+const PRICED := ["icon_pack_limited", "sticker_price_limited"]
+
 static func ui(name: String) -> Texture2D:
 	if Lang.code != "" and not Lang.is_zh():
 		var own := texture("res://assets/ui/%s_%s.png" % [name, Lang.code])
 		if own:
 			return own
+		if name in PRICED and Lang.code != "en":
+			return null
 		# Other languages without their own twin use the English one.
 		var en := texture("res://assets/ui/%s_en.png" % name)
 		if en:
@@ -59,7 +65,9 @@ static func ui_words(name: String) -> Texture2D:
 	if Lang.code == "" or Lang.is_zh():
 		return texture("res://assets/ui/%s.png" % name)
 	var own := texture("res://assets/ui/%s_%s.png" % [name, Lang.code])
-	return own if own else texture("res://assets/ui/%s_en.png" % name)
+	if own or (name in PRICED and Lang.code != "en"):
+		return own
+	return texture("res://assets/ui/%s_en.png" % name)
 
 ## The game font in the current language (see Lang.font).
 static var font: Font:

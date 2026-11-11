@@ -141,21 +141,64 @@ static func same_size(ls: Array) -> void:
 	for l in ls:
 		l.add_theme_font_size_override("font_size", fs)
 
-## A store product's price in the language's currency: its dollar price
-## ($0.99) in English; in Chinese yuan, whole without decimals, else one
-## decimal (¥3, ¥0.1).
+## Store price tiers: each dollar price and what the same tier sells for in
+## Japan (yen) and Korea (won), as the stores price them (producer
+## 2026-11-11: prices follow the currency). A release build shows the
+## store's own localized price string instead when billing provides it.
+const PRICE_TIERS := {
+	"0.99": [160, 1500], "1.99": [300, 3000], "2.99": [500, 4400], "4.99": [800, 7500],
+	"9.99": [1500, 15000], "19.99": [3000, 29000], "49.99": [7800, 73000], "99.99": [15000, 149000],
+}
+const YEN_PER_USD := 150.0
+const WON_PER_USD := 1500.0
+
+## The currency the current language shows: yuan in Chinese, yen in
+## Japanese, won in Korean, dollars otherwise.
+static func currency() -> String:
+	return {"zh": "cny", "ja": "jpy", "ko": "krw"}.get(Lang.code, "usd")
+
+## A store product's price in the language's currency: its dollar tier
+## ($0.99), that tier in yen (¥160) or won (₩1,500); in Chinese yuan, whole
+## without decimals, else one decimal (¥3, ¥0.1).
 static func price_text(p: Dictionary) -> String:
-	if not Lang.is_zh():
-		return "$%.2f" % float(p.get("usd", 0.99))
-	var f := float(p.price)
-	return "¥%d" % int(f) if is_equal_approx(f, roundf(f)) else "¥%.1f" % f
+	var usd := float(p.get("usd", 0.99))
+	match currency():
+		"cny":
+			var f := float(p.price)
+			return "¥%d" % int(f) if is_equal_approx(f, roundf(f)) else "¥%.1f" % f
+		"jpy":
+			return "¥" + _thousands(_tier(usd, 0, YEN_PER_USD, 10))
+		"krw":
+			return "₩" + _thousands(_tier(usd, 1, WON_PER_USD, 100))
+	return "$%.2f" % usd
 
 ## An amount given in yuan (what a pack is worth) in the language's currency.
-## Dollars follow the store tiers, where ¥6 sells at $0.99.
+## Dollars follow the store tiers, where ¥6 sells at $0.99; yen and won
+## convert those dollars at the tiers' rate, rounded like store prices.
 static func money(yuan: float) -> String:
-	if not Lang.is_zh():
-		return "$%.2f" % (yuan * USD_PER_YUAN)
-	return "¥%d" % int(yuan)
+	var usd := yuan * USD_PER_YUAN
+	match currency():
+		"cny":
+			return "¥%d" % int(yuan)
+		"jpy":
+			return "¥" + _thousands(int(roundf(usd * YEN_PER_USD / 10.0)) * 10)
+		"krw":
+			return "₩" + _thousands(int(roundf(usd * WON_PER_USD / 100.0)) * 100)
+	return "$%.2f" % usd
+
+static func _tier(usd: float, col: int, rate: float, step: int) -> int:
+	var key := "%.2f" % usd
+	if PRICE_TIERS.has(key):
+		return int(PRICE_TIERS[key][col])
+	return int(roundf(usd * rate / step)) * step
+
+static func _thousands(n: int) -> String:
+	var s := str(n)
+	var out := ""
+	while s.length() > 3:
+		out = "," + s.substr(s.length() - 3) + out
+		s = s.substr(0, s.length() - 3)
+	return s + out
 
 ## Reward counts and amounts (+100, ×1, 3300): dark brown with a cream
 ## outline and a soft shadow, the same everywhere.
