@@ -166,7 +166,8 @@ func _node(content: Control, i: int, p: Vector2, state: String) -> void:
 			Kit.text_at(content, num, Rect2(p.x - 62, p.y + 72, 124, 50), 40, Kit.BROWN)
 	elif state != "locked":
 		var outline := Color("#B2133A") if state == "current" else Color("#047363")
-		var ty := 0.2 if state == "current" else 0.22
+		# Raised 0.06 (sweet-update-30: the digits' ink sat ~10% low on the disc face)
+		var ty := 0.14 if state == "current" else 0.16
 		Kit.text_at(b, num, Rect2(sz.x * 0.2, sz.y * ty, sz.x * 0.6, sz.y * 0.48), 72 if num.length() < 2 else 66, Color.WHITE, outline, 10)
 	if state == "current":
 		Kit.art(content, "node_flag", Rect2(rect.position + Vector2(53, -160), Vector2(184, 189)))
@@ -175,7 +176,7 @@ func _node(content: Control, i: int, p: Vector2, state: String) -> void:
 		var s := 56.0
 		for k in stars:
 			var star := Kit.picture("map_star_small", Vector2(s, s), "★", Color("#FFC233"))
-			star.position = Vector2(p.x - stars * s * 0.5 + k * s, p.y + 52)
+			star.position = Vector2(p.x - stars * s * 0.5 + k * s, p.y + 62)
 			content.add_child(star)
 		# Producer 2026-11-09: a three-star win leaves a chest on the stars;
 		# tapping the stars (or the chest) opens it once.
@@ -186,7 +187,7 @@ func _node(content: Control, i: int, p: Vector2, state: String) -> void:
 			cb.create_tween().set_loops().tween_property(cb, "rotation", 0.1, 0.18).from(-0.1).set_trans(Tween.TRANS_SINE)
 			var hit := Button.new()
 			hit.flat = true
-			hit.position = Vector2(p.x - stars * s * 0.5, p.y + 30)
+			hit.position = Vector2(p.x - stars * s * 0.5, p.y + 50)
 			hit.size = Vector2(stars * s, s + 20)
 			content.add_child(hit)
 			var claim := func():
@@ -225,7 +226,7 @@ func _bottom_bar() -> void:
 	Kit.art(bottom, "star", Rect2(215, 1740, 123, 116), "★", Color("#FFC233"))
 	var pr: Vector2i = app.profile.chest_progress()
 	var ready := pr.x >= pr.y
-	Kit.text_at(bottom, "%d/%d" % [mini(pr.x, pr.y), pr.y], Rect2(368, 1752, 310, 92), 72, Kit.BROWN).horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
+	Kit.text_at(bottom, "%d/%d" % [mini(pr.x, pr.y), pr.y], Rect2(368, 1740, 310, 92), 72, Kit.BROWN).horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
 	var chest := Kit.art_button(bottom, "chest_closed", Rect2(736, 1717, 178, 164), "箱")
 	chest.pressed.connect(func(): app.popups.star_chest())
 	if ready:
