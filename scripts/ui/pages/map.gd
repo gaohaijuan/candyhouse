@@ -170,8 +170,8 @@ func _node(content: Control, i: int, p: Vector2, state: String) -> void:
 		# face); 54 for two digits so they clear the face's rim (producer 2026-11-12)
 		var ty := 0.14 if state == "current" else 0.16
 		Kit.text_at(b, num, Rect2(sz.x * 0.2, sz.y * ty, sz.x * 0.6, sz.y * 0.48), 62 if num.length() < 2 else 54, Color.WHITE, outline, 9)
-	if state == "current":
-		Kit.art(content, "node_flag", Rect2(rect.position + Vector2(53, -160), Vector2(184, 189)))
+	# No cupcake flag on the current node (producer 2026-11-12): its pink
+	# disc and the glow already mark it.
 	if state == "done" and not chest:
 		var stars := int(app.profile.data.stars.get(str(i + 1), 0))
 		var s := 56.0
@@ -199,11 +199,10 @@ func _node(content: Control, i: int, p: Vector2, state: String) -> void:
 			hit.pressed.connect(claim)
 	var tag: String = app.difficulty(i)
 	if tag != "normal" and state != "locked" and state != "done":
-		# Directly above the node (producer 2026-11-12; on the current one in
-		# front of the flag's cupcake, the flag rising behind it), slid sideways
-		# off the next two nodes when they rise into its row; 1.35x the first
-		# cut (audit-4: words 12-15 px tall).
-		var tr := Rect2(p.x - 101, rect.position.y - 105, 202, 101)
+		# Pressed onto the top of its node's disc (producer 2026-11-12), slid
+		# sideways off the next two nodes when they rise into its row; 1.35x
+		# the first cut (audit-4: words 12-15 px tall).
+		var tr := Rect2(p.x - 101, rect.position.y - 101 + 34, 202, 101)
 		for k in [1, 2]:
 			if i + k >= app.levels.size() or (i + k) / PER != i / PER:
 				break
