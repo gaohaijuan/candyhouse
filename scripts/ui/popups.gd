@@ -103,7 +103,7 @@ func _abs_body(info: Dictionary, body_y: float, height: float) -> Control:
 
 func privacy(on_accept: Callable) -> void:
 	var info := _make("温馨提示")
-	var welcome := Kit.text_block("欢迎来到甜点三连!\n请阅读并同意《用户协议》和《隐私政策》后开始游戏。")
+	var welcome := Kit.text_block("欢迎来到甜蜜糖果屋!\n请阅读并同意《用户协议》和《隐私政策》后开始游戏。")
 	if Lang.code in ["ja", "ko"]:
 		# Their translations come broken into lines; this size keeps each one whole.
 		welcome.add_theme_font_size_override("font_size", 46)

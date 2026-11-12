@@ -41,7 +41,7 @@ static func logo(page: Control, centre: Vector2, width: float) -> Control:
 	if t:
 		node = Kit.picture("logo", Vector2(width, width * t.get_height() / t.get_width()))
 	else:
-		node = Kit.label("甜点三连", int(width / 4.6), Color("#F0508A"), Color("#FFF6E6"), 26)
+		node = Kit.label("甜蜜糖果屋", int(width / 5.6), Color("#F0508A"), Color("#FFF6E6"), 26)
 		node.size = Vector2(width, width / 3.2)
 		node.add_theme_color_override("font_shadow_color", Color(0.6, 0.15, 0.25, 0.6))
 		node.add_theme_constant_override("shadow_offset_y", 10)
