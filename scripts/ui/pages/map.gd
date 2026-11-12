@@ -166,9 +166,10 @@ func _node(content: Control, i: int, p: Vector2, state: String) -> void:
 			Kit.text_at(content, num, Rect2(p.x - 62, p.y + 72, 124, 50), 40, Kit.BROWN)
 	elif state != "locked":
 		var outline := Color("#B2133A") if state == "current" else Color("#047363")
-		# Raised 0.06 (sweet-update-30: the digits' ink sat ~10% low on the disc face)
+		# Raised 0.06 (sweet-update-30: the digits' ink sat ~10% low on the disc
+		# face); 54 for two digits so they clear the face's rim (producer 2026-11-12)
 		var ty := 0.14 if state == "current" else 0.16
-		Kit.text_at(b, num, Rect2(sz.x * 0.2, sz.y * ty, sz.x * 0.6, sz.y * 0.48), 72 if num.length() < 2 else 66, Color.WHITE, outline, 10)
+		Kit.text_at(b, num, Rect2(sz.x * 0.2, sz.y * ty, sz.x * 0.6, sz.y * 0.48), 62 if num.length() < 2 else 54, Color.WHITE, outline, 9)
 	if state == "current":
 		Kit.art(content, "node_flag", Rect2(rect.position + Vector2(53, -160), Vector2(184, 189)))
 	if state == "done" and not chest:
@@ -198,8 +199,23 @@ func _node(content: Control, i: int, p: Vector2, state: String) -> void:
 			hit.pressed.connect(claim)
 	var tag: String = app.difficulty(i)
 	if tag != "normal" and state != "locked" and state != "done":
-		# 1.35x the first cut: the words were 12-15 px tall in audit-4
-		var tr := Rect2(p.x + sz.x * 0.25 - 26, p.y - sz.y * 0.75 - 26, 202, 101)
+		# Directly above the node (producer 2026-11-12; on the current one in
+		# front of the flag's cupcake, the flag rising behind it), slid sideways
+		# off the next two nodes when they rise into its row; 1.35x the first
+		# cut (audit-4: words 12-15 px tall).
+		var tr := Rect2(p.x - 101, rect.position.y - 105, 202, 101)
+		for k in [1, 2]:
+			if i + k >= app.levels.size() or (i + k) / PER != i / PER:
+				break
+			var q := _node_pos(i + k)
+			var other := Rect2(q - Vector2(93, 75), Vector2(186, 150))
+			if not other.intersects(tr.grow(6)):
+				continue
+			if q.x < p.x:
+				tr.position.x = other.end.x + 6
+			else:
+				tr.position.x = other.position.x - 6 - tr.size.x
+		tr.position.x = clampf(tr.position.x, 16, 1064 - tr.size.x)
 		Kit.art(content, "tag_hard" if tag == "hard" else "tag_super", tr, "", Color("#E53935") if tag == "hard" else Color("#8E24AA"))
 		Kit.text_at(content, "困难" if tag == "hard" else "超难", Rect2(tr.position.x + 30, tr.position.y + 34, 142, 42), 42, Kit.CREAM, Color("#8E1E25"), 7)
 
@@ -212,7 +228,7 @@ func _header() -> void:
 	# five-digit balance touching the "+").
 	var pill := Rect2(792, 40, 272, 92)
 	Kit.art(top, "coin_pill", pill)
-	var coins := Kit.text_at(top, str(app.profile.data.coins), Kit.pill_text_rect("coin_pill", pill, Kit.SMALL_PILL_DY), 42, Kit.BROWN)
+	var coins := Kit.text_at(top, str(app.profile.data.coins), Kit.pill_text_rect("coin_pill", pill), 42, Kit.BROWN)
 	var hit := Kit.hit_area(top, pill)
 	hit.pressed.connect(func(): app.goto("shop"))
 	app.wallet_changed.connect(func():
@@ -223,11 +239,14 @@ func _bottom_bar() -> void:
 	var bottom := Kit.band(self, 1.0)
 	var r := Rect2(53, 1711, 994, 172)
 	Kit.art(bottom, "map_bottom_bar", r, "", Color("#FFF4DE"))
-	Kit.art(bottom, "star", Rect2(215, 1740, 123, 116), "★", Color("#FFC233"))
+	# The bar's inner cream runs x 136-966, y 1741-1855 (centre 1798): the
+	# star and the chest sit inside it with a margin (producer 2026-11-12:
+	# both touched the rim).
+	Kit.art(bottom, "star", Rect2(186, 1757, 88, 83), "★", Color("#FFC233"))
 	var pr: Vector2i = app.profile.chest_progress()
 	var ready := pr.x >= pr.y
-	Kit.text_at(bottom, "%d/%d" % [mini(pr.x, pr.y), pr.y], Rect2(368, 1740, 310, 92), 72, Kit.BROWN).horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
-	var chest := Kit.art_button(bottom, "chest_closed", Rect2(736, 1717, 178, 164), "箱")
+	Kit.text_at(bottom, "%d/%d" % [mini(pr.x, pr.y), pr.y], Rect2(304, 1744, 380, 92), 64, Kit.BROWN).horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
+	var chest := Kit.art_button(bottom, "chest_closed", Rect2(812, 1750, 104, 96), "箱")
 	chest.pressed.connect(func(): app.popups.star_chest())
 	if ready:
 		chest.create_tween().set_loops().tween_property(chest, "rotation", 0.08, 0.15).from(-0.08).set_trans(Tween.TRANS_SINE)

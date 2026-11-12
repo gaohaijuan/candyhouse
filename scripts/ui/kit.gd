@@ -336,16 +336,16 @@ static func _press_feedback(b: BaseButton) -> void:
 ## between the icon and the "+", inset 12 px (measured 2026-11-11; the coin
 ## pill's cream runs x 157-462, the life pill's 177-461; the box sits high
 ## because digits ink below their line box: measured ink 12 px low at y 40).
-## That raise was set on the home bar's 117-high pill; on the 92-high pill
-## (map, shop, house) the 42 px digits then ink 10 px from the top and none
-## from the bottom (sweet-update-31), so those pages pass SMALL_PILL_DY.
-const SMALL_PILL_DY := 5.0
+## That raise overshoots by about 5 screen px on both pill sizes (home bar
+## 117 high, producer 2026-11-12; map/shop/house 92 high, sweet-update-31):
+## measured against the pill's inner cream face, so PILL_DY lowers it back.
+const PILL_DY := 5.0
 const PILL_TEXT := {"coin_pill": Rect2(169, 22, 281, 88), "life_pill": Rect2(189, 22, 260, 88)}
 
-static func pill_text_rect(art: String, rect: Rect2, dy := 0.0) -> Rect2:
+static func pill_text_rect(art: String, rect: Rect2) -> Rect2:
 	var k := rect.size / Vector2(594, 168)
 	var box: Rect2 = PILL_TEXT.get(art, PILL_TEXT.coin_pill)
-	return Rect2(rect.position + box.position * k + Vector2(0, dy), box.size * k)
+	return Rect2(rect.position + box.position * k + Vector2(0, PILL_DY), box.size * k)
 
 ## Sets a label's text at its base size, shrinking it to its own width.
 static func set_fit(l: Label, text: String, base: int) -> void:
