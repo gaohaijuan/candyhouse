@@ -4,6 +4,7 @@ extends Control
 ## chapter is a chest. Tapping an unlocked node opens the level start popup.
 
 const Kit = preload("res://scripts/ui/kit.gd")
+const Lang = preload("res://scripts/core/lang.gd")
 const Common = preload("res://scripts/ui/pages/_common.gd")
 const PER := 10
 const BLOCK := 2300.0       # height of one chapter's landscape
@@ -221,6 +222,10 @@ func _node(content: Control, i: int, p: Vector2, state: String) -> void:
 		# before and narrowed by the 7 px outline (sweet-update-33)
 		var words := Kit.text_at(content, "困难" if tag == "hard" else "超难", Rect2(tr.position.x + 30, tr.position.y + 30, 142, 42), 42, Kit.CREAM, Color("#8E1E25"), 7)
 		Kit.shrink_to_fit(words, 142.0 - 14.0)
+		# The long en/ja/ko "super" words shrink, and the smaller ink then
+		# sits 5-7 px high in the box (sweet-update-34).
+		if tag != "hard" and not Lang.is_zh():
+			words.position.y += {"ja": 7.0}.get(Lang.code, 5.0)
 
 func _header() -> void:
 	var top := Kit.band(self, 0.0)
