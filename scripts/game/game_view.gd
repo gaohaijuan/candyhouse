@@ -167,6 +167,9 @@ func _build_static() -> void:
 		hud.level = _plaque(_rect("level_plaque"), Color("#F48FB1"), Color.WHITE, 52)
 	if Art.ui("coin_pill"):
 		hud.coins = _textured_label(_rect("coin_pill"), Art.ui("coin_pill"), _text_style("coin_text"), layout.get("coin_text_box", []))
+		# Clipped so a wide balance cannot widen the label past the cream before
+		# _shrink_to_fit measures it (ja digits did: sweet-update-31 C02).
+		(hud.coins.get_child(0) as Label).clip_text = true
 		hud.coins.get_child(0).text = "1280"
 	else:
 		hud.coins = _plaque(_rect("coin_pill"), Color("#FFF6E6"), Color("#7A4A32"), 40)
