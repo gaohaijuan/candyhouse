@@ -167,8 +167,9 @@ func _node(content: Control, i: int, p: Vector2, state: String) -> void:
 	elif state != "locked":
 		var outline := Color("#B2133A") if state == "current" else Color("#047363")
 		# Raised 0.06 (sweet-update-30: the digits' ink sat ~10% low on the disc
-		# face); 54 for two digits so they clear the face's rim (producer 2026-11-12)
-		var ty := 0.14 if state == "current" else 0.16
+		# face); 54 for two digits so they clear the face's rim (producer 2026-11-12),
+		# which left them 7-8 px high: lowered 0.04 (sweet-update-33)
+		var ty := 0.18 if state == "current" else 0.20
 		Kit.text_at(b, num, Rect2(sz.x * 0.2, sz.y * ty, sz.x * 0.6, sz.y * 0.48), 62 if num.length() < 2 else 54, Color.WHITE, outline, 9)
 	# No cupcake flag on the current node (producer 2026-11-12): its pink
 	# disc and the glow already mark it.
@@ -216,7 +217,10 @@ func _node(content: Control, i: int, p: Vector2, state: String) -> void:
 				tr.position.x = other.position.x - 6 - tr.size.x
 		tr.position.x = clampf(tr.position.x, 16, 1064 - tr.size.x)
 		Kit.art(content, "tag_hard" if tag == "hard" else "tag_super", tr, "", Color("#E53935") if tag == "hard" else Color("#8E24AA"))
-		Kit.text_at(content, "困难" if tag == "hard" else "超难", Rect2(tr.position.x + 30, tr.position.y + 34, 142, 42), 42, Kit.CREAM, Color("#8E1E25"), 7)
+		# The plate's face is (20, 35)-(182, 81) here: words 4 px higher than
+		# before and narrowed by the 7 px outline (sweet-update-33)
+		var words := Kit.text_at(content, "困难" if tag == "hard" else "超难", Rect2(tr.position.x + 30, tr.position.y + 30, 142, 42), 42, Kit.CREAM, Color("#8E1E25"), 7)
+		Kit.shrink_to_fit(words, 142.0 - 14.0)
 
 func _header() -> void:
 	var top := Kit.band(self, 0.0)
@@ -244,7 +248,7 @@ func _bottom_bar() -> void:
 	Kit.art(bottom, "star", Rect2(186, 1757, 88, 83), "★", Color("#FFC233"))
 	var pr: Vector2i = app.profile.chest_progress()
 	var ready := pr.x >= pr.y
-	Kit.text_at(bottom, "%d/%d" % [mini(pr.x, pr.y), pr.y], Rect2(304, 1744, 380, 92), 64, Kit.BROWN).horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
+	Kit.text_at(bottom, "%d/%d" % [mini(pr.x, pr.y), pr.y], Rect2(304, 1752, 380, 92), 64, Kit.BROWN).horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
 	var chest := Kit.art_button(bottom, "chest_closed", Rect2(812, 1750, 104, 96), "箱")
 	chest.pressed.connect(func(): app.popups.star_chest())
 	if ready:

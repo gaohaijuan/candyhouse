@@ -57,7 +57,10 @@ func setup(owner_app, _args: Dictionary) -> void:
 		# 2026-11-12: too small); its cream plate (between the cream swirls) is
 		# x 144-520, y 60-160 on the art: text area (160, 72, 344, 80).
 		Kit.art(top, "plaque_progress", Rect2(628, 174, 441, 125))
-		progress = Kit.text_at(top, "", Rect2(737, 223, 234, 54), 48, Kit.BROWN)
+		# The ja/ko fonts ink ~7 px lower than the zh/en one at this size
+		# (sweet-update-33: 3.7 px from the plate's bottom edge).
+		var dy := -7.0 if Lang.code in ["ja", "ko"] else 0.0
+		progress = Kit.text_at(top, "", Rect2(737, 223 + dy, 234, 54), 48, Kit.BROWN)
 	else:
 		Kit.nine(top, "tag_plate", Rect2(740, 150, 320, 80), [42, 14, 43, 14])
 		progress = Kit.text_at(top, "", Rect2(760, 163, 280, 56), 42, Kit.BROWN)
