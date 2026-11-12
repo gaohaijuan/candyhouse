@@ -51,7 +51,7 @@ func setup(owner_app, _args: Dictionary) -> void:
 	Kit.art(top, "popup_ribbon", Rect2(213, 13, 590, 170))
 	Kit.ribbon_title(top, "我的糖果屋", Rect2(213, 13, 590, 170))
 	Kit.art(top, "coin_pill", Rect2(792, 36, 272, 92))
-	balance = Kit.text_at(top, "", Kit.pill_text_rect("coin_pill", Rect2(792, 36, 272, 92)), 42, Kit.BROWN)
+	balance = Kit.text_at(top, "", Kit.pill_text_rect("coin_pill", Rect2(792, 36, 272, 92), Kit.SMALL_PILL_DY), 42, Kit.BROWN)
 	if Kit.tex("plaque_progress"):
 		# Plaque 648 x 184 shown at 0.57; its cream plate (between the cream
 		# swirls) is x 144-520, y 60-160 on the art: text area (160, 72, 344, 80).

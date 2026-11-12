@@ -33,7 +33,7 @@ func setup(owner_app, _args: Dictionary) -> void:
 	Kit.art(top, "popup_ribbon", Rect2(283, 13, 505, 152))
 	Kit.ribbon_title(top, "商店", Rect2(283, 13, 505, 152))
 	Kit.art(top, "coin_pill", Rect2(792, 36, 272, 92))
-	balance = Kit.text_at(top, "", Kit.pill_text_rect("coin_pill", Rect2(792, 36, 272, 92)), 42, Kit.BROWN)
+	balance = Kit.text_at(top, "", Kit.pill_text_rect("coin_pill", Rect2(792, 36, 272, 92), Kit.SMALL_PILL_DY), 42, Kit.BROWN)
 	app.wallet_changed.connect(_rebuild)
 	_rebuild()
 

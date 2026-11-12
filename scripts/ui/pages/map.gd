@@ -212,7 +212,7 @@ func _header() -> void:
 	# five-digit balance touching the "+").
 	var pill := Rect2(792, 40, 272, 92)
 	Kit.art(top, "coin_pill", pill)
-	var coins := Kit.text_at(top, str(app.profile.data.coins), Kit.pill_text_rect("coin_pill", pill), 42, Kit.BROWN)
+	var coins := Kit.text_at(top, str(app.profile.data.coins), Kit.pill_text_rect("coin_pill", pill, Kit.SMALL_PILL_DY), 42, Kit.BROWN)
 	var hit := Kit.hit_area(top, pill)
 	hit.pressed.connect(func(): app.goto("shop"))
 	app.wallet_changed.connect(func():
